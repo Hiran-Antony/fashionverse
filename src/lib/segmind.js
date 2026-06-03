@@ -30,7 +30,7 @@ export async function uploadToCloudinary(file) {
 }
 
 /** Upload a file to the HF Space /upload endpoint via proxy */
-async function uploadFileToSpace(file) {
+async function uploadFileToSpace(file, signal) {
   const formData = new FormData();
   formData.append("files", file, file.name);
 
@@ -41,6 +41,7 @@ async function uploadFileToSpace(file) {
     method: "POST",
     headers,
     body: formData,
+    signal,
   });
 
   if (!res.ok) {
@@ -64,13 +65,15 @@ async function uploadFileToSpace(file) {
 /**
  * Join the Gradio queue.
  */
-async function joinQueue(personFileData, garmentFileData, sessionHash) {
+async function joinQueue(personFileData, garmentFileData, sessionHash, signal) {
   const headers = { "Content-Type": "application/json" };
   if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
 
   const res = await fetch(`${SPACE_URL}/queue/join`, {
     method: "POST",
     headers,
+    signal,
+
     body: JSON.stringify({
       data: [
         personFileData,  // person image FileData
@@ -99,7 +102,7 @@ async function joinQueue(personFileData, garmentFileData, sessionHash) {
 /**
  * Poll the SSE stream using the SESSION HASH.
  */
-function pollQueueResult(sessionHash, timeout = 180000) {
+function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
   return new Promise((resolve, reject) => {
     const url = `${SPACE_URL}/queue/data?session_hash=${sessionHash}`;
     console.log("📡 Polling SSE:", url);
@@ -108,6 +111,7 @@ function pollQueueResult(sessionHash, timeout = 180000) {
     if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
 
     const controller = new AbortController();
+    if (signal) { signal.addEventListener("abort", () => controller.abort()); }
     const timeoutId = setTimeout(() => {
       controller.abort();
       reject(new Error("Timed out (3 min). The AI is busy — please try again later."));
@@ -250,7 +254,7 @@ function pollQueueResult(sessionHash, timeout = 180000) {
 /**
  * Full Virtual Try-On flow with automatic retry.
  */
-export async function runVirtualTryOn(modelFile, garmentFile, _garmentDescription, retryCount = 0) {
+export async function runVirtualTryOn(modelFile, garmentFile, _garmentDescription, retryCount = 0, signal = null) {
   if (!HF_TOKEN) {
     throw new Error("Hugging Face token missing — set VITE_HF_TOKEN in .env");
   }
@@ -260,18 +264,18 @@ export async function runVirtualTryOn(modelFile, garmentFile, _garmentDescriptio
 
   console.log("📤 Uploading images to HF Space...");
   const [personFileData, garmentFileData] = await Promise.all([
-    uploadFileToSpace(modelFile),
-    uploadFileToSpace(garmentFile),
+    uploadFileToSpace(modelFile, signal),
+    uploadFileToSpace(garmentFile, signal),
   ]);
   console.log("✅ Uploaded:", { personFileData, garmentFileData });
 
   console.log("🚀 Joining queue with session_hash:", sessionHash);
-  const eventId = await joinQueue(personFileData, garmentFileData, sessionHash);
+  const eventId = await joinQueue(personFileData, garmentFileData, sessionHash, signal);
   console.log("⏳ Queued, event_id:", eventId);
 
   console.log("🎨 Polling SSE with session_hash:", sessionHash);
   try {
-    const resultUrl = await pollQueueResult(sessionHash);
+    const resultUrl = await pollQueueResult(sessionHash, 180000, signal);
     console.log("🎉 Done:", resultUrl);
     return resultUrl;
   } catch (err) {
@@ -284,15 +288,15 @@ export async function runVirtualTryOn(modelFile, garmentFile, _garmentDescriptio
     if (isTransient && retryCount < 2) {
       console.warn(`⚠️ Transient error, retrying (${retryCount + 1}/2)...`, err.message);
       await new Promise((r) => setTimeout(r, 3000)); // wait 3s before retry
-      return runVirtualTryOn(modelFile, garmentFile, _garmentDescription, retryCount + 1);
+      return runVirtualTryOn(modelFile, garmentFile, _garmentDescription, retryCount + 1, signal);
     }
     throw err;
   }
 }
 
 /** Full flow including Cloudinary backup storage */
-export async function fullTryOnFlow(modelFile, garmentFile, garmentDescription) {
-  const resultUrl = await runVirtualTryOn(modelFile, garmentFile, garmentDescription);
+export async function fullTryOnFlow(modelFile, garmentFile, garmentDescription, signal = null) {
+  const resultUrl = await runVirtualTryOn(modelFile, garmentFile, garmentDescription, 0, signal);
 
   // Upload to Cloudinary for persistent storage (non-blocking, optional)
   const [modelUrl, garmentUrl] = await Promise.all([

@@ -1,22 +1,26 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { fullTryOnFlow } from "../lib/segmind";
+import { useTryOnStore } from "../store/tryOnStore";
 
 export default function VirtualTryOn() {
-  const [modelFile, setModelFile] = useState(null);
-  const [garmentFile, setGarmentFile] = useState(null);
-  const [modelPreview, setModelPreview] = useState(null);
-  const [garmentPreview, setGarmentPreview] = useState(null);
-  const [clothDesc, setClothDesc] = useState("");
-  const [garmentCategory, setGarmentCategory] = useState("upperwear"); // "upperwear" or "bottomwear"
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [step, setStep] = useState(1);
-  const [dragOver, setDragOver] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
-  const [loadingStepIndex, setLoadingStepIndex] = useState(0);
-  const modelInputRef = useRef(null);
-  const garmentInputRef = useRef(null);
+                  
+          const {
+    modelFile, upperwearFile, bottomwearFile,
+    modelPreview, upperwearPreview, bottomwearPreview,
+    upperwearDesc, bottomwearDesc,
+    result, loading, error, step, showComparison, loadingStepIndex,
+    setModelFile, setUpperwearFile, setBottomwearFile,
+    setUpperwearDesc, setBottomwearDesc,
+    setShowComparison, setLoadingStepIndex, setError,
+    handleTryOn, cancelTryOn, reset: handleReset
+  } = useTryOnStore();
+
+  const [dragOverModel, setDragOverModel] = useState(false);
+  const [dragOverUpper, setDragOverUpper] = useState(false);
+  const [dragOverBottom, setDragOverBottom] = useState(false);
+      const modelInputRef = useRef(null);
+  const upperwearInputRef = useRef(null);
+  const bottomwearInputRef = useRef(null);
 
   const loadingSteps = [
     "Analyzing your body silhouette...",
@@ -41,77 +45,36 @@ export default function VirtualTryOn() {
     }
     const preview = URL.createObjectURL(file);
     if (type === "model") {
-      setModelFile(file);
-      setModelPreview(preview);
-      setStep(2);
-    } else {
-      setGarmentFile(file);
-      setGarmentPreview(preview);
+      setModelFile(file, preview);
+    } else if (type === "upperwear") {
+      setUpperwearFile(file, preview);
+    } else if (type === "bottomwear") {
+      setBottomwearFile(file, preview);
     }
-    setError("");
-  }, []);
+  }, [setModelFile, setUpperwearFile, setBottomwearFile, setError]);
 
   const handleDrop = useCallback((e, type) => {
     e.preventDefault();
-    setDragOver(false);
+    if (type === "model") setDragOverModel(false);
+    if (type === "upperwear") setDragOverUpper(false);
+    if (type === "bottomwear") setDragOverBottom(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file, type);
   }, [handleFile]);
 
-  const handleDragOver = useCallback((e) => {
+  const handleDragOver = useCallback((e, type) => {
     e.preventDefault();
-    setDragOver(true);
+    if (type === "model") setDragOverModel(true);
+    if (type === "upperwear") setDragOverUpper(true);
+    if (type === "bottomwear") setDragOverBottom(true);
   }, []);
 
-  const handleDragLeave = useCallback((e) => {
+  const handleDragLeave = useCallback((e, type) => {
     e.preventDefault();
-    setDragOver(false);
+    if (type === "model") setDragOverModel(false);
+    if (type === "upperwear") setDragOverUpper(false);
+    if (type === "bottomwear") setDragOverBottom(false);
   }, []);
-
-  const handleTryOn = async () => {
-    if (!modelFile || !garmentFile) {
-      setError("Please upload both your photo and a garment image.");
-      return;
-    }
-    if (!clothDesc.trim()) {
-      setError("Please describe the garment for best results.");
-      return;
-    }
-
-    setLoading(true);
-    setStep(3);
-    setError("");
-
-    try {
-      // Prepend category to description for better API results
-      const enhancedDesc = `${garmentCategory === "upperwear" ? "Upperwear" : "Bottomwear"}: ${clothDesc}`;
-      const { resultUrl } = await fullTryOnFlow(modelFile, garmentFile, enhancedDesc);
-      if (resultUrl) {
-        setResult(resultUrl);
-      } else {
-        throw new Error("No result image returned from API.");
-      }
-    } catch (err) {
-      setError(err.message || "AI processing failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setModelFile(null);
-    setGarmentFile(null);
-    setModelPreview(null);
-    setGarmentPreview(null);
-    setClothDesc("");
-    setGarmentCategory("upperwear");
-    setResult(null);
-    setLoading(false);
-    setError("");
-    setStep(1);
-    setShowComparison(false);
-    setLoadingStepIndex(0);
-  };
 
   const downloadResult = () => {
     if (!result) return;
@@ -124,13 +87,41 @@ export default function VirtualTryOn() {
     document.body.removeChild(a);
   };
 
-  const handleShare = () => {
-    alert("Sharing coming soon!");
+  const handleShare = async () => {
+    if (!result) return;
+    try {
+      const response = await fetch(result);
+      const blob = await response.blob();
+      const file = new File([blob], 'fashionverse-tryon.png', { type: blob.type || 'image/png' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'My FashionVerse Try-On',
+          text: 'Check out my new look generated by FashionVerse AI!',
+          files: [file]
+        });
+        return;
+      }
+      
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({ [blob.type || 'image/png']: blob });
+        await navigator.clipboard.write([item]);
+        alert("Image copied to clipboard! You can now paste it anywhere.");
+      } else {
+        alert("Sharing is not fully supported on this browser. Please use the Download button.");
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("Error sharing:", err);
+        alert("Failed to share the image. You can use the download button instead.");
+      }
+    }
   };
 
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes goldShimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
@@ -142,7 +133,7 @@ export default function VirtualTryOn() {
       <div style={{
         background: "linear-gradient(135deg, #0d0b07 0%, #1a1208 50%, #0d0b07 100%)",
         minHeight: "100vh",
-        fontFamily: "system-ui, sans-serif",
+        fontFamily: "'Outfit', system-ui, sans-serif",
         color: "#f5f0e8",
         padding: "2rem"
       }}>
@@ -217,24 +208,14 @@ export default function VirtualTryOn() {
           </div>
         </div>
 
-        {/* Main Content - Two Column Grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-          gap: "2rem",
-          maxWidth: "1200px",
-          margin: "0 auto"
-        }}>
-          {/* Left Column - Capture Zone */}
-          <div style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(201,168,76,0.25)",
-            borderRadius: "20px",
-            padding: "2rem",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 25px 50px rgba(0,0,0,0.5)"
-          }}>
-            {/* Card Header */}
+        {/* Main Layout - Top/Bottom Split */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+          
+          {/* TOP ROW: Photo & Garments */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))", gap: "2rem" }}>
+            
+            {/* Left Column - Capture Zone (Your Photo) */}
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -293,13 +274,15 @@ export default function VirtualTryOn() {
               <div
                 onClick={() => modelInputRef.current?.click()}
                 onDrop={(e) => handleDrop(e, "model")}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
+                onDragOver={(e) => handleDragOver(e, "model")}
+                onDragLeave={(e) => handleDragLeave(e, "model")}
                 style={{
-                  border: dragOver ? "2px dashed rgba(201,168,76,0.8)" : "2px dashed rgba(201,168,76,0.3)",
+                  border: dragOverModel ? "2px dashed rgba(201,168,76,0.8)" : (modelPreview ? "1px solid rgba(201,168,76,0.2)" : "2px dashed rgba(201,168,76,0.3)"),
                   borderRadius: "16px",
-                  minHeight: "200px",
-                  background: dragOver ? "rgba(201,168,76,0.08)" : "rgba(201,168,76,0.03)",
+                  aspectRatio: "3/4",
+                  maxWidth: "280px",
+                  margin: "0 auto",
+                  background: dragOverModel ? "rgba(201,168,76,0.08)" : (modelPreview ? "#120a06" : "rgba(201,168,76,0.02)"),
                   cursor: "pointer",
                   transition: "all 0.3s ease",
                   display: "flex",
@@ -384,250 +367,100 @@ export default function VirtualTryOn() {
               </div>
             </div>
 
-            {/* Garment Category Selector */}
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#f5f0e8",
-                marginBottom: "0.75rem",
-                display: "block"
-              }}>
-                Garment Category
-              </label>
-              <div style={{
-                display: "flex",
-                gap: "0.75rem"
-              }}>
-                <button
-                  type="button"
-                  onClick={() => setGarmentCategory("upperwear")}
-                  style={{
-                    flex: 1,
-                    padding: "12px 16px",
-                    background: garmentCategory === "upperwear" 
-                      ? "linear-gradient(135deg, #c9a84c, #f0d080)" 
-                      : "rgba(255,255,255,0.05)",
-                    border: garmentCategory === "upperwear" 
-                      ? "none" 
-                      : "1px solid rgba(201,168,76,0.3)",
-                    borderRadius: "12px",
-                    color: garmentCategory === "upperwear" ? "#1a1208" : "#f5f0e8",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  👕 Upperwear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGarmentCategory("bottomwear")}
-                  style={{
-                    flex: 1,
-                    padding: "12px 16px",
-                    background: garmentCategory === "bottomwear" 
-                      ? "linear-gradient(135deg, #c9a84c, #f0d080)" 
-                      : "rgba(255,255,255,0.05)",
-                    border: garmentCategory === "bottomwear" 
-                      ? "none" 
-                      : "1px solid rgba(201,168,76,0.3)",
-                    borderRadius: "12px",
-                    color: garmentCategory === "bottomwear" ? "#1a1208" : "#f5f0e8",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  👖 Bottomwear
-                </button>
-              </div>
             </div>
 
-            {/* Upload Zone 2 - Garment Image */}
-            <div style={{ marginBottom: "1.5rem" }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                marginBottom: "0.75rem"
-              }}>
-                <label style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#f5f0e8"
-                }}>
-                  {garmentCategory === "upperwear" ? "Upperwear Image" : "Bottomwear Image"}
-                </label>
-                <span style={{
-                  fontSize: "11px",
-                  color: "#8a7a5a",
-                  marginLeft: "auto"
-                }}>
-                  Flat-lay or mannequin photo on white background works best
-                </span>
-              </div>
-              
-              <input
-                ref={garmentInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) handleFile(file, "garment");
-                }}
-              />
-              
-              <div
-                onClick={() => garmentInputRef.current?.click()}
-                onDrop={(e) => handleDrop(e, "garment")}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                style={{
-                  border: dragOver ? "2px dashed rgba(201,168,76,0.8)" : "2px dashed rgba(201,168,76,0.3)",
-                  borderRadius: "16px",
-                  minHeight: "200px",
-                  background: dragOver ? "rgba(201,168,76,0.08)" : "rgba(201,168,76,0.03)",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                  overflow: "hidden"
-                }}
-                onMouseEnter={(e) => {
-                  if (!garmentPreview) {
-                    e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)";
-                    e.currentTarget.style.background = "rgba(201,168,76,0.05)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!garmentPreview) {
-                    e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)";
-                    e.currentTarget.style.background = "rgba(201,168,76,0.03)";
-                  }
-                }}
-              >
-                {garmentPreview ? (
-                  <>
-                    <img
-                      src={garmentPreview}
-                      alt="Garment"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        borderRadius: "12px"
-                      }}
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        garmentInputRef.current?.click();
-                      }}
-                      style={{
-                        position: "absolute",
-                        bottom: "12px",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        padding: "8px 16px",
-                        background: "rgba(0,0,0,0.7)",
-                        border: "1px solid rgba(201,168,76,0.5)",
-                        borderRadius: "8px",
-                        color: "#f5f0e8",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease"
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "rgba(201,168,76,0.3)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "rgba(0,0,0,0.7)";
-                      }}
-                    >
-                      Change
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ marginBottom: "1rem" }}>
-                      <path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" />
-                      <path d="M12 10v11" />
-                      <path d="M8 14h8" />
-                    </svg>
-                    <p style={{ color: "#c9a84c", fontSize: "15px", fontWeight: "500", margin: "0 0 0.25rem 0" }}>
-                      Drop garment here
-                    </p>
-                    <p style={{ color: "#8a7a5a", fontSize: "13px", margin: "0" }}>
-                      or click to browse
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Garment Description Input */}
-            <div style={{ marginBottom: "1.5rem" }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                marginBottom: "0.75rem"
-              }}>
-                <label style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#f5f0e8"
-                }}>
-                  Describe the {garmentCategory === "upperwear" ? "Upperwear" : "Bottomwear"}
-                </label>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a7a5a" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4" />
-                  <path d="M12 8h.01" />
+            {/* Right Column - Garments */}
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+              {/* Card Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
+                  <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
+                  <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
                 </svg>
+                <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>GARMENTS</span>
               </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
               
-              <input
-                type="text"
-                value={clothDesc}
-                onChange={(e) => setClothDesc(e.target.value)}
-                placeholder={garmentCategory === "upperwear" 
-                  ? 'e.g. "slim-fit navy blue blazer with gold buttons"' 
-                  : 'e.g. "straight-leg black denim jeans with high waist"'}
-                style={{
-                  width: "100%",
-                  padding: "14px 18px",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(201,168,76,0.3)",
-                  borderRadius: "12px",
-                  color: "#f5f0e8",
-                  fontSize: "14px",
-                  outline: "none",
-                  transition: "all 0.2s ease"
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(201,168,76,0.1)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
-              <p style={{
-                color: "#5a4f35",
-                fontSize: "12px",
-                marginTop: "0.5rem"
-              }}>
-                Be specific about color, fit, fabric and style for best results
-              </p>
+              {/* UPPERWEAR */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <label style={{ fontSize: "14px", fontWeight: "500", color: "#f5f0e8" }}>Upperwear</label>
+                </div>
+                <input ref={upperwearInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files[0]; if (f) handleFile(f, "upperwear"); }} />
+                
+                <div
+                  onClick={() => upperwearInputRef.current?.click()}
+                  onDrop={(e) => handleDrop(e, "upperwear")}
+                  onDragOver={(e) => handleDragOver(e, "upperwear")}
+                  onDragLeave={(e) => handleDragLeave(e, "upperwear")}
+                  style={{
+                    border: dragOverUpper ? "2px dashed rgba(201,168,76,0.8)" : (upperwearPreview ? "1px solid rgba(201,168,76,0.2)" : "2px dashed rgba(201,168,76,0.3)"),
+                    borderRadius: "16px",
+                    aspectRatio: "3/4",
+                    width: "100%",
+                    background: dragOverUpper ? "rgba(201,168,76,0.08)" : (upperwearPreview ? "#120a06" : "rgba(201,168,76,0.02)"),
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden"
+                  }}
+                  onMouseEnter={(e) => { if (!upperwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; } }}
+                  onMouseLeave={(e) => { if (!upperwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.background = "rgba(201,168,76,0.03)"; } }}
+                >
+                  {upperwearPreview ? (
+                    <>
+                      <img src={upperwearPreview} alt="Upperwear" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", borderRadius: "15px" }} />
+                      <button onClick={(e) => { e.stopPropagation(); upperwearInputRef.current?.click(); }} style={{ position: "absolute", bottom: "12px", left: "50%", transform: "translateX(-50%)", padding: "6px 12px", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(201,168,76,0.5)", borderRadius: "8px", color: "#f5f0e8", fontSize: "11px", cursor: "pointer", transition: "all 0.2s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.3)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>Change</button>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ marginBottom: "0.5rem" }}><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" /></svg>
+                      <p style={{ color: "#8a7a5a", fontSize: "12px", margin: 0 }}>Upperwear</p>
+                    </>
+                  )}
+                </div>
+                <input type="text" value={upperwearDesc} onChange={(e) => setUpperwearDesc(e.target.value)} placeholder='e.g. "blue shirt"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
+              </div>
+
+              {/* BOTTOMWEAR */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <label style={{ fontSize: "14px", fontWeight: "500", color: "#f5f0e8" }}>Bottomwear</label>
+                </div>
+                <input ref={bottomwearInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files[0]; if (f) handleFile(f, "bottomwear"); }} />
+                
+                <div
+                  onClick={() => bottomwearInputRef.current?.click()}
+                  onDrop={(e) => handleDrop(e, "bottomwear")}
+                  onDragOver={(e) => handleDragOver(e, "bottomwear")}
+                  onDragLeave={(e) => handleDragLeave(e, "bottomwear")}
+                  style={{
+                    border: dragOverBottom ? "2px dashed rgba(201,168,76,0.8)" : (bottomwearPreview ? "1px solid rgba(201,168,76,0.2)" : "2px dashed rgba(201,168,76,0.3)"),
+                    borderRadius: "16px",
+                    aspectRatio: "3/4",
+                    width: "100%",
+                    background: dragOverBottom ? "rgba(201,168,76,0.08)" : (bottomwearPreview ? "#120a06" : "rgba(201,168,76,0.02)"),
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden"
+                  }}
+                  onMouseEnter={(e) => { if (!bottomwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; } }}
+                  onMouseLeave={(e) => { if (!bottomwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.background = "rgba(201,168,76,0.03)"; } }}
+                >
+                  {bottomwearPreview ? (
+                    <>
+                      <img src={bottomwearPreview} alt="Bottomwear" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", borderRadius: "15px" }} />
+                      <button onClick={(e) => { e.stopPropagation(); bottomwearInputRef.current?.click(); }} style={{ position: "absolute", bottom: "12px", left: "50%", transform: "translateX(-50%)", padding: "6px 12px", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(201,168,76,0.5)", borderRadius: "8px", color: "#f5f0e8", fontSize: "11px", cursor: "pointer", transition: "all 0.2s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.3)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>Change</button>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ marginBottom: "0.5rem" }}><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" /></svg>
+                      <p style={{ color: "#8a7a5a", fontSize: "12px", margin: 0 }}>Bottomwear</p>
+                    </>
+                  )}
+                </div>
+                <input type="text" value={bottomwearDesc} onChange={(e) => setBottomwearDesc(e.target.value)} placeholder='e.g. "black jeans"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
+              </div>
+
             </div>
 
             {/* Error Message */}
@@ -653,7 +486,12 @@ export default function VirtualTryOn() {
               </div>
             )}
 
-            {/* Try It On Button */}
+            </div>
+          </div>
+
+          {/* MIDDLE ROW: Try It On Button */}
+          <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+            <div style={{ width: "100%", maxWidth: "400px" }}>
             <button
               onClick={handleTryOn}
               disabled={loading}
@@ -727,19 +565,13 @@ export default function VirtualTryOn() {
               </svg>
               Your images are private. Not stored or shared.
             </p>
+            </div>
           </div>
 
-          {/* Right Column - AI Output */}
-          <div style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(201,168,76,0.25)",
-            borderRadius: "20px",
-            padding: "2rem",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
-            display: "flex",
-            flexDirection: "column"
-          }}>
+          {/* BOTTOM ROW: AI Output */}
+          <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+            <div style={{ width: "100%", maxWidth: "800px" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)", minHeight: "400px", display: "flex", flexDirection: "column" }}>
             {/* Card Header */}
             <div style={{
               display: "flex",
@@ -851,9 +683,31 @@ export default function VirtualTryOn() {
                     animation: "progressFill 25s ease-out forwards"
                   }} />
                 </div>
-                <p style={{ color: "#5a4f35", fontSize: "12px" }}>
+                <p style={{ color: "#5a4f35", fontSize: "12px", marginBottom: "1.5rem" }}>
                   This takes 15–30 seconds
                 </p>
+                <button
+                  onClick={cancelTryOn}
+                  style={{
+                    padding: "8px 24px",
+                    background: "transparent",
+                    border: "1px solid rgba(201,168,76,0.5)",
+                    borderRadius: "8px",
+                    color: "#c9a84c",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(201,168,76,0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             )}
 
@@ -934,8 +788,11 @@ export default function VirtualTryOn() {
                         alt="Before"
                         style={{
                           width: "100%",
-                          height: "auto",
-                          display: "block"
+                          aspectRatio: "3/4",
+                          objectFit: "cover",
+                          objectPosition: "center",
+                          display: "block",
+                          backgroundColor: "#120a06"
                         }}
                       />
                       <div style={{
@@ -968,8 +825,11 @@ export default function VirtualTryOn() {
                         alt="After"
                         style={{
                           width: "100%",
-                          height: "auto",
-                          display: "block"
+                          aspectRatio: "3/4",
+                          objectFit: "cover",
+                          objectPosition: "center",
+                          display: "block",
+                          backgroundColor: "#120a06"
                         }}
                       />
                       <div style={{
@@ -992,10 +852,15 @@ export default function VirtualTryOn() {
                     alt="Try-on result"
                     style={{
                       width: "100%",
+                      maxWidth: "280px",
+                      margin: "0 auto 1.5rem",
+                      aspectRatio: "3/4",
+                      objectFit: "cover",
+                      objectPosition: "center",
+                      backgroundColor: "#120a06",
                       borderRadius: "16px",
                       border: "2px solid rgba(201,168,76,0.4)",
                       boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-                      marginBottom: "1.5rem",
                       animation: "fadeSlideIn 0.6s ease"
                     }}
                   />
@@ -1114,6 +979,8 @@ export default function VirtualTryOn() {
                 </div>
               </div>
             )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
