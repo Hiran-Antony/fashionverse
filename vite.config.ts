@@ -13,6 +13,31 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  server: {
+    proxy: {
+      // Proxy all Kolors Virtual Try-On space requests through Vite
+      // This bypasses the "Forbidden embedding" 403 by making requests appear
+      // to come from localhost instead of the browser origin
+      '/api/tryon': {
+        target: 'https://kwai-kolors-kolors-virtual-try-on.hf.space',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/tryon/, ''),
+        secure: true,
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Referer', 'https://kwai-kolors-kolors-virtual-try-on.hf.space/');
+            proxyReq.setHeader('Origin', 'https://kwai-kolors-kolors-virtual-try-on.hf.space');
+          });
+          proxy.on('error', (err) => {
+            console.warn('[proxy error]', err.message);
+          });
+        },
+        timeout: 0,          // disable proxy timeout for SSE streams
+        proxyTimeout: 0,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {
@@ -33,3 +58,5 @@ export default defineConfig({
     },
   },
 })
+
+
