@@ -770,6 +770,267 @@ a:hover {
   }
 }
 
+/* ─── Account Pages ────────────────────────────────────────── */
+.account-page {
+  min-height: calc(100vh - var(--nav-height));
+  background: linear-gradient(180deg, var(--purple-50) 0%, var(--bg-primary) 280px);
+}
+
+.account-shell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.account-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .account-layout {
+    flex-direction: row;
+    gap: 32px;
+    align-items: flex-start;
+  }
+}
+
+.account-sidebar {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .account-sidebar {
+    width: 280px;
+    position: sticky;
+    top: calc(var(--nav-height) + 24px);
+  }
+}
+
+.account-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.account-profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  text-align: center;
+}
+
+.account-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.account-nav-link:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.account-nav-link.active {
+  background: var(--purple-100);
+  color: var(--purple-700);
+  border-color: var(--purple-200);
+}
+
+.account-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 28px 32px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .account-panel {
+    padding: 20px 16px;
+  }
+
+  .account-shell {
+    padding: 20px 16px 48px;
+  }
+}
+
+.account-page-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.account-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0 0 28px;
+}
+
+.account-field-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+}
+
+.account-loyalty-card {
+  background: var(--gradient-hero);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.account-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .account-stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+.account-order-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 24px 28px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.account-order-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-order-summary-total {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.account-order-summary--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .account-order-summary,
+  .account-order-summary--two {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .account-order-summary-total {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+.account-order-card {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: visible;
+  box-shadow: var(--shadow-lg);
+}
+
+.account-order-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, var(--purple-50) 0%, var(--gold-50) 100%);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+@media (min-width: 640px) {
+  .account-order-card-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+
+.account-order-card-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+  flex: 1;
+}
+
+.account-order-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  margin: 0 0 6px;
+  color: var(--text-muted);
+}
+
+.account-order-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+@media (min-width: 640px) {
+  .account-order-status-badge {
+    align-self: center;
+  }
+}
+
+.account-order-card-body {
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
 /* ─── Responsive Utilities ─────────────────────────────────── */
 @media (max-width: 768px) {
   .section {

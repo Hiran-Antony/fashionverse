@@ -65,25 +65,6 @@ export default function AdminDashboard() {
       html.setAttribute('data-theme', prev);
     };
   }, []);
-
-  const handleReset = async () => {
-    if (!window.confirm('⚠️ WARNING: This will delete ALL orders and customer data. This is for testing only. Continue?')) return;
-    try {
-      toast.loading('Resetting dashboard...', { id: 'reset' });
-      // Delete order items
-      await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      // Delete orders
-      await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      // Delete customer profiles
-      await supabase.from('profiles').delete().eq('role', 'customer');
-      
-      toast.success('Dashboard reset successfully!', { id: 'reset' });
-      window.location.reload();
-    } catch (err: any) {
-      toast.error('Failed to reset: ' + err.message, { id: 'reset' });
-    }
-  };
-
   if (isLoading) {
     return (
       <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0d0720'}}>
@@ -163,20 +144,6 @@ export default function AdminDashboard() {
             <HomeIcon size={17} style={{color:'#9ca3af'}}/> Back to Store
           </Link>
         </nav>
-
-        {/* Reset Button (Testing Only) */}
-        <div style={{padding:'0 16px', marginTop: 'auto'}}>
-          <button onClick={handleReset} style={{
-            width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-            padding:'10px',borderRadius:12,background:'rgba(239,68,68,0.1)',border:'1px dashed rgba(239,68,68,0.3)',
-            color:'#fca5a5',fontSize:11,fontWeight:700,cursor:'pointer',transition:'all 0.15s'
-          }}
-          onMouseEnter={e=>(e.currentTarget.style.background='rgba(239,68,68,0.15)')}
-          onMouseLeave={e=>(e.currentTarget.style.background='rgba(239,68,68,0.1)')}
-          >
-            <Trash2 size={13}/> Reset Data (Test)
-          </button>
-        </div>
 
         {/* Profile card */}
         <div style={{margin:12,padding:14,background:'white',border:'1px solid #ede9fe',borderRadius:16,boxShadow:'0 4px 12px rgba(139,92,246,0.05)'}}>
@@ -712,167 +679,226 @@ function ProductsTab() {
 }
 
 // ─── Orders ──────────────────────────────────────────────────
-function OrdersTab() {
-  const qc=useQueryClient();
-  const [expandedId,setExpandedId]=useState<string|null>(null);
-  const [search,setSearch]=useState('');
+function AdminOrderCard({
+  order,
+  orderNum,
+  isExpanded,
+  onToggle,
+  onStatusChange,
+}: {
+  order: any;
+  orderNum: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onStatusChange: (status: string) => void;
+}) {
+  const st = ORDER_STATUSES.find((s) => s.value === order.status);
+  const customerName = order.address?.name || order.profiles?.name || 'Customer';
+  const customerEmail = order.profiles?.email || order.address?.phone || '';
 
-  const { data:orders=[],isLoading } = useQuery({
-    queryKey:['admin-orders'],
-    queryFn: async()=>{
-      const { data, error }=await supabase
+  return (
+    <div
+      style={{
+        width: '100%',
+        background: 'white',
+        border: '1px solid #ebebf5',
+        borderRadius: 20,
+        overflow: 'hidden',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+      }}
+    >
+      <div
+        style={{
+          padding: '20px 24px',
+          background: 'linear-gradient(135deg, #faf5ff 0%, #fffbeb 100%)',
+          borderBottom: '1px solid #ebebf5',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 16,
+          alignItems: 'center',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Order ID</div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: '#7c3aed' }}>#{orderNum}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+            {customerName.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0720', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customerName}</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customerEmail}</div>
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Amount</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#7c3aed' }}>₹{order.total_amount?.toLocaleString('en-IN')}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Items</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0720' }}>{order.order_items?.length || 0}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Status</div>
+          <select
+            value={order.status}
+            onChange={(e) => onStatusChange(e.target.value)}
+            style={{ fontSize: 12, fontWeight: 700, padding: '8px 14px', borderRadius: 999, border: `1.5px solid ${st?.color}40`, outline: 'none', cursor: 'pointer', background: `${st?.color}18`, color: st?.color, width: '100%', maxWidth: 180 }}
+          >
+            {ORDER_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Date</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+              {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onToggle}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: isExpanded ? '#ede9fe' : '#f5f5fb', color: isExpanded ? '#7c3aed' : '#6b7280', flexShrink: 0 }}
+          >
+            <Eye size={14} />{isExpanded ? 'Hide' : 'Details'}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div style={{ padding: '20px 24px', background: '#fafafa', borderTop: '1px solid #ebebf5' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Order Items</div>
+          {(order.order_items || []).length === 0 ? (
+            <div style={{ fontSize: 13, color: '#9ca3af', padding: '8px 0' }}>No items data available</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {(order.order_items || []).map((item: any) => (
+                <div
+                  key={item.id}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'white', border: '1px solid #ebebf5', borderRadius: 14 }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0720' }}>{item.products?.name || 'Product'}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                      {[item.color_name, item.size && `Size ${item.size}`, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: '#7c3aed', flexShrink: 0 }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {order.address && (
+            <div style={{ padding: '16px 18px', background: 'white', border: '1px solid #ebebf5', borderRadius: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Delivery Address</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{order.address.name} · {order.address.phone}</div>
+              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                {order.address.line1}, {order.address.city}, {order.address.state} — {order.address.pincode}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrdersTab() {
+  const qc = useQueryClient();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('orders')
         .select('*, profiles(name,email), order_items(*, products(name))')
-        .order('created_at',{ascending:true}); // ASC so index = order number
-      if(error) {
-        const { data: fallback }=await supabase
+        .order('created_at', { ascending: true });
+      if (error) {
+        const { data: fallback } = await supabase
           .from('orders')
           .select('*, order_items(*, products(name))')
-          .order('created_at',{ascending:true});
-        return (fallback||[]).reverse();
+          .order('created_at', { ascending: true });
+        return (fallback || []).reverse();
       }
-      // Reverse for display (newest first) but keep index for numbering
-      return (data||[]).reverse();
+      return (data || []).reverse();
     },
   });
 
-  // Helper: get best display name from an order
-  const getCustomerName = (order:any) =>
+  const getCustomerName = (order: any) =>
     order.address?.name || order.profiles?.name || 'Customer';
 
-  const filtered=orders.filter((o:any)=>{
-    const name=getCustomerName(o).toLowerCase();
-    const q=search.toLowerCase();
-    return q===''||name.includes(q);
+  const filtered = orders.filter((o: any) => {
+    const name = getCustomerName(o).toLowerCase();
+    const q = search.toLowerCase();
+    return q === '' || name.includes(q);
   });
 
-  const updateStatus=async(orderId:string,status:string)=>{
-    await supabase.from('orders').update({status}).eq('id',orderId);
+  const updateStatus = async (orderId: string, status: string) => {
+    await supabase.from('orders').update({ status }).eq('id', orderId);
     toast.success('Status updated');
-    qc.invalidateQueries({queryKey:['admin-orders']});
-    qc.invalidateQueries({queryKey:['admin-stats']});
+    qc.invalidateQueries({ queryKey: ['admin-orders'] });
+    qc.invalidateQueries({ queryKey: ['admin-stats'] });
   };
 
   return (
-    <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} style={{display:'flex',flexDirection:'column',gap:20}}>
-      <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <div style={{position:'relative',flex:1,maxWidth:360}}>
-          <Search size={15} style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',color:'#9ca3af'}}/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by customer name..."
-            style={{width:'100%',padding:'11px 14px 11px 40px',borderRadius:12,border:'1.5px solid #ebebf5',background:'white',color:'#0d0720',fontSize:13,outline:'none',boxSizing:'border-box'}}
-            onFocus={e=>(e.target.style.borderColor='#8b5cf6')} onBlur={e=>(e.target.style.borderColor='#ebebf5')}/>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 420 }}>
+          <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by customer name..."
+            style={{ width: '100%', padding: '11px 14px 11px 40px', borderRadius: 12, border: '1.5px solid #ebebf5', background: 'white', color: '#0d0720', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            onFocus={(e) => (e.target.style.borderColor = '#8b5cf6')}
+            onBlur={(e) => (e.target.style.borderColor = '#ebebf5')}
+          />
         </div>
-        <span style={{fontSize:12,fontWeight:700,padding:'8px 16px',borderRadius:10,background:'white',border:'1px solid #ebebf5',color:'#6b7280'}}>{filtered.length} orders</span>
+        <span style={{ fontSize: 12, fontWeight: 700, padding: '8px 16px', borderRadius: 10, background: 'white', border: '1px solid #ebebf5', color: '#6b7280' }}>
+          {filtered.length} orders
+        </span>
       </div>
 
-      <div style={{background:'white',border:'1px solid #ebebf5',borderRadius:20,overflow:'hidden',boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
-        {isLoading?(
-          <div style={{padding:'80px 0',display:'flex',justifyContent:'center'}}>
-            <div style={{width:32,height:32,borderRadius:'50%',border:'3px solid #f0f0f5',borderTopColor:'#8b5cf6',animation:'spin 0.8s linear infinite'}}/>
+      {isLoading ? (
+        <div style={{ padding: '80px 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #f0f0f5', borderTopColor: '#8b5cf6', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: '80px 24px', textAlign: 'center', background: 'white', border: '1px solid #ebebf5', borderRadius: 20 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 18, background: '#f3f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <ShoppingBag size={26} style={{ color: '#8b5cf6' }} />
           </div>
-        ):filtered.length===0?(
-          <div style={{padding:'80px 0',textAlign:'center'}}>
-            <div style={{width:60,height:60,borderRadius:18,background:'#f3f0ff',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-              <ShoppingBag size={26} style={{color:'#8b5cf6'}}/>
-            </div>
-            <div style={{fontSize:14,fontWeight:700,color:'#0d0720'}}>No orders yet</div>
-          </div>
-        ):(
-          <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead>
-                <tr style={{background:'#fafafa',borderBottom:'1px solid #f5f5fb'}}>
-                  {['Order ID','Customer','Amount','Items','Status','Date',''].map(h=>(
-                    <th key={h} style={{padding:'12px 20px',textAlign:'left',fontSize:10,fontWeight:800,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.1em',whiteSpace:'nowrap'}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((order:any, idx:number)=>{
-                  const st=ORDER_STATUSES.find(s=>s.value===order.status);
-                  const isExp=expandedId===order.id;
-                  // Sequential order number: orders are stored newest-first after reverse
-                  // so index 0 = newest. Number them: total - idx + 100
-                  const orderNum = orders.length - orders.indexOf(order) + 100;
-                  const customerName = order.address?.name || order.profiles?.name || 'Customer';
-                  const customerEmail = order.profiles?.email || order.address?.phone || '';
-                  return (
-                    <>
-                      <tr key={order.id} style={{borderBottom:'1px solid #fafafa',transition:'background 0.12s'}}
-                        onMouseEnter={e=>(e.currentTarget.style.background='#fafafa')}
-                        onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                        <td style={{padding:'14px 20px'}}>
-                          <span style={{fontSize:13,fontWeight:800,color:'#7c3aed'}}>#{orderNum}</span>
-                        </td>
-                        <td style={{padding:'14px 20px'}}>
-                          <div style={{display:'flex',alignItems:'center',gap:10}}>
-                            <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:700,fontSize:12,flexShrink:0}}>
-                              {customerName.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{fontSize:13,fontWeight:700,color:'#0d0720'}}>{customerName}</div>
-                              <div style={{fontSize:10,color:'#9ca3af'}}>{customerEmail}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={{padding:'14px 20px',fontSize:13,fontWeight:900,color:'#7c3aed'}}>₹{order.total_amount?.toLocaleString()}</td>
-                        <td style={{padding:'14px 20px',fontSize:13,fontWeight:600,color:'#6b7280'}}>{order.order_items?.length||0}</td>
-                        <td style={{padding:'14px 20px'}}>
-                          <select value={order.status} onChange={e=>updateStatus(order.id,e.target.value)}
-                            style={{fontSize:11,fontWeight:700,padding:'5px 12px',borderRadius:999,border:'none',outline:'none',cursor:'pointer',background:`${st?.color}18`,color:st?.color,appearance:'none'}}>
-                            {ORDER_STATUSES.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
-                          </select>
-                        </td>
-                        <td style={{padding:'14px 20px',fontSize:12,color:'#9ca3af',whiteSpace:'nowrap'}}>
-                          {new Date(order.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}
-                        </td>
-                        <td style={{padding:'14px 20px'}}>
-                          <button onClick={()=>setExpandedId(isExp?null:order.id)}
-                            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:10,fontSize:11,fontWeight:700,cursor:'pointer',border:'none',background:isExp?'#ede9fe':'#f5f5fb',color:isExp?'#7c3aed':'#6b7280'}}>
-                            <Eye size={12}/>{isExp?'Hide':'View'}
-                          </button>
-                        </td>
-                      </tr>
-                      {isExp&&(
-                        <tr key={`exp-${order.id}`} style={{borderBottom:'1px solid #f5f5fb'}}>
-                          <td colSpan={7} style={{padding:'0 20px 16px'}}>
-                            <div style={{background:'#fafafa',border:'1px solid #ebebf5',borderRadius:16,padding:18,marginTop:4}}>
-                              <div style={{fontSize:10,fontWeight:800,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:14}}>Order Items</div>
-                              {(order.order_items||[]).length===0&&(
-                                <div style={{fontSize:12,color:'#9ca3af',padding:'8px 0'}}>No items data available</div>
-                              )}
-                              {(order.order_items||[]).map((item:any)=>(
-                                <div key={item.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid #ebebf5'}}>
-                                  <div>
-                                    <div style={{fontSize:13,fontWeight:700,color:'#0d0720'}}>{item.products?.name||'Product'}</div>
-                                    <div style={{fontSize:11,color:'#9ca3af',marginTop:2}}>{item.color_name} · Size {item.size} · Qty {item.quantity}</div>
-                                  </div>
-                                  <div style={{fontSize:13,fontWeight:900,color:'#7c3aed'}}>₹{(item.price*item.quantity).toLocaleString()}</div>
-                                </div>
-                              ))}
-                              <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid #ebebf5'}}>
-                                <div style={{fontSize:10,fontWeight:800,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:6}}>Delivery Address</div>
-                                <div style={{fontSize:12,fontWeight:600,color:'#374151'}}>{order.address?.name} · {order.address?.phone}</div>
-                                <div style={{fontSize:12,color:'#6b7280',marginTop:2}}>{order.address?.line1}, {order.address?.city}, {order.address?.state} — {order.address?.pincode}</div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0720' }}>No orders yet</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
+          {filtered.map((order: any) => {
+            const orderNum = orders.length - orders.indexOf(order) + 100;
+            return (
+              <AdminOrderCard
+                key={order.id}
+                order={order}
+                orderNum={orderNum}
+                isExpanded={expandedId === order.id}
+                onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                onStatusChange={(status) => updateStatus(order.id, status)}
+              />
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }
 
 // ─── Customers ───────────────────────────────────────────────
 function CustomersTab() {
+  const qc = useQueryClient();
   const [search,setSearch]=useState('');
 
   const { data:customers=[],isLoading } = useQuery({
