@@ -13,13 +13,25 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  server: {
+    // Serve index.html for all routes — fixes white page on refresh in SPA
+    historyApiFallback: true,
+  },
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-state': ['zustand', '@tanstack/react-query'],
-          'vendor-ui': ['framer-motion', 'lucide-react'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('zustand') || id.includes('@tanstack')) {
+              return 'vendor-state';
+            }
+            if (id.includes('framer-motion') || id.includes('lucide-react')) {
+              return 'vendor-ui';
+            }
+          }
         },
       },
     },

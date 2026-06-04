@@ -29,7 +29,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       user: null,
       profile: null,
       session: null,
@@ -65,9 +65,11 @@ export const useAuthStore = create<AuthState>()(
           set({
             profile: data as Profile,
             isAdmin: data?.role === 'admin',
+            isLoading: false,
           });
         } catch (error) {
           console.error('Error fetching profile:', error);
+          set({ isLoading: false });
         }
       },
 

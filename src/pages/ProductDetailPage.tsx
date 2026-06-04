@@ -1,39 +1,11 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Star, ChevronLeft, ChevronRight, Shield, Truck, RotateCcw, Award } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Shield, Truck, RotateCcw, Award } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
-
-// ─── Mock product data until Supabase products are seeded ────
-const MOCK_PRODUCT = {
-  id: '1',
-  name: 'Premium Slim Fit Oxford Shirt',
-  description:
-    'Crafted from 100% premium Egyptian cotton, this slim-fit Oxford shirt offers unparalleled comfort and a sophisticated silhouette. Perfect for both formal occasions and smart-casual outings, it features a button-down collar, chest pocket, and mother-of-pearl buttons.',
-  price: 2499,
-  original_price: 3999,
-  category: 'men',
-  brand: 'FashionVerse',
-  rating: 4.7,
-  review_count: 284,
-  is_featured: true,
-  is_trending: true,
-  tags: ['cotton', 'formal', 'slim-fit', 'oxford'],
-  product_colors: [
-    { id: 'c1', color_name: 'Midnight Blue', hex_code: '#1e3a5f', image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=85' },
-    { id: 'c2', color_name: 'Crisp White', hex_code: '#f8f8f8', image_url: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&q=85' },
-    { id: 'c3', color_name: 'Sage Green', hex_code: '#7d9b76', image_url: 'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=800&q=85' },
-  ],
-  product_sizes: [
-    { id: 's1', size: 'XS', stock: 5, is_out_of_stock: false },
-    { id: 's2', size: 'S', stock: 12, is_out_of_stock: false },
-    { id: 's3', size: 'M', stock: 8, is_out_of_stock: false },
-    { id: 's4', size: 'L', stock: 3, is_out_of_stock: false },
-    { id: 's5', size: 'XL', stock: 0, is_out_of_stock: true },
-    { id: 's6', size: 'XXL', stock: 6, is_out_of_stock: false },
-  ],
-};
 
 const TRUST_BADGES = [
   { icon: <Truck size={18} />, label: 'Free delivery', sub: 'On orders above ₹999' },
@@ -43,23 +15,58 @@ const TRUST_BADGES = [
 ];
 
 export default function ProductDetailPage() {
-  const { id } = useParams();
-  const product = MOCK_PRODUCT; // Will be replaced by real Supabase query later
-
-  const [selectedColor, setSelectedColor] = useState(product.product_colors[0]);
+  const { id } = useParams<{ id: string }>();
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [imageIndex, setImageIndex] = useState(0);
   const [sizeError, setSizeError] = useState(false);
 
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
+
+  const { data: product, isLoading, isError } = useQuery({
+    queryKey: ['product-detail', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, colors:product_colors(*), sizes:product_sizes(*)')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!id,
+  });
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ width: 40, height: 40, border: '3px solid var(--purple-200)', borderTopColor: 'var(--purple-600)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          Loading product...
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: 18, marginBottom: 16 }}>Product not found.</p>
+        <Link to="/products" style={{ color: 'var(--purple-600)' }}>← Browse Products</Link>
+      </div>
+    );
+  }
+
+  const colors: any[] = product.colors || [];
+  const sizes: any[] = product.sizes || [];
+
+  // Default to first color
+  const selectedColor = colors.find((c: any) => c.id === selectedColorId) || colors[0];
   const inWishlist = isInWishlist(product.id);
 
-  const discount = product.original_price
+  const discount = product.original_price && product.original_price > product.price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
-
-  const images = product.product_colors.map((c) => c.image_url);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -69,12 +76,12 @@ export default function ProductDetailPage() {
     }
     addItem({
       product_id: product.id,
-      color_name: selectedColor.color_name,
+      color_name: selectedColor?.color_name || '',
       size: selectedSize,
       quantity: 1,
       product_name: product.name,
       product_price: product.price,
-      image_url: selectedColor.image_url,
+      image_url: selectedColor?.image_url || '',
     });
     openCart();
   };
@@ -100,21 +107,19 @@ export default function ProductDetailPage() {
             {/* Main Image */}
             <div
               className="relative rounded-3xl overflow-hidden mb-4"
-              style={{
-                aspectRatio: '3/4',
-                background: 'var(--bg-secondary)',
-              }}
+              style={{ aspectRatio: '3/4', background: 'var(--bg-secondary)' }}
             >
               <AnimatePresence mode="wait">
                 <motion.img
-                  key={selectedColor.image_url}
-                  src={selectedColor.image_url}
-                  alt={`${product.name} in ${selectedColor.color_name}`}
+                  key={selectedColor?.image_url}
+                  src={selectedColor?.image_url || ''}
+                  alt={`${product.name} in ${selectedColor?.color_name || ''}`}
                   initial={{ opacity: 0, scale: 1.04 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.35 }}
                   className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </AnimatePresence>
 
@@ -145,32 +150,35 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Color Thumbnails */}
-            <div className="flex gap-3">
-              {product.product_colors.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColor(color)}
-                  className="relative rounded-2xl overflow-hidden transition-all"
-                  style={{
-                    width: '80px',
-                    height: '100px',
-                    border: selectedColor.id === color.id
-                      ? '2.5px solid var(--purple-600)'
-                      : '2.5px solid transparent',
-                    outline: selectedColor.id === color.id ? '2px solid var(--purple-200)' : 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    background: 'none',
-                  }}
-                >
-                  <img
-                    src={color.image_url}
-                    alt={color.color_name}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {colors.length > 0 && (
+              <div className="flex gap-3">
+                {colors.map((color: any) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColorId(color.id)}
+                    className="relative rounded-2xl overflow-hidden transition-all"
+                    style={{
+                      width: '80px',
+                      height: '100px',
+                      border: (selectedColor?.id === color.id)
+                        ? '2.5px solid var(--purple-600)'
+                        : '2.5px solid transparent',
+                      outline: (selectedColor?.id === color.id) ? '2px solid var(--purple-200)' : 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      background: 'var(--bg-secondary)',
+                    }}
+                  >
+                    <img
+                      src={color.image_url}
+                      alt={color.color_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── RIGHT: Product Info ─────────────────────────── */}
@@ -196,24 +204,28 @@ export default function ProductDetailPage() {
               </h1>
 
               {/* Rating */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={15}
-                      fill={star <= Math.round(product.rating) ? '#f59e0b' : 'none'}
-                      color={star <= Math.round(product.rating) ? '#f59e0b' : 'var(--border-color)'}
-                    />
-                  ))}
+              {product.rating > 0 && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={15}
+                        fill={star <= Math.round(product.rating) ? '#f59e0b' : 'none'}
+                        color={star <= Math.round(product.rating) ? '#f59e0b' : 'var(--border-color)'}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {product.rating}
+                  </span>
+                  {product.review_count > 0 && (
+                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                      ({product.review_count.toLocaleString()} reviews)
+                    </span>
+                  )}
                 </div>
-                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {product.rating}
-                </span>
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  ({product.review_count.toLocaleString()} reviews)
-                </span>
-              </div>
+              )}
             </div>
 
             {/* Price */}
@@ -228,12 +240,9 @@ export default function ProductDetailPage() {
               >
                 ₹{product.price.toLocaleString()}
               </span>
-              {product.original_price && (
+              {product.original_price && product.original_price > product.price && (
                 <>
-                  <span
-                    className="text-lg line-through"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
+                  <span className="text-lg line-through" style={{ color: 'var(--text-muted)' }}>
                     ₹{product.original_price.toLocaleString()}
                   </span>
                   <span
@@ -247,101 +256,91 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Color Selection */}
-            <div>
-              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                Color: <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedColor.color_name}</span>
-              </p>
-              <div className="flex items-center gap-3">
-                {product.product_colors.map((color) => (
-                  <button
-                    key={color.id}
-                    onClick={() => setSelectedColor(color)}
-                    title={color.color_name}
-                    className="w-8 h-8 rounded-full transition-all"
-                    style={{
-                      background: color.hex_code || '#ccc',
-                      border: selectedColor.id === color.id
-                        ? '3px solid var(--purple-600)'
-                        : '3px solid transparent',
-                      outline: selectedColor.id === color.id ? '2px solid var(--purple-300)' : 'none',
-                      outlineOffset: '2px',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    }}
-                  />
-                ))}
+            {colors.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+                  Color: <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedColor?.color_name}</span>
+                </p>
+                <div className="flex items-center gap-3">
+                  {colors.map((color: any) => (
+                    <button
+                      key={color.id}
+                      onClick={() => setSelectedColorId(color.id)}
+                      title={color.color_name}
+                      className="w-8 h-8 rounded-full transition-all"
+                      style={{
+                        background: color.hex_code || '#ccc',
+                        border: (selectedColor?.id === color.id)
+                          ? '3px solid var(--purple-600)'
+                          : '3px solid transparent',
+                        outline: (selectedColor?.id === color.id) ? '2px solid var(--purple-300)' : 'none',
+                        outlineOffset: '2px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Size Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Size:{' '}
-                  {selectedSize && (
-                    <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedSize}</span>
-                  )}
-                </p>
-                <button
-                  className="text-xs font-medium underline"
-                  style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  Size guide
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                {product.product_sizes.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      if (!s.is_out_of_stock) {
-                        setSelectedSize(s.size);
-                        setSizeError(false);
-                      }
-                    }}
-                    disabled={s.is_out_of_stock}
-                    className="relative w-14 h-12 rounded-xl text-sm font-semibold transition-all"
-                    style={{
-                      background: selectedSize === s.size
-                        ? 'var(--purple-600)'
-                        : s.is_out_of_stock
-                          ? 'var(--bg-secondary)'
-                          : 'var(--bg-secondary)',
-                      color: selectedSize === s.size
-                        ? 'white'
-                        : s.is_out_of_stock
-                          ? 'var(--text-muted)'
-                          : 'var(--text-primary)',
-                      border: selectedSize === s.size
-                        ? '2px solid var(--purple-600)'
-                        : sizeError
-                          ? '2px solid var(--error)'
-                          : '2px solid var(--border-color)',
-                      cursor: s.is_out_of_stock ? 'not-allowed' : 'pointer',
-                      opacity: s.is_out_of_stock ? 0.45 : 1,
-                    }}
-                  >
-                    {s.size}
-                    {s.is_out_of_stock && (
-                      <span
-                        className="absolute inset-0 flex items-center justify-center rounded-xl text-[0.6rem] font-bold"
-                        style={{ color: 'var(--text-muted)' }}
-                      />
+            {sizes.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Size:{' '}
+                    {selectedSize && (
+                      <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedSize}</span>
                     )}
+                  </p>
+                  <button
+                    className="text-xs font-medium underline"
+                    style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Size guide
                   </button>
-                ))}
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {sizes.map((s: any) => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        if (!s.is_out_of_stock) {
+                          setSelectedSize(s.size);
+                          setSizeError(false);
+                        }
+                      }}
+                      disabled={s.is_out_of_stock}
+                      className="relative w-14 h-12 rounded-xl text-sm font-semibold transition-all"
+                      style={{
+                        background: selectedSize === s.size ? 'var(--purple-600)' : 'var(--bg-secondary)',
+                        color: selectedSize === s.size ? 'white' : s.is_out_of_stock ? 'var(--text-muted)' : 'var(--text-primary)',
+                        border: selectedSize === s.size
+                          ? '2px solid var(--purple-600)'
+                          : sizeError
+                            ? '2px solid var(--error)'
+                            : '2px solid var(--border-color)',
+                        cursor: s.is_out_of_stock ? 'not-allowed' : 'pointer',
+                        opacity: s.is_out_of_stock ? 0.45 : 1,
+                      }}
+                    >
+                      {s.size}
+                    </button>
+                  ))}
+                </div>
+                {sizeError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs font-medium mt-2"
+                    style={{ color: 'var(--error)' }}
+                  >
+                    Please select a size to continue.
+                  </motion.p>
+                )}
               </div>
-              {sizeError && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-xs font-medium mt-2"
-                  style={{ color: 'var(--error)' }}
-                >
-                  Please select a size to continue.
-                </motion.p>
-              )}
-            </div>
+            )}
 
             {/* CTA Buttons */}
             <div className="flex gap-3">
@@ -399,32 +398,36 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Description */}
-            <div>
-              <h3
-                className="text-base font-bold mb-3"
-                style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-              >
-                Product Details
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', lineHeight: 1.85 }}>
-                {product.description}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {product.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full text-xs font-medium capitalize"
-                    style={{
-                      background: 'var(--purple-50)',
-                      color: 'var(--purple-700)',
-                      border: '1px solid var(--purple-100)',
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
+            {product.description && (
+              <div>
+                <h3
+                  className="text-base font-bold mb-3"
+                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+                >
+                  Product Details
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', lineHeight: 1.85 }}>
+                  {product.description}
+                </p>
+                {product.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {product.tags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 rounded-full text-xs font-medium capitalize"
+                        style={{
+                          background: 'var(--purple-50)',
+                          color: 'var(--purple-700)',
+                          border: '1px solid var(--purple-100)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

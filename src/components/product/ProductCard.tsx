@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, Eye, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Product } from '../../types';
+import type { Product } from '../../types';
 import { formatPrice } from '../../utils/formatters';
 import { getOptimizedUrl } from '../../lib/cloudinary';
 import { useWishlistStore } from '../../store/wishlistStore';
@@ -16,17 +16,19 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [activeColorIndex, setActiveColorIndex] = useState(0);
 
-  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
   const { openCart, addItem } = useCartStore();
 
-  const activeColor = product.colors[activeColorIndex];
-  // Filter out sizes with 0 stock
-  const availableSizes = activeColor.sizes.filter((s) => s.stock > 0);
+  const colors: any[] = product.colors || product.product_colors || [];
+  const activeColor = colors[activeColorIndex] as any;
+  // Sizes are attached to the product, not individual colors
+  const sizes: any[] = product.sizes || product.product_sizes || [];
+  const availableSizes = sizes.filter((s: any) => s.stock > 0);
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (availableSizes.length > 0) {
+    if (availableSizes.length > 0 && activeColor) {
       // Add first available size by default when clicking quick add
       addItem({
         product_id: product.id,
@@ -43,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
-    toggleWishlist(product);
+    toggleItem(product.id);
   };
 
   return (
@@ -60,10 +62,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-        {product.is_new && (
+        {(product.is_new || product.is_featured) && (
           <span className="badge badge-purple text-[10px] font-bold shadow-sm">NEW</span>
         )}
-        {product.price < 50 && (
+        {product.original_price && product.original_price > product.price && (
           <span className="badge badge-gold text-[10px] font-bold shadow-sm">SALE</span>
         )}
       </div>
@@ -85,18 +87,25 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image Gallery Link */}
       <Link
         to={`/product/${product.id}`}
-        className="relative block w-full pt-[125%] overflow-hidden"
-        style={{ background: 'var(--bg-secondary)' }}
+        className="relative block w-full overflow-hidden"
+        style={{ background: '#ffffff', aspectRatio: '3/4' }}
       >
-        <img
-          src={getOptimizedUrl(activeColor.image_url, 400)}
-          alt={`${product.name} - ${activeColor.color_name}`}
-          loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out"
-          style={{
-            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-          }}
-        />
+        {activeColor?.image_url ? (
+          <img
+            src={activeColor.image_url}
+            alt={`${product.name} - ${activeColor?.color_name || ''}`}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-contain transition-transform duration-700 ease-out"
+            style={{
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+              padding: '8px',
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+            No Image
+          </div>
+        )}
 
         {/* Quick Actions Overlay (Desktop) */}
         <div
@@ -172,18 +181,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
             {formatPrice(product.price)}
           </span>
-          {/* Optional original price placeholder */}
-          {product.price < 50 && (
+          {product.original_price && product.original_price > product.price && (
             <span className="text-xs line-through" style={{ color: 'var(--text-muted)' }}>
-              {formatPrice(product.price * 1.2)}
+              {formatPrice(product.original_price)}
             </span>
           )}
         </div>
 
         {/* Color Swatches */}
-        {product.colors.length > 1 && (
+        {colors.length > 1 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {product.colors.map((color, idx) => (
+            {colors.map((color: any, idx: number) => (
               <button
                 key={color.color_name}
                 onClick={(e) => {
@@ -202,7 +210,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               />
             ))}
             <span className="text-[10px] ml-1 flex items-center" style={{ color: 'var(--text-muted)' }}>
-              {product.colors.length} colors
+              {colors.length} colors
             </span>
           </div>
         )}

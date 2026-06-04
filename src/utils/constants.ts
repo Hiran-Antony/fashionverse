@@ -11,6 +11,45 @@ export const CATEGORIES: { value: ProductCategory; label: string }[] = [
   { value: 'accessories', label: 'Accessories' },
 ];
 
+export const SUB_CATEGORIES: Record<string, {label: string, value: string}[]> = {
+  men: [
+    { label: 'Formal Shirts', value: 'Formal Shirts' },
+    { label: 'Casual Shirts', value: 'Casual Shirts' },
+    { label: 'T-Shirts', value: 'T-Shirts' },
+    { label: 'Jeans', value: 'Jeans' },
+    { label: 'Trousers', value: 'Trousers' },
+    { label: 'Cargo', value: 'Cargo' },
+    { label: 'Track Pants', value: 'Track Pants' },
+    { label: 'Shorts', value: 'Shorts' },
+  ],
+  women: [
+    { label: 'Dresses', value: 'Dresses' },
+    { label: 'Tops & T-Shirts', value: 'Tops & T-Shirts' },
+    { label: 'Kurtas & Suits', value: 'Kurtas & Suits' },
+    { label: 'Jeans', value: 'Jeans' },
+    { label: 'Trousers', value: 'Trousers' },
+    { label: 'Activewear', value: 'Activewear' },
+  ],
+  kids: [
+    { label: 'T-Shirts', value: 'T-Shirts' },
+    { label: 'Shirts', value: 'Shirts' },
+    { label: 'Jeans', value: 'Jeans' },
+    { label: 'Dresses', value: 'Dresses' },
+  ],
+  footwear: [
+    { label: 'Sneakers', value: 'Sneakers' },
+    { label: 'Formal Shoes', value: 'Formal Shoes' },
+    { label: 'Sandals', value: 'Sandals' },
+    { label: 'Heels', value: 'Heels' },
+  ],
+  accessories: [
+    { label: 'Bags', value: 'Bags' },
+    { label: 'Watches', value: 'Watches' },
+    { label: 'Belts', value: 'Belts' },
+    { label: 'Jewellery', value: 'Jewellery' },
+  ]
+};
+
 export const SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
 
 export const SORT_OPTIONS = [

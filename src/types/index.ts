@@ -28,11 +28,15 @@ export interface Product {
   review_count: number;
   is_featured: boolean;
   is_trending: boolean;
+  is_new?: boolean;
   is_active: boolean;
   tags: string[] | null;
   created_at: string;
+  // Supabase join alias
   product_colors?: ProductColor[];
   product_sizes?: ProductSize[];
+  // Convenience alias used in components (maps to product_colors)
+  colors?: ProductColorWithSizes[];
 }
 
 export type ProductCategory =
@@ -48,6 +52,11 @@ export interface ProductColor {
   color_name: string;
   hex_code: string | null;
   image_url: string;
+}
+
+export interface ProductColorWithSizes extends ProductColor {
+  sizes?: ProductSize[];
+  product_sizes?: ProductSize[];
 }
 
 export interface ProductSize {

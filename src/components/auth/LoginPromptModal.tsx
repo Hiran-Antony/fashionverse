@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Heart, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 
 export default function LoginPromptModal() {

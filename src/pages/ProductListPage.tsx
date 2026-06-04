@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { X, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { Product } from '../types';
-import { CATEGORIES } from '../utils/constants';
+import type { Product } from '../types';
+import { CATEGORIES, SUB_CATEGORIES } from '../utils/constants';
 import ProductCard from '../components/product/ProductCard';
 
 export default function ProductListPage() {
@@ -15,6 +15,7 @@ export default function ProductListPage() {
   const categoryQuery = searchParams.get('category');
   const searchQuery = searchParams.get('search');
   const sortQuery = searchParams.get('sort') || 'newest';
+  const activeTypes = searchParams.get('types')?.split(',').filter(Boolean) || [];
 
   // Fetch products (mock for now, or real if Supabase is connected)
   const { data: products = [], isLoading } = useQuery({
@@ -22,10 +23,8 @@ export default function ProductListPage() {
     queryFn: async () => {
       let query = supabase.from('products').select(`
         *,
-        colors:product_colors (
-          *,
-          sizes:product_sizes (*)
-        )
+        colors:product_colors (*),
+        sizes:product_sizes (*)
       `);
 
       if (categoryQuery) {
@@ -57,6 +56,10 @@ export default function ProductListPage() {
       else if (activeFilters.priceRange === 'over100') sorted = sorted.filter(p => p.price > 100);
     }
 
+    if (activeTypes.length > 0) {
+      sorted = sorted.filter(p => p.tags && p.tags.some(tag => activeTypes.includes(tag)));
+    }
+
     switch (sortQuery) {
       case 'price-asc':
         sorted.sort((a, b) => a.price - b.price);
@@ -69,8 +72,8 @@ export default function ProductListPage() {
         break;
       case 'newest':
       default:
-        // Mock newness by ID or created_at
-        sorted.sort((a, b) => (b.is_new ? 1 : 0) - (a.is_new ? 1 : 0));
+        // Newest by created_at
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
 
@@ -87,8 +90,26 @@ export default function ProductListPage() {
     const newParams = new URLSearchParams(searchParams);
     if (value) {
       newParams.set('category', value);
+      newParams.delete('types');
     } else {
       newParams.delete('category');
+      newParams.delete('types');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleTypeToggle = (typeValue: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    let types = searchParams.get('types')?.split(',').filter(Boolean) || [];
+    if (types.includes(typeValue)) {
+      types = types.filter(t => t !== typeValue);
+    } else {
+      types.push(typeValue);
+    }
+    if (types.length > 0) {
+      newParams.set('types', types.join(','));
+    } else {
+      newParams.delete('types');
     }
     setSearchParams(newParams);
   };
@@ -102,7 +123,7 @@ export default function ProductListPage() {
             {categoryQuery
               ? CATEGORIES.find((c) => c.value === categoryQuery)?.label || 'Collection'
               : searchQuery
-              ? `Search Results: "${searchQuery}"`
+              ? `"${searchQuery}"`
               : 'All Products'}
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -215,6 +236,42 @@ export default function ProductListPage() {
                     ))}
                   </ul>
                 </div>
+
+                {/* Product Type Filters */}
+                {categoryQuery && SUB_CATEGORIES[categoryQuery] && (
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
+                      Product Type
+                    </h4>
+                    <div className="space-y-3">
+                      {SUB_CATEGORIES[categoryQuery].map((type) => {
+                        const isChecked = activeTypes.includes(type.value);
+                        return (
+                          <label key={type.value} className="flex items-center gap-3 cursor-pointer group">
+                            <div
+                              className="w-5 h-5 rounded border flex items-center justify-center transition-all"
+                              style={{
+                                background: isChecked ? 'var(--purple-600)' : 'transparent',
+                                borderColor: isChecked ? 'var(--purple-600)' : 'var(--border-color)',
+                              }}
+                            >
+                              {isChecked && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                            </div>
+                            <span className="text-sm font-medium transition-colors" style={{ color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                              {type.label}
+                            </span>
+                            <input
+                              type="checkbox"
+                              className="hidden"
+                              checked={isChecked}
+                              onChange={() => handleTypeToggle(type.value)}
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Sort (Desktop only, mobile is above grid) */}
                 <div className="hidden lg:block">

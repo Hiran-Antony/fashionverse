@@ -2,7 +2,6 @@ import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { AnimatePresence } from 'framer-motion';
 
 import { queryClient } from './lib/queryClient';
 import { useThemeStore } from './store/themeStore';
@@ -14,17 +13,17 @@ import HomePage from './pages/HomePage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
 // ─── Lazy-loaded pages (code splitting) ──────────────────────
-// These heavy pages only load when the user navigates to them
 const ProductListPage = lazy(() => import('./pages/ProductListPage'));
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
-const CartPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Shopping Cart" description="Review your items and proceed to checkout." /> })));
-const CheckoutPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Checkout" description="Complete your order with secure payment." /> })));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
-const AccountPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="My Account" description="Manage your profile, orders, and preferences." /> })));
-const WishlistPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Wishlist" description="Your saved items — buy them before they're gone!" /> })));
-const TryOnPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Virtual Try-On ✨" description="AI-powered fitting room — see clothes on yourself." /> })));
-const StyleBuilderPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Style Builder" description="Build complete outfits and add them to cart." /> })));
-const AdminDashboard = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Admin Dashboard" description="Manage products, orders, and customers." /> })));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
+const TryOnPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Virtual Try-On ✨" description="AI-powered fitting room — see clothes on yourself. Coming in Phase 4!" /> })));
+const StyleBuilderPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Style Builder" description="Build complete outfits and add them to cart. Coming in Phase 4!" /> })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 // ─── Loading Spinner ─────────────────────────────────────────
 function PageLoader() {
@@ -52,63 +51,68 @@ function App() {
 
   // Initialize auth listener
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
+    // Get initial session — wrapped in try/catch so mock/unconfigured Supabase never crashes
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        const session = data?.session ?? null;
+        setSession(session);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
+      })
+      .catch((err) => {
+        console.warn('Auth session init error:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-    });
+    let unsubscribe = () => {};
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      });
+      unsubscribe = subscription.unsubscribe.bind(subscription);
+    } catch (err) {
+      console.warn('Auth state change listener error:', err);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [setSession, fetchProfile, setLoading]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AnimatePresence mode="wait">
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* ── Standalone pages (no Navbar/Footer) ─── */}
-              <Route
-                path="/auth"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <AuthPage />
-                  </Suspense>
-                }
-              />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* ── Standalone pages (no Navbar/Footer) ─── */}
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
 
-              {/* ── Main app with Navbar + Footer ──────── */}
-              <Route element={<Layout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<Suspense fallback={<PageLoader />}><ProductListPage /></Suspense>} />
-                <Route path="/product/:id" element={<Suspense fallback={<PageLoader />}><ProductDetailPage /></Suspense>} />
-                <Route path="/cart" element={<Suspense fallback={<PageLoader />}><CartPage /></Suspense>} />
-                <Route path="/checkout" element={<Suspense fallback={<PageLoader />}><CheckoutPage /></Suspense>} />
-                <Route path="/account/*" element={<Suspense fallback={<PageLoader />}><AccountPage /></Suspense>} />
-                <Route path="/wishlist" element={<Suspense fallback={<PageLoader />}><WishlistPage /></Suspense>} />
-                <Route path="/try-on" element={<Suspense fallback={<PageLoader />}><TryOnPage /></Suspense>} />
-                <Route path="/style-builder" element={<Suspense fallback={<PageLoader />}><StyleBuilderPage /></Suspense>} />
-                {/* Hidden Admin Route */}
-                <Route path="/admin-dashboard/*" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
-                {/* 404 */}
-                <Route path="*" element={<PlaceholderPage title="404 — Page Not Found" description="The page you're looking for doesn't exist." />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </AnimatePresence>
+            {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
+            <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
+
+            {/* ── Main app with Navbar + Footer ──────── */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<ProductListPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/account/*" element={<AccountPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/try-on" element={<TryOnPage />} />
+              <Route path="/style-builder" element={<StyleBuilderPage />} />
+              <Route path="*" element={<PlaceholderPage title="404 — Page Not Found" description="The page you're looking for doesn't exist." />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
       <Toaster
         position="bottom-right"
