@@ -4,13 +4,28 @@
 
 // ─── User & Auth ─────────────────────────────────────────────
 
+export interface SavedAddress {
+  id: string;
+  label: string;        // e.g. "Home", "Work"
+  name: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  is_default?: boolean;
+}
+
 export interface Profile {
   id: string;
   name: string | null;
+  email: string | null;
   avatar_url: string | null;
   phone: string | null;
   role: 'customer' | 'admin';
   loyalty_points: number;
+  addresses?: SavedAddress[];
   created_at: string;
 }
 

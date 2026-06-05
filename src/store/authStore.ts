@@ -19,6 +19,7 @@ interface AuthState {
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
   fetchProfile: (userId: string) => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 
@@ -70,6 +71,22 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Error fetching profile:', error);
           set({ isLoading: false });
+        }
+      },
+
+      updateProfile: async (updates: Partial<Profile>) => {
+        const currentProfile = _get().profile;
+        if (!currentProfile) return;
+        // Optimistic update — reflect changes instantly in the UI
+        set({ profile: { ...currentProfile, ...updates } });
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', currentProfile.id);
+        if (error) {
+          // Roll back on failure
+          set({ profile: currentProfile });
+          throw error;
         }
       },
 

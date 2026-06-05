@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,12 +6,13 @@ import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Phone, User, ChevronDown, Package, CreditCard, Truck,
-  ArrowLeft, Lock, CheckCircle2,
+  ArrowLeft, Lock, CheckCircle2, Plus, X,
 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import { getOptimizedUrl } from '../lib/cloudinary';
+import type { SavedAddress } from '../types';
 import toast from 'react-hot-toast';
 
 // ─── Validation Schema ────────────────────────────────────────
@@ -34,14 +35,123 @@ const INDIAN_STATES = [
   'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
 ];
 
+/* ─── Floating Label Input for React Hook Form ─────────────── */
+const RHF_FloatingInput = forwardRef<
+  HTMLInputElement | HTMLSelectElement,
+  {
+    label: string;
+    type?: string;
+    placeholder?: string;
+    icon?: React.ElementType;
+    error?: string;
+    isSelect?: boolean;
+    options?: string[];
+    watchValue?: any;
+  } & React.InputHTMLAttributes<HTMLInputElement> & React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ label, type = 'text', placeholder, icon: Icon, error, isSelect, options, onChange, onBlur, name, watchValue, ...rest }, ref) => {
+  const [focused, setFocused] = useState(false);
+  const [hasValue, setHasValue] = useState(Boolean(rest.defaultValue || rest.value));
+
+  const active = focused || hasValue || Boolean(watchValue);
+
+  const handleChange = (e: React.ChangeEvent<any>) => {
+    setHasValue(e.target.value.length > 0);
+    if (onChange) onChange(e);
+  };
+
+  const handleBlur = (e: React.FocusEvent<any>) => {
+    setFocused(false);
+    if (onBlur) onBlur(e);
+  };
+
+  return (
+    <div className="relative mb-2">
+      <div
+        className="relative flex items-center w-full rounded-xl transition-all duration-200"
+        style={{
+          border: `2px solid ${error ? '#ef4444' : focused ? '#8b5cf6' : '#e5e7eb'}`,
+          background: error ? '#fef2f2' : focused ? '#faf5ff' : '#f9fafb',
+        }}
+      >
+        {Icon && (
+          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#8b5cf6' : '#9ca3af' }}>
+            <Icon size={16} />
+          </div>
+        )}
+        <div className="w-full" style={{ paddingLeft: Icon ? '44px' : '16px', paddingRight: isSelect ? '40px' : '16px', paddingTop: '22px', paddingBottom: '8px' }}>
+          <label
+            style={{
+              position: 'absolute',
+              left: Icon ? '44px' : '16px',
+              top: active ? '8px' : '50%',
+              transform: active ? 'none' : 'translateY(-50%)',
+              fontSize: active ? '10px' : '14px',
+              fontWeight: active ? 700 : 500,
+              color: error ? '#ef4444' : focused ? '#8b5cf6' : '#9ca3af',
+              textTransform: active ? 'uppercase' : 'none',
+              letterSpacing: active ? '0.06em' : 'normal',
+              transition: 'all 0.15s ease',
+              pointerEvents: 'none',
+            }}
+          >
+            {label}
+          </label>
+          
+          {isSelect ? (
+            <>
+              <select
+                ref={ref as React.Ref<HTMLSelectElement>}
+                name={name}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                onFocus={() => setFocused(true)}
+                className="appearance-none w-full bg-transparent border-none outline-none"
+                style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', lineHeight: '1.4', cursor: 'pointer' }}
+                {...(rest as any)}
+              >
+                <option value="" disabled hidden></option>
+                {options?.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9ca3af' }} />
+            </>
+          ) : (
+            <input
+              ref={ref as React.Ref<HTMLInputElement>}
+              type={type}
+              name={name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              onFocus={() => setFocused(true)}
+              placeholder={active ? placeholder : ''}
+              className="w-full bg-transparent border-none outline-none"
+              style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', lineHeight: '1.4' }}
+              {...(rest as any)}
+            />
+          )}
+        </div>
+      </div>
+      {error && <p style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>{error}</p>}
+    </div>
+  );
+});
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, getTotal, getItemCount, clearCart } = useCartStore();
-  const { user, profile } = useAuthStore();
+  const { user, profile, updateProfile } = useAuthStore();
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [isPlacing, setIsPlacing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [savedAddress, setSavedAddress] = useState<AddressForm | null>(null);
+  const [selectedSaved, setSelectedSaved] = useState<SavedAddress | null>(
+    (profile?.addresses || []).find(a => a.is_default) || null
+  );
+  const [saveToProfile, setSaveToProfile] = useState(false);
+  const [showNewForm, setShowNewForm] = useState(!(profile?.addresses?.length));
+
+  const savedAddresses: SavedAddress[] = profile?.addresses || [];
 
   const subtotal = getTotal();
   const deliveryFee = subtotal >= 999 ? 0 : 99;
@@ -50,12 +160,14 @@ export default function CheckoutPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
     defaultValues: {
       name: '', // Force user to manually type their given name
       phone: profile?.phone || '',
+      state: '',
     },
   });
 
@@ -87,7 +199,25 @@ export default function CheckoutPage() {
   }
 
   const onSubmit = async (address: AddressForm) => {
-    setSavedAddress(address);
+    const finalAddress = selectedSaved
+      ? { name: selectedSaved.name, phone: selectedSaved.phone, line1: selectedSaved.line1, line2: selectedSaved.line2, city: selectedSaved.city, state: selectedSaved.state, pincode: selectedSaved.pincode }
+      : address;
+
+    // Save new address to profile if checkbox ticked
+    if (!selectedSaved && saveToProfile && profile) {
+      try {
+        const newAddr: SavedAddress = {
+          id: crypto.randomUUID(),
+          label: 'Home',
+          ...address,
+          is_default: savedAddresses.length === 0,
+        };
+        const updated = [...savedAddresses, newAddr];
+        await updateProfile({ addresses: updated });
+      } catch { /* non-blocking */ }
+    }
+
+    setSavedAddress(finalAddress);
     setShowPaymentModal(true);
   };
 
@@ -230,130 +360,192 @@ export default function CheckoutPage() {
           {/* Left: Address + Payment */}
           <div className="lg:col-span-2 space-y-6">
             {/* Delivery Address */}
+            {/* Delivery Address */}
             <div
-              className="rounded-2xl p-6"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+              style={{ background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 8px 32px rgba(139,92,246,0.06)' }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: 'var(--purple-100)', color: 'var(--purple-600)' }}
-                >
-                  <MapPin size={18} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(139,92,246,0.35)' }}>
+                  <MapPin size={22} color="white" />
                 </div>
-                <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                  Delivery Address
-                </h2>
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', fontFamily: 'var(--font-display)', marginBottom: '2px' }}>
+                    Delivery Address
+                  </h2>
+                  <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Where should we send your order?</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                    <input
-                      {...register('name')}
-                      placeholder="Rahul Sharma"
-                      className={`input ${errors.name ? 'input-error' : ''}`}
-                      style={{ paddingLeft: '2.5rem' }}
-                    />
-                  </div>
-                  {errors.name && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.name.message}</p>}
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    Mobile Number *
-                  </label>
-                  <div className="relative">
-                    <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                    <input
-                      {...register('phone')}
-                      placeholder="9876543210"
-                      maxLength={10}
-                      className={`input ${errors.phone ? 'input-error' : ''}`}
-                      style={{ paddingLeft: '2.5rem' }}
-                    />
-                  </div>
-                  {errors.phone && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.phone.message}</p>}
-                </div>
-
-                {/* Address Line 1 */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    Address Line 1 *
-                  </label>
-                  <input
-                    {...register('line1')}
-                    placeholder="House no, Street, Area"
-                    className={`input ${errors.line1 ? 'input-error' : ''}`}
-                  />
-                  {errors.line1 && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.line1.message}</p>}
-                </div>
-
-                {/* Address Line 2 */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                    Address Line 2 (Optional)
-                  </label>
-                  <input
-                    {...register('line2')}
-                    placeholder="Landmark, Apartment name (optional)"
-                    className="input"
-                  />
-                </div>
-
-                {/* City */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    City *
-                  </label>
-                  <input
-                    {...register('city')}
-                    placeholder="Mumbai"
-                    className={`input ${errors.city ? 'input-error' : ''}`}
-                  />
-                  {errors.city && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.city.message}</p>}
-                </div>
-
-                {/* Pincode */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    Pincode *
-                  </label>
-                  <input
-                    {...register('pincode')}
-                    placeholder="400001"
-                    maxLength={6}
-                    className={`input ${errors.pincode ? 'input-error' : ''}`}
-                  />
-                  {errors.pincode && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.pincode.message}</p>}
-                </div>
-
-                {/* State */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-                    State *
-                  </label>
-                  <div className="relative">
-                    <select
-                      {...register('state')}
-                      className={`input select appearance-none ${errors.state ? 'input-error' : ''}`}
+              {/* Saved address cards */}
+              {savedAddresses.length > 0 && (
+                <div style={{ marginBottom: '28px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '12px' }}>Saved Addresses</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                    {savedAddresses.map(addr => {
+                      const isSelected = selectedSaved?.id === addr.id;
+                      return (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => { setSelectedSaved(addr); setShowNewForm(false); }}
+                          style={{
+                            textAlign: 'left', padding: '18px', borderRadius: '16px', transition: 'all 0.2s', cursor: 'pointer',
+                            background: isSelected ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
+                            border: `2px solid ${isSelected ? '#8b5cf6' : '#e5e7eb'}`,
+                            boxShadow: isSelected ? '0 4px 12px rgba(139,92,246,0.15)' : 'none',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8b5cf6' }}>{addr.label}</span>
+                            {isSelected && <CheckCircle2 size={16} style={{ color: '#8b5cf6' }} />}
+                          </div>
+                          <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827', marginBottom: '2px' }}>{addr.name}</p>
+                          <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                            {[addr.line1, addr.city, addr.pincode].filter(Boolean).join(', ')}
+                          </p>
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSaved(null); setShowNewForm(true); }}
+                      style={{
+                        textAlign: 'left', padding: '18px', borderRadius: '16px', transition: 'all 0.2s', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        background: showNewForm && !selectedSaved ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
+                        border: `2px dashed ${showNewForm && !selectedSaved ? '#8b5cf6' : '#d1d5db'}`,
+                      }}
                     >
-                      <option value="">Select state</option>
-                      {INDIAN_STATES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: showNewForm && !selectedSaved ? 'white' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Plus size={16} style={{ color: '#8b5cf6' }} />
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#111827', display: 'block' }}>New Address</span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Deliver to a different location</span>
+                      </div>
+                    </button>
                   </div>
-                  {errors.state && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.state.message}</p>}
                 </div>
-              </div>
+              )}
+
+              {/* Manual address form — only when new address selected */}
+              <AnimatePresence>
+              {showNewForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  {savedAddresses.length > 0 && (
+                    <div style={{ height: '1px', background: '#e5e7eb', marginBottom: '24px' }} />
+                  )}
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div style={{ gridColumn: 'span 1' }}>
+                      <RHF_FloatingInput
+                        {...register('name')}
+                        watchValue={watch('name')}
+                        label="Full Name *"
+                        placeholder="Rahul Sharma"
+                        icon={User}
+                        error={errors.name?.message}
+                      />
+                    </div>
+                    <div style={{ gridColumn: 'span 1' }}>
+                      <RHF_FloatingInput
+                        {...register('phone')}
+                        watchValue={watch('phone')}
+                        label="Mobile Number *"
+                        placeholder="9876543210"
+                        maxLength={10}
+                        icon={Phone}
+                        error={errors.phone?.message}
+                      />
+                    </div>
+                    
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <RHF_FloatingInput
+                        {...register('line1')}
+                        watchValue={watch('line1')}
+                        label="Address Line 1 *"
+                        placeholder="House / Flat no, Building, Street"
+                        icon={MapPin}
+                        error={errors.line1?.message}
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <RHF_FloatingInput
+                        {...register('line2')}
+                        watchValue={watch('line2')}
+                        label="Address Line 2 (Optional)"
+                        placeholder="Area, Landmark"
+                        error={errors.line2?.message}
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: 'span 1' }}>
+                      <RHF_FloatingInput
+                        {...register('city')}
+                        watchValue={watch('city')}
+                        label="City *"
+                        placeholder="e.g. Mumbai"
+                        error={errors.city?.message}
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: 'span 1' }}>
+                      <RHF_FloatingInput
+                        {...register('pincode')}
+                        watchValue={watch('pincode')}
+                        label="Pincode *"
+                        placeholder="6-digit code"
+                        maxLength={6}
+                        error={errors.pincode?.message}
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <RHF_FloatingInput
+                        {...register('state')}
+                        watchValue={watch('state')}
+                        label="State *"
+                        isSelect
+                        options={INDIAN_STATES}
+                        error={errors.state?.message}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Save address toggle */}
+                  {user && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginTop: '16px', padding: '14px 16px', borderRadius: '12px', background: '#f9fafb', border: '1.5px solid #e5e7eb' }}>
+                      <div
+                        onClick={() => setSaveToProfile(!saveToProfile)}
+                        style={{
+                          width: '44px', height: '24px', borderRadius: '999px', flexShrink: 0,
+                          background: saveToProfile ? '#8b5cf6' : '#d1d5db',
+                          position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', top: '3px',
+                          left: saveToProfile ? '23px' : '3px',
+                          width: '18px', height: '18px', borderRadius: '50%',
+                          background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                          transition: 'left 0.2s',
+                        }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>Save this address to my profile</p>
+                        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>You can use it for faster checkout next time</p>
+                      </div>
+                    </label>
+                  )}
+                </motion.div>
+              )}
+              </AnimatePresence>
             </div>
 
             {/* Payment method section removed and moved to modal */}
@@ -365,43 +557,43 @@ export default function CheckoutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-2xl p-6 sticky top-24"
+              className="sticky top-24"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
+                background: 'white',
+                borderRadius: '24px',
+                padding: '32px',
+                boxShadow: '0 8px 32px rgba(139,92,246,0.06)',
               }}
             >
               <h2
-                className="text-base font-bold mb-5"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+                style={{ fontSize: '20px', fontWeight: 800, color: '#111827', fontFamily: 'var(--font-display)', marginBottom: '24px' }}
               >
                 Order Summary
               </h2>
 
               {/* Items */}
-              <div className="space-y-3 mb-5 max-h-64 overflow-y-auto pr-1">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', maxHeight: '320px', overflowY: 'auto', paddingRight: '8px' }}>
                 {items.map((item) => (
                   <div
                     key={`${item.product_id}-${item.color_name}-${item.size}`}
-                    className="flex gap-3 items-center"
+                    style={{ display: 'flex', gap: '16px', alignItems: 'center' }}
                   >
-                    <img
-                      src={getOptimizedUrl(item.image_url, 80)}
-                      alt={item.product_name}
-                      className="w-12 h-14 rounded-lg object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="text-xs font-medium line-clamp-1"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
+                    <div style={{ width: '56px', height: '64px', borderRadius: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', overflow: 'hidden', flexShrink: 0 }}>
+                      <img
+                        src={getOptimizedUrl(item.image_url, 80)}
+                        alt={item.product_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.product_name}
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600 }}>
                         {item.color_name} · {item.size} · Qty {item.quantity}
                       </p>
                     </div>
-                    <span className="text-xs font-bold shrink-0" style={{ color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
                       ₹{(item.product_price * item.quantity).toLocaleString()}
                     </span>
                   </div>
@@ -410,184 +602,225 @@ export default function CheckoutPage() {
 
               {/* Price Breakdown */}
               <div
-                className="space-y-2 py-4"
-                style={{ borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: '12px',
+                  paddingTop: '20px', paddingBottom: '20px',
+                  borderTop: '1px dashed #e5e7eb', borderBottom: '1px dashed #e5e7eb',
+                  marginBottom: '20px'
+                }}
               >
-                <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span>Subtotal ({getItemCount()} items)</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>Subtotal ({getItemCount()} items)</span>
+                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700 }}>₹{subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span className="flex items-center gap-1"><Truck size={12} /> Delivery</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>
+                    <Truck size={14} /> Delivery
+                  </span>
                   {deliveryFee === 0 ? (
-                    <span style={{ color: '#059669', fontWeight: 600 }}>FREE</span>
+                    <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '999px', background: '#d1fae5', color: '#059669' }}>FREE</span>
                   ) : (
-                    <span>₹{deliveryFee}</span>
+                    <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700 }}>₹{deliveryFee}</span>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-between font-bold text-base mt-4 mb-6" style={{ color: 'var(--text-primary)' }}>
-                <span>Total</span>
-                <span>₹{total.toLocaleString()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Total</span>
+                <span style={{ fontSize: '22px', fontWeight: 900, color: '#7c3aed' }}>₹{total.toLocaleString()}</span>
               </div>
 
               {/* Place Order Button */}
               <button
-                type="submit"
-                className="btn btn-primary w-full justify-center text-sm"
+                type={selectedSaved ? 'button' : 'submit'}
+                onClick={selectedSaved ? () => {
+                  setSavedAddress({ name: selectedSaved.name, phone: selectedSaved.phone, line1: selectedSaved.line1, line2: selectedSaved.line2 || '', city: selectedSaved.city, state: selectedSaved.state, pincode: selectedSaved.pincode });
+                  setShowPaymentModal(true);
+                } : undefined}
+                disabled={isPlacing || (!selectedSaved && !showNewForm)}
                 style={{
-                  padding: '14px 24px',
-                  opacity: isPlacing || paymentMethod === 'online' ? 0.7 : 1,
-                  cursor: isPlacing || paymentMethod === 'online' ? 'not-allowed' : 'pointer',
+                  width: '100%', padding: '16px 24px', borderRadius: '16px',
+                  background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+                  border: 'none', color: 'white', fontSize: '15px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
+                  cursor: isPlacing || (!selectedSaved && !showNewForm) ? 'not-allowed' : 'pointer',
+                  opacity: isPlacing || (!selectedSaved && !showNewForm) ? 0.6 : 1,
+                  transition: 'all 0.2s',
                 }}
               >
-                  <>
-                    <Lock size={15} /> Continue to Payment
-                  </>
+                <Lock size={16} /> Continue to Payment
               </button>
 
-              <p className="text-center text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
-                🔒 Your data is encrypted and secure
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+                <Lock size={12} style={{ color: '#9ca3af' }} />
+                <p style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>
+                  Your data is encrypted and secure
+                </p>
+              </div>
             </motion.div>
           </div>
         </div>
       </form>
 
+
       {/* Payment Modal */}
       <AnimatePresence>
         {showPaymentModal && (
-          <>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+            onClick={(e) => { if (!isPlacing && e.target === e.currentTarget) setShowPaymentModal(false); }}
+          >
             <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !isPlacing && setShowPaymentModal(false)}
-              className="fixed inset-0 z-[100]"
-              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-            />
-            <motion.div
-              key="modal"
-              initial={{ opacity: 0, y: 50, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="fixed z-[101] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-6"
+              initial={{ opacity: 0, scale: 0.93, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.93, y: 24 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              style={{
+                width: '100%', maxWidth: '440px',
+                background: 'white', borderRadius: '24px', padding: '32px',
+                boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+              }}
             >
-              <div
-                className="rounded-3xl p-6 overflow-hidden shadow-2xl relative"
-                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
-              >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px' }}>
+                <div>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: '48px', height: '48px', borderRadius: '14px', marginBottom: '16px',
+                    background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+                    boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+                  }}>
+                    <CreditCard size={22} color="white" />
+                  </div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+                    Payment Method
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>Choose how you want to pay</p>
+                </div>
                 <button
                   onClick={() => !isPlacing && setShowPaymentModal(false)}
-                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   disabled={isPlacing}
-                >
-                  <Lock size={16} style={{ color: 'var(--text-muted)' }} />
-                </button>
-                
-                <h2 className="text-xl font-bold mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                  Select Payment Method
-                </h2>
-
-                <div className="space-y-3 mb-8">
-                  {/* COD */}
-                  <label
-                    className="flex items-center gap-4 rounded-xl p-4 cursor-pointer transition-all"
-                    style={{
-                      background: paymentMethod === 'cod' ? 'var(--purple-50)' : 'var(--bg-secondary)',
-                      border: paymentMethod === 'cod' ? '2px solid var(--purple-400)' : '1px solid var(--border-color)',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="modal-payment"
-                      value="cod"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                      className="accent-purple-600 w-5 h-5"
-                    />
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ background: 'var(--gold-100)', color: 'var(--gold-700)' }}
-                      >
-                        <Package size={20} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Cash on Delivery</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Pay when your order arrives</p>
-                      </div>
-                    </div>
-                  </label>
-
-                  {/* Online Payment */}
-                  <label
-                    className="flex items-center gap-4 rounded-xl p-4 cursor-pointer transition-all opacity-80"
-                    style={{
-                      background: paymentMethod === 'online' ? 'var(--purple-50)' : 'var(--bg-secondary)',
-                      border: paymentMethod === 'online' ? '2px solid var(--purple-400)' : '1px solid var(--border-color)',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="modal-payment"
-                      value="online"
-                      checked={paymentMethod === 'online'}
-                      onChange={() => setPaymentMethod('online')}
-                      className="accent-purple-600 w-5 h-5"
-                    />
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ background: 'var(--purple-100)', color: 'var(--purple-600)' }}
-                      >
-                        <CreditCard size={20} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                          Pay Online
-                          <span className="ml-2 text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold" style={{ background: 'var(--gold-100)', color: 'var(--gold-700)' }}>
-                            Soon
-                          </span>
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>UPI, Cards, Net Banking</p>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                {paymentMethod === 'online' && (
-                  <p className="text-xs mb-6 p-3 rounded-xl" style={{ background: 'var(--gold-50)', color: 'var(--gold-700)', border: '1px solid var(--gold-200)' }}>
-                    ⚡ Online payments are being integrated. Please proceed with Cash on Delivery for now.
-                  </p>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleConfirmOrder}
-                  disabled={isPlacing || paymentMethod === 'online'}
-                  className="btn btn-primary w-full justify-center text-sm py-4 rounded-xl"
                   style={{
-                    opacity: isPlacing || paymentMethod === 'online' ? 0.7 : 1,
-                    cursor: isPlacing || paymentMethod === 'online' ? 'not-allowed' : 'pointer',
+                    width: '36px', height: '36px', borderRadius: '10px',
+                    background: '#f3f4f6', border: 'none', cursor: isPlacing ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#6b7280', transition: 'all 0.15s',
                   }}
                 >
-                  {isPlacing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : paymentMethod === 'online' ? (
-                    'Select Cash on Delivery'
-                  ) : (
-                    `Place Order · ₹${total.toLocaleString()}`
-                  )}
+                  <X size={16} />
                 </button>
               </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                {/* COD */}
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                    background: paymentMethod === 'cod' ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
+                    border: `2px solid ${paymentMethod === 'cod' ? '#8b5cf6' : '#e5e7eb'}`,
+                    boxShadow: paymentMethod === 'cod' ? '0 4px 12px rgba(139,92,246,0.15)' : 'none',
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'cod' ? '#8b5cf6' : '#d1d5db'}`,
+                    background: 'white', flexShrink: 0, transition: 'all 0.2s',
+                  }} />
+                  <input
+                    type="radio"
+                    name="modal-payment"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={() => setPaymentMethod('cod')}
+                    style={{ display: 'none' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
+                      <Package size={20} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827', marginBottom: '2px' }}>Cash on Delivery</p>
+                      <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Pay when your order arrives</p>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Online Payment */}
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s', opacity: 0.8,
+                    background: paymentMethod === 'online' ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
+                    border: `2px solid ${paymentMethod === 'online' ? '#8b5cf6' : '#e5e7eb'}`,
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'online' ? '#8b5cf6' : '#d1d5db'}`,
+                    background: 'white', flexShrink: 0, transition: 'all 0.2s',
+                  }} />
+                  <input
+                    type="radio"
+                    name="modal-payment"
+                    value="online"
+                    checked={paymentMethod === 'online'}
+                    onChange={() => setPaymentMethod('online')}
+                    style={{ display: 'none' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6', flexShrink: 0 }}>
+                      <CreditCard size={20} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827' }}>Pay Online</p>
+                        <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px', borderRadius: '999px', background: '#fef3c7', color: '#d97706' }}>
+                          Soon
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>UPI, Cards, Net Banking</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {paymentMethod === 'online' && (
+                <div style={{ padding: '16px', borderRadius: '12px', background: '#fffbeb', border: '1px solid #fde68a', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <p style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, lineHeight: '1.5' }}>
+                    Online payments are currently being integrated. Please proceed with Cash on Delivery for now.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleConfirmOrder}
+                disabled={isPlacing || paymentMethod === 'online'}
+                style={{
+                  width: '100%', padding: '16px', borderRadius: '16px',
+                  background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+                  border: 'none', color: 'white', fontSize: '16px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  boxShadow: '0 8px 24px rgba(139,92,246,0.35)',
+                  cursor: isPlacing || paymentMethod === 'online' ? 'not-allowed' : 'pointer',
+                  opacity: isPlacing || paymentMethod === 'online' ? 0.7 : 1,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isPlacing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...
+                  </>
+                ) : paymentMethod === 'online' ? (
+                  'Select Cash on Delivery'
+                ) : (
+                  `Place Order · ₹${total.toLocaleString()}`
+                )}
+              </button>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
     </div>

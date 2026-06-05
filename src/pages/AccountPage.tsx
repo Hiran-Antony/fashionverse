@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWishlistStore } from '../store/wishlistStore';
 import {
-  User, Package, LogOut, Settings, Edit3,
-  ChevronRight, CheckCircle2, Truck, Package as PackageIcon, Home, X,
-  Star, Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
-  Circle, Shield, Calendar, ArrowRight,
+  User, Package, LogOut, Edit3,
+  CheckCircle2, Truck, Package as PackageIcon, Home, X,
+  Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
+  Circle, Shield, Calendar, ArrowRight, Plus, Trash2,
+  Save, Phone, Mail, ChevronRight, Star, XCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/product/ProductCard';
-import type { Product } from '../types';
+import type { Product, SavedAddress } from '../types';
 import toast from 'react-hot-toast';
 
 type Tab = 'profile' | 'orders' | 'wishlist';
@@ -24,15 +25,355 @@ const STATUS_META: Record<string, { icon: React.ReactNode; label: string; color:
   packed:    { icon: <PackageIcon size={14} />,  label: 'Packed',       color: '#8B5CF6', bg: '#F5F3FF' },
   shipped:   { icon: <Truck size={14} />,        label: 'Shipped',      color: '#3B82F6', bg: '#EFF6FF' },
   delivered: { icon: <Home size={14} />,         label: 'Delivered',    color: '#10B981', bg: '#ECFDF5' },
-  cancelled: { icon: <X size={14} />,            label: 'Cancelled',    color: '#EF4444', bg: '#FEF2F2' },
+  cancelled: { icon: <XCircle size={14} />,      label: 'Cancelled',    color: '#EF4444', bg: '#FEF2F2' },
 };
 
 const TAB_META: Record<Tab, { title: string; subtitle: string }> = {
-  profile:  { title: 'Profile Details', subtitle: 'Manage your personal information and rewards' },
-  orders:   { title: 'My Orders',       subtitle: 'Track deliveries and view order history' },
-  wishlist: { title: 'My Wishlist',     subtitle: 'Items you have saved for later' },
+  profile:  { title: 'My Profile',   subtitle: 'Manage your personal information and delivery addresses' },
+  orders:   { title: 'My Orders',    subtitle: 'Track your deliveries and view past orders' },
+  wishlist: { title: 'My Wishlist',  subtitle: 'Items you have saved for later' },
 };
 
+/* ─── Floating Label Input ──────────────────────────────────── */
+function FloatingInput({
+  label, value, onChange, type = 'text', placeholder, icon: Icon,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; icon?: React.ElementType;
+}) {
+  const [focused, setFocused] = useState(false);
+  const active = focused || value.length > 0;
+  return (
+    <div className="relative" style={{ marginBottom: '20px' }}>
+      <div
+        className="relative flex items-center w-full rounded-xl transition-all duration-200"
+        style={{
+          border: `2px solid ${focused ? '#8b5cf6' : '#e5e7eb'}`,
+          background: focused ? '#faf5ff' : '#f9fafb',
+        }}
+      >
+        {Icon && (
+          <div className="absolute left-4 flex items-center justify-center" style={{ color: focused ? '#8b5cf6' : '#9ca3af' }}>
+            <Icon size={16} />
+          </div>
+        )}
+        <div className="w-full" style={{ paddingLeft: Icon ? '44px' : '16px', paddingRight: '16px', paddingTop: '22px', paddingBottom: '8px' }}>
+          <label
+            style={{
+              position: 'absolute',
+              left: Icon ? '44px' : '16px',
+              top: active ? '8px' : '50%',
+              transform: active ? 'none' : 'translateY(-50%)',
+              fontSize: active ? '10px' : '14px',
+              fontWeight: active ? 700 : 500,
+              color: focused ? '#8b5cf6' : '#9ca3af',
+              textTransform: active ? 'uppercase' : 'none',
+              letterSpacing: active ? '0.06em' : 'normal',
+              transition: 'all 0.15s ease',
+              pointerEvents: 'none',
+            }}
+          >
+            {label}
+          </label>
+          <input
+            type={type}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={active ? placeholder : ''}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: '15px',
+              fontWeight: 600,
+              color: '#1f2937',
+              lineHeight: '1.4',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Edit Profile Modal ─────────────────────────────────────── */
+function EditProfileModal({ onClose }: { onClose: () => void }) {
+  const { profile, updateProfile } = useAuthStore();
+  const [name, setName] = useState(profile?.name || '');
+  const [phone, setPhone] = useState(profile?.phone || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim()) { toast.error('Name cannot be empty'); return; }
+    setSaving(true);
+    try {
+      await updateProfile({ name: name.trim(), phone: phone.trim() || null });
+      toast.success('Profile updated successfully!');
+      onClose();
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 24 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        style={{
+          width: '100%', maxWidth: '440px',
+          background: 'white',
+          borderRadius: '24px',
+          padding: '32px',
+          boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
+              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+            }}>
+              <User size={22} color="white" />
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+              Edit Profile
+            </h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Update your personal information</p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: '#f3f4f6', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#6b7280', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = '#6b7280'; }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <FloatingInput label="Full Name" value={name} onChange={setName} placeholder="Enter your full name" icon={User} />
+        <FloatingInput label="Phone Number" value={phone} onChange={setPhone} type="tel" placeholder="+91 99999 99999" icon={Phone} />
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              border: '2px solid #e5e7eb', background: 'white',
+              fontSize: '14px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              border: 'none', fontSize: '14px', fontWeight: 700,
+              color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.8 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(139,92,246,0.4)',
+              transition: 'all 0.15s',
+            }}
+          >
+            {saving ? <div className="spinner" style={{ width: '16px', height: '16px' }} /> : <Save size={15} />}
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Address Form Modal ─────────────────────────────────────── */
+function AddressFormModal({ existing, onClose, onSave }: {
+  existing?: SavedAddress; onClose: () => void; onSave: (addr: SavedAddress) => void;
+}) {
+  const [label, setLabel] = useState(existing?.label || 'Home');
+  const [name, setName] = useState(existing?.name || '');
+  const [phone, setPhone] = useState(existing?.phone || '');
+  const [line1, setLine1] = useState(existing?.line1 || '');
+  const [line2, setLine2] = useState(existing?.line2 || '');
+  const [city, setCity] = useState(existing?.city || '');
+  const [state, setState] = useState(existing?.state || '');
+  const [pincode, setPincode] = useState(existing?.pincode || '');
+  const [isDefault, setIsDefault] = useState(existing?.is_default || false);
+
+  const handleSave = () => {
+    if (!name || !phone || !line1 || !city || !state || !pincode) {
+      toast.error('Please fill all required fields'); return;
+    }
+    onSave({ id: existing?.id || crypto.randomUUID(), label, name, phone, line1, line2, city, state, pincode, is_default: isDefault });
+  };
+
+  const LABELS = ['Home', 'Work', 'Other'];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 24 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        style={{
+          width: '100%', maxWidth: '520px', maxHeight: '92vh', overflowY: 'auto',
+          background: 'white', borderRadius: '24px', padding: '32px',
+          boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
+              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+            }}>
+              <MapPin size={22} color="white" />
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+              {existing ? 'Edit Address' : 'New Address'}
+            </h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
+              {existing ? 'Update your delivery address' : 'Add a new delivery address'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: '#f3f4f6', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = '#6b7280'; }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Label Pills */}
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Address Type</p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {LABELS.map(l => (
+              <button
+                key={l}
+                onClick={() => setLabel(l)}
+                style={{
+                  padding: '7px 18px', borderRadius: '999px',
+                  fontSize: '13px', fontWeight: 700, cursor: 'pointer', border: 'none',
+                  background: label === l ? 'linear-gradient(135deg,#8b5cf6,#7c3aed)' : '#f3f4f6',
+                  color: label === l ? 'white' : '#6b7280',
+                  boxShadow: label === l ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Fields */}
+        <FloatingInput label="Full Name" value={name} onChange={setName} placeholder="Recipient's full name" icon={User} />
+        <FloatingInput label="Phone Number" value={phone} onChange={setPhone} type="tel" placeholder="10-digit mobile number" icon={Phone} />
+        <FloatingInput label="Address Line 1" value={line1} onChange={setLine1} placeholder="House / Flat, Building, Street" icon={MapPin} />
+        <FloatingInput label="Address Line 2 (Optional)" value={line2} onChange={setLine2} placeholder="Area, Landmark" />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <FloatingInput label="City" value={city} onChange={setCity} placeholder="e.g. Chennai" />
+          <FloatingInput label="Pincode" value={pincode} onChange={setPincode} placeholder="6-digit code" />
+        </div>
+        <FloatingInput label="State" value={state} onChange={setState} placeholder="e.g. Tamil Nadu" />
+
+        {/* Default toggle */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '24px', padding: '14px 16px', borderRadius: '12px', background: '#f9fafb', border: '1.5px solid #e5e7eb' }}>
+          <div
+            onClick={() => setIsDefault(!isDefault)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '999px', flexShrink: 0,
+              background: isDefault ? '#8b5cf6' : '#d1d5db',
+              position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: '3px',
+              left: isDefault ? '23px' : '3px',
+              width: '18px', height: '18px', borderRadius: '50%',
+              background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+              transition: 'left 0.2s',
+            }} />
+          </div>
+          <div>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>Set as default address</p>
+            <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Use this address by default at checkout</p>
+          </div>
+        </label>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              border: '2px solid #e5e7eb', background: 'white',
+              fontSize: '14px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 2, padding: '13px', borderRadius: '12px',
+              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              border: 'none', fontSize: '14px', fontWeight: 700, color: 'white', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(139,92,246,0.4)',
+            }}
+          >
+            <Save size={15} /> Save Address
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Main AccountPage ───────────────────────────────────────── */
 export default function AccountPage() {
   const { user, profile, signOut, isLoading } = useAuthStore();
   const location = useLocation();
@@ -47,23 +388,16 @@ export default function AccountPage() {
       </div>
     );
   }
+  if (!user) return <Navigate to="/auth" replace />;
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  const handleSignOut = async () => {
-    await signOut();
-    toast('Signed out successfully');
-  };
+  const handleSignOut = async () => { await signOut(); toast('Signed out successfully'); };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'profile',  label: 'Profile',    icon: <User size={17} /> },
-    { id: 'orders',   label: 'My Orders',  icon: <Package size={17} /> },
-    { id: 'wishlist', label: 'Wishlist',   icon: <Heart size={17} /> },
+    { id: 'profile',  label: 'Profile',   icon: <User size={17} /> },
+    { id: 'orders',   label: 'My Orders', icon: <Package size={17} /> },
+    { id: 'wishlist', label: 'Wishlist',  icon: <Heart size={17} /> },
   ];
 
-  const displayName = profile?.name || 'Customer';
   const initial = profile?.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?';
   const meta = TAB_META[currentTab];
 
@@ -72,94 +406,68 @@ export default function AccountPage() {
       <div className="account-shell">
         <div className="account-layout">
 
-          {/* Sidebar */}
+          {/* ── Sidebar ───────────────────────── */}
           <aside className="account-sidebar">
+            {/* Avatar card */}
             <div className="account-profile-card mb-4">
-              <div
-                className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold"
-                style={{ background: 'var(--gradient-primary)', color: 'white' }}
-              >
-                {initial}
+              <div style={{
+                width: '72px', height: '72px', borderRadius: '50%', margin: '0 auto 14px',
+                background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: '28px', fontWeight: 800, color: 'white',
+                overflow: 'hidden', boxShadow: '0 8px 24px rgba(139,92,246,0.35)',
+              }}>
+                {profile?.avatar_url
+                  ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : initial}
               </div>
-              <h2 className="font-bold text-lg mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-                {displayName}
-              </h2>
-              <p className="text-sm truncate px-2" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
+              <p style={{ fontSize: '15px', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {profile?.name || 'Customer'}
+              </p>
+              <p style={{ fontSize: '12px', textAlign: 'center', color: 'var(--text-muted)', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.email}
+              </p>
               {profile?.role === 'admin' && (
-                <span
-                  className="inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                  style={{ background: 'var(--purple-100)', color: 'var(--purple-700)' }}
-                >
-                  Admin
-                </span>
+                <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 12px', borderRadius: '999px', background: 'var(--purple-100)', color: 'var(--purple-700)' }}>
+                    Admin
+                  </span>
+                </div>
               )}
-              <div
-                className="mt-4 pt-4 flex items-center justify-center gap-2 text-sm font-semibold"
-                style={{ borderTop: '1px solid var(--border-color)', color: 'var(--gold-600)' }}
-              >
-                <Star size={14} fill="currentColor" />
-                {profile?.loyalty_points || 0} loyalty points
-              </div>
             </div>
 
-            <nav
-              className="rounded-2xl p-2 space-y-1"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}
-            >
-              {tabs.map((tab) => {
-                const toPath = tab.id === 'profile' ? '/account' : `/account/${tab.id}`;
-                const isActive = currentTab === tab.id;
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {tabs.map(tab => {
+                const active = currentTab === tab.id;
                 return (
-                  <Link
-                    key={tab.id}
-                    to={toPath}
-                    className={`account-nav-link ${isActive ? 'active' : ''}`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                    {isActive && <ChevronRight size={14} className="ml-auto" />}
+                  <Link key={tab.id} to={`/account/${tab.id}`} className="account-nav-link no-underline" data-active={active}>
+                    <span className="shrink-0">{tab.icon}</span>
+                    <span style={{ flex: 1 }}>{tab.label}</span>
+                    {active && <ChevronRight size={14} />}
                   </Link>
                 );
               })}
+            </nav>
 
-              {profile?.role === 'admin' && (
-                <Link to="/admin-dashboard" className="account-nav-link">
-                  <Settings size={17} /> Admin Dashboard
-                </Link>
-              )}
-
-              <button
-                onClick={handleSignOut}
-                className="account-nav-link w-full"
-                style={{ color: 'var(--error)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#fee2e2')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+              <button onClick={handleSignOut} className="account-nav-link w-full text-left" style={{ color: '#ef4444' }}>
                 <LogOut size={17} /> Sign Out
               </button>
-            </nav>
+            </div>
           </aside>
 
-          {/* Main content — flex-1 fills remaining width */}
+          {/* ── Main Content ───────────────────── */}
           <div className="account-main">
-            <div className="account-panel min-h-[520px]">
-              <header className="mb-2">
-                <p
-                  className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2"
-                  style={{ color: 'var(--purple-600)' }}
-                >
-                  My Account
-                </p>
-                <h1 className="account-page-title">{meta.title}</h1>
-                <p className="account-page-subtitle">{meta.subtitle}</p>
-              </header>
+            <header style={{ marginBottom: '28px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--purple-500)', marginBottom: '6px' }}>My Account</p>
+              <h1 className="account-page-title">{meta.title}</h1>
+              <p className="account-page-subtitle">{meta.subtitle}</p>
+            </header>
 
-              <AnimatePresence mode="wait">
-                {currentTab === 'profile'  && <ProfileTab  key="profile" />}
-                {currentTab === 'orders'   && <OrdersTab   key="orders"  userId={user.id} />}
-                {currentTab === 'wishlist' && <WishlistTab key="wishlist" />}
-              </AnimatePresence>
-            </div>
+            <AnimatePresence mode="wait">
+              {currentTab === 'profile'  && <ProfileTab  key="profile" />}
+              {currentTab === 'orders'   && <OrdersTab   key="orders" userId={user.id} />}
+              {currentTab === 'wishlist' && <WishlistTab key="wishlist" />}
+            </AnimatePresence>
           </div>
 
         </div>
@@ -168,157 +476,291 @@ export default function AccountPage() {
   );
 }
 
-/* ── Profile Tab ───────────────────────────────────────────── */
+/* ─── Profile Tab ───────────────────────────────────────────── */
 function ProfileTab() {
-  const { user, profile } = useAuthStore();
+  const { user, profile, updateProfile } = useAuthStore();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | undefined>();
+
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
     : '—';
 
+  const addresses: SavedAddress[] = profile?.addresses || [];
+
+  const saveAddresses = async (list: SavedAddress[]) => {
+    try { await updateProfile({ addresses: list }); toast.success('Saved!'); }
+    catch { toast.error('Failed to save address.'); }
+  };
+
+  const handleAddressSave = async (addr: SavedAddress) => {
+    let list = [...addresses];
+    if (addr.is_default) list = list.map(a => ({ ...a, is_default: false }));
+    const idx = list.findIndex(a => a.id === addr.id);
+    if (idx >= 0) list[idx] = addr; else list.push(addr);
+    await saveAddresses(list);
+    setShowAddressForm(false); setEditingAddress(undefined);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this address?')) return;
+    await saveAddresses(addresses.filter(a => a.id !== id));
+  };
+
+  const handleSetDefault = async (id: string) => {
+    await saveAddresses(addresses.map(a => ({ ...a, is_default: a.id === id })));
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: 'white',
+    borderRadius: '20px',
+    padding: '28px',
+    border: '1px solid #f0edfb',
+    boxShadow: '0 2px 12px rgba(139,92,246,0.07)',
+    marginBottom: '20px',
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="grid grid-cols-1 xl:grid-cols-3 gap-6"
-    >
-      <div className="xl:col-span-2 space-y-6">
-        <div className="account-field-card">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-            {[
-              { label: 'Full Name',    value: profile?.name || '—' },
-              { label: 'Email',        value: user?.email || '—' },
-              { label: 'Phone',        value: profile?.phone || 'Not added' },
-              { label: 'Account Type', value: profile?.role === 'admin' ? 'Administrator' : 'Customer' },
-            ].map((field) => (
-              <div key={field.label}>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {field.label}
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+
+      {/* ── Personal Info Card ─── */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+              <User size={18} color="white" />
+            </div>
+            <div>
+              <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Personal Information</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Your basic profile details</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowEditModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
+              borderRadius: '10px', border: '1.5px solid #e5e7eb', background: 'white',
+              fontSize: '13px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.color = '#8b5cf6'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#6b7280'; }}
+          >
+            <Edit3 size={13} /> Edit
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+          {[
+            { label: 'Full Name',    value: profile?.name || '—',                                  icon: User,    iconBg: '#f5f3ff', iconColor: '#8b5cf6' },
+            { label: 'Email Address', value: user?.email || '—',                                   icon: Mail,    iconBg: '#eff6ff', iconColor: '#3b82f6' },
+            { label: 'Phone Number', value: profile?.phone || 'Not added yet',                     icon: Phone,   iconBg: '#f0fdf4', iconColor: '#10b981' },
+            { label: 'Account Type', value: profile?.role === 'admin' ? 'Administrator' : 'Customer', icon: Shield, iconBg: '#fffbeb', iconColor: '#f59e0b' },
+          ].map(f => (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', borderRadius: '14px', background: '#fafafa', border: '1px solid #f3f4f6' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: f.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <f.icon size={16} style={{ color: f.iconColor }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '5px' }}>{f.label}</p>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', wordBreak: 'break-word' }}>{f.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Stats Row ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '20px' }}>
+        {/* Loyalty */}
+        <div style={{
+          borderRadius: '20px', padding: '22px 20px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+          boxShadow: '0 8px 24px rgba(124,58,237,0.35)',
+        }}>
+          <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+          <Sparkles size={18} color="#fbbf24" style={{ marginBottom: '10px' }} />
+          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.65)', marginBottom: '6px' }}>Points</p>
+          <p style={{ fontSize: '32px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{profile?.loyalty_points || 0}</p>
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>1 pt per ₹10</p>
+        </div>
+        {/* Member Since */}
+        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'white', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.06)' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+            <Calendar size={18} style={{ color: '#8b5cf6' }} />
+          </div>
+          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '6px' }}>Member Since</p>
+          <p style={{ fontSize: '14px', fontWeight: 800, color: '#111827' }}>{memberSince}</p>
+        </div>
+        {/* Status */}
+        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'white', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.06)' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+            <Shield size={18} style={{ color: '#10b981' }} />
+          </div>
+          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '6px' }}>Status</p>
+          <p style={{ fontSize: '14px', fontWeight: 800, color: '#10b981' }}>✓ Verified</p>
+        </div>
+      </div>
+
+      {/* ── Saved Addresses ─── */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+              <MapPin size={18} color="white" />
+            </div>
+            <div>
+              <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Saved Addresses</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Manage your delivery locations</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setEditingAddress(undefined); setShowAddressForm(true); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
+              borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              fontSize: '13px', fontWeight: 700, color: 'white', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.3)', transition: 'all 0.15s',
+            }}
+          >
+            <Plus size={13} /> Add New
+          </button>
+        </div>
+
+        {addresses.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 20px', borderRadius: '16px', background: '#fafafa', border: '2px dashed #e5e7eb' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <MapPin size={26} style={{ color: '#8b5cf6' }} />
+            </div>
+            <p style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>No addresses saved</p>
+            <p style={{ fontSize: '13px', color: '#9ca3af' }}>Add an address to speed up checkout</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
+            {addresses.map(addr => (
+              <div
+                key={addr.id}
+                style={{
+                  borderRadius: '16px', padding: '18px',
+                  background: addr.is_default ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
+                  border: `2px solid ${addr.is_default ? '#c4b5fd' : '#e5e7eb'}`,
+                  position: 'relative', transition: 'all 0.2s',
+                }}
+              >
+                {addr.is_default && (
+                  <span style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
+                    padding: '3px 9px', borderRadius: '999px',
+                    background: '#8b5cf6', color: 'white',
+                  }}>Default</span>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                  <MapPin size={13} style={{ color: '#8b5cf6' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8b5cf6' }}>{addr.label}</span>
+                </div>
+                <p style={{ fontSize: '14px', fontWeight: 800, color: '#111827', marginBottom: '3px' }}>{addr.name}</p>
+                <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '3px' }}>{addr.phone}</p>
+                <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                  {[addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                 </p>
-                <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{field.value}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
+                  <button onClick={() => { setEditingAddress(addr); setShowAddressForm(true); }}
+                    style={{ fontSize: '12px', fontWeight: 700, color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Edit3 size={11} /> Edit
+                  </button>
+                  {!addr.is_default && (
+                    <button onClick={() => handleSetDefault(addr.id)}
+                      style={{ fontSize: '12px', fontWeight: 700, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Star size={11} /> Default
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(addr.id)}
+                    style={{ fontSize: '12px', fontWeight: 700, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', marginLeft: 'auto' }}>
+                    <Trash2 size={11} /> Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-8 pt-6 flex flex-wrap gap-3" style={{ borderTop: '1px solid var(--border-color)' }}>
-            <button
-              className="btn btn-outline flex items-center gap-2"
-              onClick={() => toast('Profile editing coming soon!')}
-            >
-              <Edit3 size={16} /> Edit Profile
-            </button>
-            <Link to="/products" className="btn btn-primary flex items-center gap-2 no-underline">
-              <ShoppingBag size={16} /> Continue Shopping
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="space-y-4">
-        <div className="account-loyalty-card">
-          <div
-            className="absolute pointer-events-none"
-            style={{ top: '-20%', right: '-15%', width: 160, height: 160, borderRadius: '50%', background: 'rgba(245,158,11,0.25)', filter: 'blur(40px)' }}
+      <AnimatePresence>
+        {showEditModal && <EditProfileModal onClose={() => setShowEditModal(false)} />}
+        {showAddressForm && (
+          <AddressFormModal
+            existing={editingAddress}
+            onClose={() => { setShowAddressForm(false); setEditingAddress(undefined); }}
+            onSave={handleAddressSave}
           />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles size={18} color="#fbbf24" />
-              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                Loyalty Rewards
-              </p>
-            </div>
-            <p className="text-5xl font-bold text-white mb-2">{profile?.loyalty_points || 0}</p>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              points available
-            </p>
-            <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Earn 1 point for every ₹10 spent
-            </p>
-          </div>
-        </div>
-
-        <div className="account-stat-row">
-          <div className="account-stat-chip">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--purple-100)' }}>
-              <Calendar size={18} style={{ color: 'var(--purple-600)' }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Member Since</p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{memberSince}</p>
-            </div>
-          </div>
-          <div className="account-stat-chip">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--gold-100)' }}>
-              <Shield size={18} style={{ color: 'var(--gold-600)' }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Account Status</p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--success)' }}>Verified &amp; Active</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-/* ── Orders Tab ────────────────────────────────────────────── */
+/* ─── Orders Tab ───────────────────────────────────────────── */
 function OrdersTab({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .from('orders').select('*, order_items(*)').eq('user_id', userId)
+        .order('created_at', { ascending: false }).limit(30);
       if (error) throw error;
       return data || [];
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase.from('orders').update({ status: 'cancelled' })
+        .eq('id', orderId).eq('user_id', userId).eq('status', 'pending');
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['my-orders', userId] }); toast.success('Order cancelled.'); },
+    onError: () => toast.error('Could not cancel. Please try again.'),
   });
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
       {!isLoading && orders.length > 0 && (
-        <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', marginTop: '-8px' }}>
           {orders.length} order{orders.length !== 1 ? 's' : ''} ·{' '}
-          <Link to="/products" className="font-semibold no-underline" style={{ color: 'var(--purple-600)' }}>
-            Continue Shopping <ArrowRight size={12} className="inline" />
+          <Link to="/products" style={{ color: 'var(--purple-600)', fontWeight: 700, textDecoration: 'none' }}>
+            Continue Shopping <ArrowRight size={11} style={{ display: 'inline' }} />
           </Link>
         </p>
       )}
 
       {isLoading && (
-        <div className="space-y-6">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="rounded-2xl skeleton w-full" style={{ height: 220 }} />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[...Array(2)].map((_, i) => <div key={i} className="rounded-2xl skeleton w-full" style={{ height: 200 }} />)}
         </div>
       )}
 
       {!isLoading && orders.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl" style={{ background: 'var(--bg-secondary)' }}>
-          <div
-            className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
-            style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow)' }}
-          >
-            <ShoppingBag size={40} color="white" strokeWidth={1.5} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'white', border: '1px solid #f0edfb' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 12px 28px rgba(139,92,246,0.35)' }}>
+            <ShoppingBag size={36} color="white" strokeWidth={1.5} />
           </div>
-          <h3 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-            No orders yet
-          </h3>
-          <p className="text-sm mb-8 max-w-md" style={{ color: 'var(--text-muted)' }}>
-            Your order history will appear here once you place your first order.
-          </p>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No orders yet</h3>
+          <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '28px', maxWidth: '320px' }}>Your order history will appear here once you place your first order.</p>
           <Link to="/products" className="btn btn-primary no-underline">Start Shopping</Link>
         </div>
       )}
 
       {!isLoading && orders.length > 0 && (
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {orders.map((order: any, idx: number) => (
-            <OrderCard key={order.id} order={order} index={idx} />
+            <OrderCard key={order.id} order={order} index={idx}
+              onCancel={() => { if (window.confirm('Cancel this order?')) cancelMutation.mutate(order.id); }} />
           ))}
         </div>
       )}
@@ -326,87 +768,78 @@ function OrdersTab({ userId }: { userId: string }) {
   );
 }
 
-function getOrderAddress(order: any) {
-  return order.shipping_address || order.address || null;
-}
-
-function OrderCard({ order, index }: { order: any; index: number }) {
+function OrderCard({ order, index, onCancel }: { order: any; index: number; onCancel: () => void }) {
   const meta = STATUS_META[order.status] || STATUS_META.pending;
   const stepIdx = STATUS_STEPS.indexOf(order.status);
   const isCancelled = order.status === 'cancelled';
-  const delivery = getOrderAddress(order);
+  const delivery = order.shipping_address || order.address || null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06 }}
-      className="account-order-card"
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }}
+      style={{ background: 'white', borderRadius: '20px', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.07)', overflow: 'hidden' }}
     >
-      <div className="account-order-card-header">
-        <div className="account-order-card-header-meta">
+      {/* Header */}
+      <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f3f4f6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div>
-            <p className="account-order-label">Order ID</p>
-            <p className="text-lg font-black font-mono leading-tight" style={{ color: 'var(--purple-700)' }}>
-              #{order.id.slice(0, 8).toUpperCase()}
-            </p>
+            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '4px' }}>Order ID</p>
+            <p style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'monospace', color: '#7c3aed' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
           </div>
-          <div className="hidden sm:block w-px self-stretch min-h-[48px]" style={{ background: 'var(--border-color)' }} />
+          <div style={{ width: '1px', height: '40px', background: '#f3f4f6' }} />
           <div>
-            <p className="account-order-label">Order Date</p>
-            <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '4px' }}>Order Date</p>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: '#374151' }}>
               {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
         </div>
-        <span
-          className="account-order-status-badge"
-          style={{ background: meta.bg, color: meta.color, border: `2px solid ${meta.color}` }}
-        >
-          {meta.icon}
-          {meta.label}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {order.status === 'pending' && (
+            <button onClick={onCancel}
+              style={{
+                padding: '7px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fecaca', cursor: 'pointer',
+              }}>
+              Cancel
+            </button>
+          )}
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '6px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
+            background: meta.bg, color: meta.color, border: `1.5px solid ${meta.color}`,
+          }}>
+            {meta.icon} {meta.label}
+          </span>
+        </div>
       </div>
 
-      <div className="account-order-card-body">
+      {/* Progress */}
       {!isCancelled && (
-        <div className="px-6 sm:px-8 py-8" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
-          <div className="flex items-center w-full">
+        <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6', background: '#fafafa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             {STATUS_STEPS.map((step, i) => {
               const s = STATUS_META[step];
               const done = i <= stepIdx;
               const active = i === stepIdx;
               const isLast = i === STATUS_STEPS.length - 1;
               return (
-                <div key={step} className="flex-1 flex items-center min-w-0">
-                  <div className="flex flex-col items-center gap-2 relative z-10 shrink-0" style={{ minWidth: 64 }}>
-                    <div
-                      className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-500"
-                      style={{
-                        background: done ? (active ? meta.color : 'var(--success)') : 'var(--gray-200)',
-                        color: done ? 'white' : 'var(--gray-400)',
-                        boxShadow: active ? `0 0 0 5px ${meta.color}22` : 'none',
-                        transform: active ? 'scale(1.1)' : 'scale(1)',
-                      }}
-                    >
-                      {done && !active ? (
-                        <CheckCircle2 size={18} strokeWidth={2.5} />
-                      ) : done && active ? (
-                        <span className="flex items-center justify-center [&_svg]:w-[18px] [&_svg]:h-[18px]">{s.icon}</span>
-                      ) : (
-                        <Circle size={18} strokeWidth={2} />
-                      )}
+                <div key={step} style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0, minWidth: '56px' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: done ? (active ? meta.color : '#10b981') : '#e5e7eb',
+                      color: done ? 'white' : '#9ca3af',
+                      boxShadow: active ? `0 0 0 5px ${meta.color}25` : 'none',
+                      transform: active ? 'scale(1.15)' : 'scale(1)',
+                      transition: 'all 0.3s',
+                    }}>
+                      {done && !active ? <CheckCircle2 size={17} strokeWidth={2.5} /> : done && active ? <span style={{ display: 'flex' }}>{s.icon}</span> : <Circle size={17} strokeWidth={2} />}
                     </div>
-                    <p className="text-[10px] font-bold text-center uppercase leading-tight" style={{ color: done ? 'var(--text-primary)' : 'var(--text-muted)', maxWidth: 72 }}>
-                      {s.label}
-                    </p>
+                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? '#374151' : '#9ca3af', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
                   </div>
-                  {!isLast && (
-                    <div
-                      className="flex-1 h-1 mx-1 sm:mx-2 rounded-full min-w-[8px]"
-                      style={{ background: i < stepIdx ? 'var(--success)' : 'var(--gray-200)' }}
-                    />
-                  )}
+                  {!isLast && <div style={{ flex: 1, height: '3px', margin: '0 4px', borderRadius: '999px', background: i < stepIdx ? '#10b981' : '#e5e7eb', marginBottom: '20px' }} />}
                 </div>
               );
             })}
@@ -414,98 +847,56 @@ function OrderCard({ order, index }: { order: any; index: number }) {
         </div>
       )}
 
-      {order.order_items && order.order_items.length > 0 && (
-        <div className="px-6 sm:px-8 py-5" style={{ borderBottom: '1px solid var(--border-color)' }}>
-          <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
+      {/* Items */}
+      {order.order_items?.length > 0 && (
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+          <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '14px' }}>
             Order Items ({order.order_items.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {order.order_items.map((item: any) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 p-3 rounded-xl"
-                style={{ background: 'var(--bg-secondary)' }}
-              >
-                <div
-                  className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-                  style={{ background: 'white', border: '1px solid var(--border-color)' }}
-                >
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <PackageIcon size={22} style={{ color: 'var(--purple-300)' }} />
-                  )}
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', borderRadius: '12px', background: '#fafafa' }}>
+                <div style={{ width: '52px', height: '60px', borderRadius: '10px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                  {item.image_url ? <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PackageIcon size={20} style={{ color: '#c4b5fd' }} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-                    {item.product_name || 'Product'}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                    {item.size && `Size ${item.size}`}
-                    {item.size && item.color && ' · '}
-                    {item.color}
-                    {' · '}Qty {item.quantity}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name || 'Product'}</p>
+                  <p style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    {item.size && `Size ${item.size}`}{item.size && item.color_name && ' · '}{item.color_name} · Qty {item.quantity}
                   </p>
                 </div>
-                <p className="text-base font-black shrink-0" style={{ color: 'var(--purple-700)' }}>
-                  ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                </p>
+                <p style={{ fontSize: '15px', fontWeight: 900, color: '#7c3aed', flexShrink: 0 }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className={`account-order-summary${delivery ? '' : ' account-order-summary--two'}`}>
+      {/* Footer */}
+      <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         {delivery && (
-          <div className="account-order-summary-item">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--purple-100)' }}>
-              <MapPin size={16} style={{ color: 'var(--purple-600)' }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Delivery</p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {typeof delivery === 'object'
-                  ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') || 'On file'
-                  : delivery}
-              </p>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MapPin size={14} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>
+              {typeof delivery === 'object' ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') : delivery}
+            </p>
           </div>
         )}
-        <div className="account-order-summary-item">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--gold-100)' }}>
-            <CreditCard size={16} style={{ color: 'var(--gold-600)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CreditCard size={14} style={{ color: '#9ca3af' }} />
+            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Payment</p>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online Payment'}
-            </p>
+          <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)' }}>
+            <p style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
           </div>
         </div>
-        <div className="account-order-summary-item account-order-summary-total">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Total Amount</p>
-            <p
-              className="text-2xl font-black"
-              style={{
-                background: 'var(--gradient-primary)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              ₹{order.total_amount?.toLocaleString('en-IN')}
-            </p>
-          </div>
-        </div>
-      </div>
       </div>
     </motion.div>
   );
 }
 
-/* ── Wishlist Tab ──────────────────────────────────────────── */
+/* ─── Wishlist Tab ─────────────────────────────────────────── */
 function WishlistTab() {
   const { items } = useWishlistStore();
 
@@ -513,10 +904,7 @@ function WishlistTab() {
     queryKey: ['wishlist-products', items],
     queryFn: async () => {
       if (items.length === 0) return [];
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, product_colors(*), product_sizes(*)')
-        .in('id', items);
+      const { data, error } = await supabase.from('products').select('*, product_colors(*), product_sizes(*)').in('id', items);
       if (error) throw error;
       return (data || []) as Product[];
     },
@@ -526,20 +914,13 @@ function WishlistTab() {
 
   if (items.length === 0) {
     return (
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-        <div
-          className="flex flex-col items-center justify-center py-20 text-center rounded-2xl"
-          style={{ background: 'var(--bg-secondary)' }}
-        >
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5" style={{ background: '#fee2e2' }}>
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'white', border: '1px solid #f0edfb' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
             <Heart size={36} style={{ color: '#ef4444' }} />
           </div>
-          <h3 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-            No saved items
-          </h3>
-          <p className="text-sm mb-8 max-w-sm" style={{ color: 'var(--text-muted)' }}>
-            Heart a product while browsing to save it here for later.
-          </p>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No saved items</h3>
+          <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '28px', maxWidth: '300px' }}>Heart a product while browsing to save it here.</p>
           <Link to="/products" className="btn btn-primary no-underline">Browse Products</Link>
         </div>
       </motion.div>
@@ -547,46 +928,26 @@ function WishlistTab() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-      <p className="text-sm mb-6 -mt-4" style={{ color: 'var(--text-muted)' }}>
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', marginTop: '-8px' }}>
         {items.length} saved {items.length === 1 ? 'item' : 'items'}
       </p>
-
       {isLoading ? (
-        <div className="product-grid">
-          {[...Array(Math.min(items.length, 4))].map((_, i) => (
-            <div key={i} className="rounded-2xl skeleton" style={{ aspectRatio: '3/4' }} />
-          ))}
-        </div>
+        <div className="product-grid">{[...Array(Math.min(items.length, 4))].map((_, i) => <div key={i} className="rounded-2xl skeleton" style={{ aspectRatio: '3/4' }} />)}</div>
       ) : products.length > 0 ? (
-        <div className="product-grid">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <div className="product-grid">{products.map(p => <ProductCard key={p.id} product={p} />)}</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {items.map((id) => (
-            <Link
-              key={id}
-              to={`/product/${id}`}
-              className="no-underline rounded-xl p-4 flex flex-col gap-3 transition-all"
-              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
-            >
-              <div className="w-full aspect-square rounded-lg flex items-center justify-center" style={{ background: 'white' }}>
-                <Heart size={28} style={{ color: '#ef4444' }} />
-              </div>
-              <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>Saved Product</p>
-              <span className="text-xs font-medium" style={{ color: 'var(--purple-600)' }}>View →</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {items.map(id => (
+            <Link key={id} to={`/product/${id}`} className="no-underline rounded-2xl p-4 flex flex-col gap-3 transition-all" style={{ background: 'white', border: '1px solid #f0edfb' }}>
+              <div className="w-full aspect-square rounded-xl flex items-center justify-center" style={{ background: '#f5f3ff' }}><Heart size={28} style={{ color: '#ef4444' }} /></div>
+              <span className="text-xs font-semibold" style={{ color: '#8b5cf6' }}>View →</span>
             </Link>
           ))}
         </div>
       )}
-
-      <div className="mt-10 text-center">
-        <Link to="/products" className="btn btn-outline inline-flex items-center gap-2 no-underline">
-          <ShoppingBag size={16} /> Continue Shopping
-        </Link>
+      <div style={{ marginTop: '32px', textAlign: 'center' }}>
+        <Link to="/products" className="btn btn-outline inline-flex items-center gap-2 no-underline"><ShoppingBag size={16} /> Continue Shopping</Link>
       </div>
     </motion.div>
   );
