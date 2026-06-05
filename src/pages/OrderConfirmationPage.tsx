@@ -4,7 +4,7 @@ import { CheckCircle2, Package, Truck, Home, ShoppingBag, ArrowRight } from 'luc
 
 // Confetti burst animation using CSS
 function ConfettiBurst() {
-  const colors = ['#7c3aed', '#f59e0b', '#ec4899', '#10b981', '#3b82f6', '#ef4444'];
+  const colors = ['#C9973A', '#E8B84B', '#D4A935', '#10b981', '#A07828', '#ef4444'];
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>

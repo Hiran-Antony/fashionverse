@@ -17,7 +17,7 @@ export default function HomePage() {
           subtitle="Just Dropped"
           filter="featured"
           viewAllLink="/products?sort=newest"
-          accentColor="purple"
+          accentColor="gold"
         />
       </div>
       <div data-reveal="fade-up" data-reveal-delay="100">

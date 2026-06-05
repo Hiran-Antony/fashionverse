@@ -69,12 +69,12 @@ const RHF_FloatingInput = forwardRef<
       <div
         className="relative flex items-center w-full rounded-xl transition-all duration-200"
         style={{
-          border: `2px solid ${error ? '#ef4444' : focused ? '#8b5cf6' : '#e5e7eb'}`,
-          background: error ? '#fef2f2' : focused ? '#faf5ff' : '#f9fafb',
+          border: `2px solid ${error ? '#ef4444' : focused ? '#C9973A' : '#e5e7eb'}`,
+          background: error ? 'rgba(239,68,68,0.12)' : focused ? 'rgba(201,151,58,0.12)' : 'var(--bg-secondary)',
         }}
       >
         {Icon && (
-          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#8b5cf6' : '#9ca3af' }}>
+          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#C9973A' : '#9ca3af' }}>
             <Icon size={16} />
           </div>
         )}
@@ -87,7 +87,7 @@ const RHF_FloatingInput = forwardRef<
               transform: active ? 'none' : 'translateY(-50%)',
               fontSize: active ? '10px' : '14px',
               fontWeight: active ? 700 : 500,
-              color: error ? '#ef4444' : focused ? '#8b5cf6' : '#9ca3af',
+              color: error ? '#ef4444' : focused ? '#C9973A' : '#9ca3af',
               textTransform: active ? 'uppercase' : 'none',
               letterSpacing: active ? '0.06em' : 'normal',
               transition: 'all 0.15s ease',
@@ -362,10 +362,10 @@ export default function CheckoutPage() {
             {/* Delivery Address */}
             {/* Delivery Address */}
             <div
-              style={{ background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 8px 32px rgba(139,92,246,0.06)' }}
+              style={{ background: 'var(--bg-card)', borderRadius: '24px', padding: '32px', boxShadow: '0 8px 32px rgba(201,151,58,0.06)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(139,92,246,0.35)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg,#C9973A,#E8B84B)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(201,151,58,0.35)' }}>
                   <MapPin size={22} color="white" />
                 </div>
                 <div>
@@ -390,14 +390,14 @@ export default function CheckoutPage() {
                           onClick={() => { setSelectedSaved(addr); setShowNewForm(false); }}
                           style={{
                             textAlign: 'left', padding: '18px', borderRadius: '16px', transition: 'all 0.2s', cursor: 'pointer',
-                            background: isSelected ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
-                            border: `2px solid ${isSelected ? '#8b5cf6' : '#e5e7eb'}`,
-                            boxShadow: isSelected ? '0 4px 12px rgba(139,92,246,0.15)' : 'none',
+                            background: isSelected ? 'linear-gradient(135deg,rgba(201,151,58,0.12),rgba(26,15,8,0.95))' : 'var(--bg-secondary)',
+                            border: `2px solid ${isSelected ? '#C9973A' : '#e5e7eb'}`,
+                            boxShadow: isSelected ? '0 4px 12px rgba(201,151,58,0.15)' : 'none',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8b5cf6' }}>{addr.label}</span>
-                            {isSelected && <CheckCircle2 size={16} style={{ color: '#8b5cf6' }} />}
+                            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#C9973A' }}>{addr.label}</span>
+                            {isSelected && <CheckCircle2 size={16} style={{ color: '#C9973A' }} />}
                           </div>
                           <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827', marginBottom: '2px' }}>{addr.name}</p>
                           <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
@@ -412,12 +412,12 @@ export default function CheckoutPage() {
                       style={{
                         textAlign: 'left', padding: '18px', borderRadius: '16px', transition: 'all 0.2s', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: '12px',
-                        background: showNewForm && !selectedSaved ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
-                        border: `2px dashed ${showNewForm && !selectedSaved ? '#8b5cf6' : '#d1d5db'}`,
+                        background: showNewForm && !selectedSaved ? 'linear-gradient(135deg,rgba(201,151,58,0.12),rgba(26,15,8,0.95))' : 'var(--bg-secondary)',
+                        border: `2px dashed ${showNewForm && !selectedSaved ? '#C9973A' : '#d1d5db'}`,
                       }}
                     >
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: showNewForm && !selectedSaved ? 'white' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Plus size={16} style={{ color: '#8b5cf6' }} />
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: showNewForm && !selectedSaved ? 'white' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Plus size={16} style={{ color: '#C9973A' }} />
                       </div>
                       <div>
                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#111827', display: 'block' }}>New Address</span>
@@ -520,12 +520,12 @@ export default function CheckoutPage() {
 
                   {/* Save address toggle */}
                   {user && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginTop: '16px', padding: '14px 16px', borderRadius: '12px', background: '#f9fafb', border: '1.5px solid #e5e7eb' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginTop: '16px', padding: '14px 16px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1.5px solid #e5e7eb' }}>
                       <div
                         onClick={() => setSaveToProfile(!saveToProfile)}
                         style={{
                           width: '44px', height: '24px', borderRadius: '999px', flexShrink: 0,
-                          background: saveToProfile ? '#8b5cf6' : '#d1d5db',
+                          background: saveToProfile ? '#C9973A' : '#d1d5db',
                           position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
                         }}
                       >
@@ -533,7 +533,7 @@ export default function CheckoutPage() {
                           position: 'absolute', top: '3px',
                           left: saveToProfile ? '23px' : '3px',
                           width: '18px', height: '18px', borderRadius: '50%',
-                          background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                          background: 'var(--bg-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                           transition: 'left 0.2s',
                         }} />
                       </div>
@@ -559,10 +559,10 @@ export default function CheckoutPage() {
               transition={{ delay: 0.1 }}
               className="sticky top-24"
               style={{
-                background: 'white',
+                background: 'var(--bg-card)',
                 borderRadius: '24px',
                 padding: '32px',
-                boxShadow: '0 8px 32px rgba(139,92,246,0.06)',
+                boxShadow: '0 8px 32px rgba(201,151,58,0.06)',
               }}
             >
               <h2
@@ -578,7 +578,7 @@ export default function CheckoutPage() {
                     key={`${item.product_id}-${item.color_name}-${item.size}`}
                     style={{ display: 'flex', gap: '16px', alignItems: 'center' }}
                   >
-                    <div style={{ width: '56px', height: '64px', borderRadius: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: '56px', height: '64px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1px solid #e5e7eb', overflow: 'hidden', flexShrink: 0 }}>
                       <img
                         src={getOptimizedUrl(item.image_url, 80)}
                         alt={item.product_name}
@@ -627,7 +627,7 @@ export default function CheckoutPage() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
                 <span style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Total</span>
-                <span style={{ fontSize: '22px', fontWeight: 900, color: '#7c3aed' }}>₹{total.toLocaleString()}</span>
+                <span style={{ fontSize: '22px', fontWeight: 900, color: '#E8B84B' }}>₹{total.toLocaleString()}</span>
               </div>
 
               {/* Place Order Button */}
@@ -640,10 +640,10 @@ export default function CheckoutPage() {
                 disabled={isPlacing || (!selectedSaved && !showNewForm)}
                 style={{
                   width: '100%', padding: '16px 24px', borderRadius: '16px',
-                  background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+                  background: 'linear-gradient(135deg,#C9973A,#E8B84B)',
                   border: 'none', color: 'white', fontSize: '15px', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
+                  boxShadow: '0 8px 24px rgba(201,151,58,0.3)',
                   cursor: isPlacing || (!selectedSaved && !showNewForm) ? 'not-allowed' : 'pointer',
                   opacity: isPlacing || (!selectedSaved && !showNewForm) ? 0.6 : 1,
                   transition: 'all 0.2s',
@@ -679,8 +679,8 @@ export default function CheckoutPage() {
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               style={{
                 width: '100%', maxWidth: '440px',
-                background: 'white', borderRadius: '24px', padding: '32px',
-                boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+                background: 'var(--bg-card)', borderRadius: '24px', padding: '32px',
+                boxShadow: '0 32px 64px rgba(201,151,58,0.2), 0 8px 24px rgba(0,0,0,0.12)',
               }}
             >
               {/* Header */}
@@ -689,8 +689,8 @@ export default function CheckoutPage() {
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     width: '48px', height: '48px', borderRadius: '14px', marginBottom: '16px',
-                    background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-                    boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+                    background: 'linear-gradient(135deg,#C9973A,#E8B84B)',
+                    boxShadow: '0 8px 20px rgba(201,151,58,0.35)',
                   }}>
                     <CreditCard size={22} color="white" />
                   </div>
@@ -704,7 +704,7 @@ export default function CheckoutPage() {
                   disabled={isPlacing}
                   style={{
                     width: '36px', height: '36px', borderRadius: '10px',
-                    background: '#f3f4f6', border: 'none', cursor: isPlacing ? 'not-allowed' : 'pointer',
+                    background: 'var(--bg-tertiary)', border: 'none', cursor: isPlacing ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#6b7280', transition: 'all 0.15s',
                   }}
@@ -719,14 +719,14 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '16px',
                     padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
-                    background: paymentMethod === 'cod' ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
-                    border: `2px solid ${paymentMethod === 'cod' ? '#8b5cf6' : '#e5e7eb'}`,
-                    boxShadow: paymentMethod === 'cod' ? '0 4px 12px rgba(139,92,246,0.15)' : 'none',
+                    background: paymentMethod === 'cod' ? 'linear-gradient(135deg,rgba(201,151,58,0.12),rgba(26,15,8,0.95))' : 'var(--bg-secondary)',
+                    border: `2px solid ${paymentMethod === 'cod' ? '#C9973A' : '#e5e7eb'}`,
+                    boxShadow: paymentMethod === 'cod' ? '0 4px 12px rgba(201,151,58,0.15)' : 'none',
                   }}
                 >
                   <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'cod' ? '#8b5cf6' : '#d1d5db'}`,
-                    background: 'white', flexShrink: 0, transition: 'all 0.2s',
+                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'cod' ? '#C9973A' : '#d1d5db'}`,
+                    background: 'var(--bg-card)', flexShrink: 0, transition: 'all 0.2s',
                   }} />
                   <input
                     type="radio"
@@ -737,7 +737,7 @@ export default function CheckoutPage() {
                     style={{ display: 'none' }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
                       <Package size={20} />
                     </div>
                     <div>
@@ -752,13 +752,13 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '16px',
                     padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s', opacity: 0.8,
-                    background: paymentMethod === 'online' ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
-                    border: `2px solid ${paymentMethod === 'online' ? '#8b5cf6' : '#e5e7eb'}`,
+                    background: paymentMethod === 'online' ? 'linear-gradient(135deg,rgba(201,151,58,0.12),rgba(26,15,8,0.95))' : 'var(--bg-secondary)',
+                    border: `2px solid ${paymentMethod === 'online' ? '#C9973A' : '#e5e7eb'}`,
                   }}
                 >
                   <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'online' ? '#8b5cf6' : '#d1d5db'}`,
-                    background: 'white', flexShrink: 0, transition: 'all 0.2s',
+                    width: '22px', height: '22px', borderRadius: '50%', border: `6px solid ${paymentMethod === 'online' ? '#C9973A' : '#d1d5db'}`,
+                    background: 'var(--bg-card)', flexShrink: 0, transition: 'all 0.2s',
                   }} />
                   <input
                     type="radio"
@@ -769,7 +769,7 @@ export default function CheckoutPage() {
                     style={{ display: 'none' }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6', flexShrink: 0 }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C9973A', flexShrink: 0 }}>
                       <CreditCard size={20} />
                     </div>
                     <div>
@@ -786,7 +786,7 @@ export default function CheckoutPage() {
               </div>
 
               {paymentMethod === 'online' && (
-                <div style={{ padding: '16px', borderRadius: '12px', background: '#fffbeb', border: '1px solid #fde68a', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(201,151,58,0.12)', border: '1px solid rgba(201,151,58,0.3)', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '16px' }}>⚡</span>
                   <p style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, lineHeight: '1.5' }}>
                     Online payments are currently being integrated. Please proceed with Cash on Delivery for now.
@@ -800,10 +800,10 @@ export default function CheckoutPage() {
                 disabled={isPlacing || paymentMethod === 'online'}
                 style={{
                   width: '100%', padding: '16px', borderRadius: '16px',
-                  background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+                  background: 'linear-gradient(135deg,#C9973A,#E8B84B)',
                   border: 'none', color: 'white', fontSize: '16px', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  boxShadow: '0 8px 24px rgba(139,92,246,0.35)',
+                  boxShadow: '0 8px 24px rgba(201,151,58,0.35)',
                   cursor: isPlacing || paymentMethod === 'online' ? 'not-allowed' : 'pointer',
                   opacity: isPlacing || paymentMethod === 'online' ? 0.7 : 1,
                   transition: 'all 0.2s',

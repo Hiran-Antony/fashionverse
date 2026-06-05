@@ -25,14 +25,26 @@ export default function BrandLogo({
 
   return (
     <Link to="/" className={`brand-logo-link no-underline shrink-0 ${className}`}>
-      <img
-        src={logoSrc}
-        alt="FashionVerse"
+      <div 
         className="brand-logo-img"
-        style={{ height: dim.height, width: 'auto' }}
-        draggable={false}
-        onError={() => setLogoSrc('/brand-logo.svg')}
-      />
+        style={{
+          width: dim.height, 
+          height: dim.height, 
+          borderRadius: '50%', 
+          overflow: 'hidden', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          flexShrink: 0, 
+          background: '#fff'
+      }}>
+        <img
+          src="/logo.png"
+          alt="FashionVerse"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          draggable={false}
+        />
+      </div>
       {showWordmark && (
         <div className="brand-logo-wordmark hidden sm:block">
           <span

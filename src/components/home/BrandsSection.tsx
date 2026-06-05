@@ -3,12 +3,12 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const BRANDS = [
-  { name: 'FashionVerse', tagline: 'Premium Essentials', color: '#7c3aed' },
+  { name: 'FashionVerse', tagline: 'Premium Essentials', color: '#C9973A' },
   { name: 'Bloom', tagline: 'Floral & Feminine', color: '#ec4899' },
   { name: 'StepUp', tagline: 'Footwear First', color: '#f59e0b' },
   { name: 'Heritage', tagline: 'Ethnic Luxury', color: '#dc2626' },
   { name: 'LuxCarry', tagline: 'Bags & Accessories', color: '#059669' },
-  { name: 'TinyTrend', tagline: 'Kids Fashion', color: '#3b82f6' },
+  { name: 'TinyTrend', tagline: 'Kids Fashion', color: '#C9973A' },
 ];
 
 export default function BrandsSection() {
@@ -24,7 +24,7 @@ export default function BrandsSection() {
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-3"
-            style={{ color: 'var(--gold-600)' }}
+            style={{ color: '#E8B84B' }}
           >
             Curated Selection
           </p>

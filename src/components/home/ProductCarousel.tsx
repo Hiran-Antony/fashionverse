@@ -12,7 +12,7 @@ interface ProductCarouselProps {
   subtitle: string;
   filter: 'featured' | 'trending' | 'new';
   viewAllLink?: string;
-  accentColor?: 'purple' | 'gold';
+  accentColor?: 'purple' | 'gold' | 'sapphire';
 }
 
 export default function ProductCarousel({
@@ -54,7 +54,8 @@ export default function ProductCarousel({
     scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
   };
 
-  const accentVar = accentColor === 'gold' ? 'var(--gold-500)' : 'var(--purple-600)';
+  const accentVar =
+    accentColor === 'gold' || accentColor === 'sapphire' ? '#E8B84B' : 'var(--purple-600)';
 
   return (
     <section style={{ padding: '5rem 0', background: 'var(--bg-primary)' }}>

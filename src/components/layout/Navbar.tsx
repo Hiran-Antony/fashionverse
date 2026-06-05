@@ -293,38 +293,28 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden"
-                      style={{
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border-color)',
-                        boxShadow: 'var(--shadow-xl)',
-                      }}
+                      className="profile-dropdown"
                     >
-                      <div
-                        className="px-5 py-4"
-                        style={{ borderBottom: '1px solid var(--border-color)' }}
-                      >
-                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      <div className="profile-dropdown-header">
+                        <p className="profile-dropdown-name">
                           {profile?.name || user.user_metadata?.full_name || 'User'}
+                          {profile?.role === 'admin' && <span className="profile-admin-badge ml-2">Admin</span>}
                         </p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        <p className="profile-dropdown-email">
                           {user.email}
                         </p>
                       </div>
-                      <div className="p-2">
-                        <UserMenuItem to="/account" icon={<User size={15} />} label="My Account" />
-                        <UserMenuItem to="/account/orders" icon={<Package size={15} />} label="My Orders" />
-                        <UserMenuItem to="/account/addresses" icon={<MapPin size={15} />} label="Saved Addresses" />
-                        <UserMenuItem to="/wishlist" icon={<Heart size={15} />} label="Wishlist" />
-                        <div style={{ height: '1px', background: 'var(--border-light)', margin: '0.375rem 0.5rem' }} />
+                      <div className="profile-dropdown-menu">
+                        <UserMenuItem to="/account" icon={<User />} label="My Account" />
+                        <UserMenuItem to="/account/orders" icon={<Package />} label="My Orders" />
+                        <UserMenuItem to="/account/addresses" icon={<MapPin />} label="Saved Addresses" />
+                        <UserMenuItem to="/wishlist" icon={<Heart />} label="Wishlist" />
+                        <div className="profile-dropdown-divider" />
                         <button
                           onClick={handleSignOut}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                          style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer' }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          className="profile-dropdown-signout"
                         >
-                          <LogOut size={15} />
+                          <LogOut />
                           Sign Out
                         </button>
                       </div>
@@ -363,36 +353,34 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="fixed z-40 left-0 right-0 px-6 py-4 shadow-xl"
-            style={{
-              top: 'var(--nav-height)',
-              background: 'var(--bg-elevated)',
-              borderBottom: '1px solid var(--border-color)',
-            }}
+            className="fixed z-40 left-0 right-0 bottom-0 px-6 py-10 search-overlay"
+            style={{ top: 'var(--nav-height)' }}
           >
             <form onSubmit={handleSearch} className="container max-w-2xl mx-auto">
-              <div className="relative">
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2"
-                  size={18}
-                  style={{ color: 'var(--text-muted)' }}
-                />
+              <p className="search-recent-label">Search FASHIONVERSE</p>
+              <div className="search-input-wrapper">
+                <Search className="search-input-icon" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for shirts, dresses, shoes..."
-                  className="input pl-12 pr-12"
+                  className="search-input"
+                  autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setIsSearchOpen(false)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                  style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="search-close-btn flex items-center justify-center p-1"
                 >
-                  <X size={17} />
+                  <X size={20} />
                 </button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-5">
+                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Summer Collection'); handleSearch(new Event('submit') as any); }}>Summer Collection</button>
+                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Sneakers'); handleSearch(new Event('submit') as any); }}>Sneakers</button>
+                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Dresses'); handleSearch(new Event('submit') as any); }}>Dresses</button>
               </div>
             </form>
           </motion.div>
@@ -578,16 +566,7 @@ function UserMenuItem({
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium no-underline transition-colors"
-      style={{ color: 'var(--text-secondary)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'var(--bg-secondary)';
-        e.currentTarget.style.color = 'var(--text-primary)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.color = 'var(--text-secondary)';
-      }}
+      className="profile-dropdown-item"
     >
       {icon}
       {label}

@@ -39,7 +39,7 @@ export function FeaturesSection() {
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: 'var(--gold-600)', marginBottom: '1rem' }}
+            style={{ color: '#E8B84B', marginBottom: '1rem' }}
           >
             Powered by AI
           </p>
@@ -74,7 +74,8 @@ export function FeaturesSection() {
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
                 (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-xl)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--purple-200)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border-glow)';
+                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--glow-gold-soft)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
@@ -84,7 +85,7 @@ export function FeaturesSection() {
             >
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                style={{ background: 'var(--purple-100)', color: 'var(--purple-600)' }}
+                style={{ background: 'rgba(201,151,58,0.15)', color: '#E8B84B', boxShadow: 'var(--glow-gold-soft)' }}
               >
                 {feature.icon}
               </div>
@@ -129,7 +130,7 @@ export function CTABanner() {
           width: '600px',
           height: '600px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(96,165,250,0.2) 0%, transparent 65%)',
           filter: 'blur(80px)',
         }}
       />
@@ -141,7 +142,7 @@ export function CTABanner() {
           width: '400px',
           height: '400px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(201,151,58,0.35) 0%, transparent 65%)',
           filter: 'blur(80px)',
         }}
       />
@@ -181,7 +182,7 @@ export function CTABanner() {
               Find your perfect outfit{' '}
               <span
                 style={{
-                  background: 'linear-gradient(135deg, var(--gold-300), var(--gold-500))',
+                  background: 'linear-gradient(135deg, #D4A935, #E8B84B)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -234,7 +235,7 @@ export function CTABanner() {
                   >
                     <span
                       className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
-                      style={{ background: 'rgba(255,255,255,0.12)', fontSize: '0.6rem', color: 'var(--gold-300)' }}
+                      style={{ background: 'rgba(201,151,58,0.2)', fontSize: '0.6rem', color: '#D4A935' }}
                     >
                       ✓
                     </span>
@@ -250,9 +251,9 @@ export function CTABanner() {
                 to="/try-on"
                 className="no-underline flex items-center justify-center gap-2.5 font-semibold text-sm rounded-xl px-8 py-4 transition-all hover:-translate-y-0.5 flex-1 text-center"
                 style={{
-                  background: 'white',
-                  color: 'var(--purple-900)',
-                  boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+                  background: 'linear-gradient(135deg, #C9973A, #A07828)',
+                  color: '#F0F8FF',
+                  boxShadow: '0 8px 32px rgba(201,151,58,0.5)',
                 }}
               >
                 Start Virtual Try-On

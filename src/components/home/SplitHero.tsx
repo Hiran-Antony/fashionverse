@@ -143,7 +143,7 @@ export default function SplitHero() {
 
   return (
     <>
-      <section className="split-hero">
+      <section className="split-hero hero-section hero-container">
         {/* Left panel — text */}
         <div ref={leftRef} className="split-hero-left">
           <div className="split-hero-content">
@@ -200,7 +200,7 @@ export default function SplitHero() {
 
         {/* Right panel — video */}
         <div className="split-hero-right">
-          <div className="split-hero-video-wrap">
+          <div className="split-hero-video-wrap hero-video-panel">
             <video
               key={LOOKBOOK_VIDEOS[activeVideo].src}
               ref={videoRef}

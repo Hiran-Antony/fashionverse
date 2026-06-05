@@ -118,9 +118,9 @@ export default function LoginPromptModal() {
                   className="w-full flex items-center justify-center gap-3 font-semibold text-sm rounded-xl transition-all hover:-translate-y-0.5"
                   style={{
                     padding: '0.9rem 1.5rem',
-                    background: 'white',
-                    color: '#1a1a1a',
-                    border: '1px solid #e0e0e0',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                     cursor: 'pointer',
                     marginBottom: '1rem',

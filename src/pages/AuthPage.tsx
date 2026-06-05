@@ -42,7 +42,7 @@ export default function AuthPage() {
       {/* ── LEFT PANEL ─────────────────────────────── */}
       <div
         className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #5b21b6 0%, #7c3aed 50%, #4c1d95 100%)' }}
+        style={{ background: 'linear-gradient(145deg, #120a06 0%, #A07828 45%, #1a0f08 100%)' }}
       >
         {/* Decorative orb top-right */}
         <motion.div
@@ -51,7 +51,7 @@ export default function AuthPage() {
           style={{
             position: 'absolute', top: '-80px', right: '-80px',
             width: '420px', height: '420px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(167,139,250,0.45) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -62,7 +62,7 @@ export default function AuthPage() {
           style={{
             position: 'absolute', bottom: '-60px', left: '-60px',
             width: '340px', height: '340px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(201,151,58,0.25) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -101,7 +101,7 @@ export default function AuthPage() {
             }}>
               Your style journey<br />
               <span style={{
-                background: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)',
+                background: 'linear-gradient(135deg, #D4A935 0%, #E8B84B 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
@@ -197,9 +197,9 @@ export default function AuthPage() {
               width: '100%',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.875rem',
               padding: '0.9375rem 1.5rem',
-              background: 'white',
-              color: '#1f1f1f',
-              border: '1.5px solid #e2e2e2',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              border: '1.5px solid var(--border-color)',
               borderRadius: '14px',
               fontSize: '0.9375rem', fontWeight: 600,
               boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
@@ -232,9 +232,9 @@ export default function AuthPage() {
           }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.78125rem', lineHeight: 1.7, textAlign: 'center', margin: 0 }}>
               By continuing, you agree to our{' '}
-              <a href="#" style={{ color: 'var(--purple-600)', textDecoration: 'none', fontWeight: 600 }}>Terms of Service</a>
+              <a href="#" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>Terms of Service</a>
               {' '}and{' '}
-              <a href="#" style={{ color: 'var(--purple-600)', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</a>.
+              <a href="#" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</a>.
               <br />We never post without your permission.
             </p>
           </div>

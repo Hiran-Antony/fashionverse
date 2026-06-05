@@ -48,7 +48,7 @@ export default function PageLoader() {
             >
               <path
                 className="page-loader-stroke"
-                d="M20 15 L20 55 M20 15 L50 15 M20 35 L42 35 M55 15 L75 15 L75 55 L55 55 L55 15 M55 35 L70 55"
+                d="M20 15 L20 55 M20 15 L50 15 M20 35 L42 35 M60 15 L75 55 L90 15"
                 stroke="url(#loaderGrad)"
                 strokeWidth="3"
                 strokeLinecap="round"
@@ -57,7 +57,7 @@ export default function PageLoader() {
               <defs>
                 <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#E8B4A0" />
-                  <stop offset="100%" stopColor="#7C3AED" />
+                  <stop offset="100%" stopColor="#C9973A" />
                 </linearGradient>
               </defs>
             </svg>

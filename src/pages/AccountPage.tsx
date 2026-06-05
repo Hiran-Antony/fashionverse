@@ -21,11 +21,11 @@ type Tab = 'profile' | 'orders' | 'wishlist';
 const STATUS_STEPS = ['pending', 'packed', 'shipped', 'delivered'];
 
 const STATUS_META: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-  pending:   { icon: <Clock size={14} />,        label: 'Order Placed', color: '#F59E0B', bg: '#FFFBEB' },
-  packed:    { icon: <PackageIcon size={14} />,  label: 'Packed',       color: '#8B5CF6', bg: '#F5F3FF' },
-  shipped:   { icon: <Truck size={14} />,        label: 'Shipped',      color: '#3B82F6', bg: '#EFF6FF' },
-  delivered: { icon: <Home size={14} />,         label: 'Delivered',    color: '#10B981', bg: '#ECFDF5' },
-  cancelled: { icon: <XCircle size={14} />,      label: 'Cancelled',    color: '#EF4444', bg: '#FEF2F2' },
+  pending:   { icon: <Clock size={14} />,        label: 'Order Placed', color: '#E8B84B', bg: 'rgba(201,151,58,0.15)' },
+  packed:    { icon: <PackageIcon size={14} />,  label: 'Packed',       color: '#D4A935', bg: 'rgba(201,151,58,0.15)' },
+  shipped:   { icon: <Truck size={14} />,        label: 'Shipped',      color: '#C9973A', bg: 'rgba(201,151,58,0.15)' },
+  delivered: { icon: <Home size={14} />,         label: 'Delivered',    color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
+  cancelled: { icon: <XCircle size={14} />,      label: 'Cancelled',    color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
 };
 
 const TAB_META: Record<Tab, { title: string; subtitle: string }> = {
@@ -48,12 +48,12 @@ function FloatingInput({
       <div
         className="relative flex items-center w-full rounded-xl transition-all duration-200"
         style={{
-          border: `2px solid ${focused ? '#8b5cf6' : '#e5e7eb'}`,
-          background: focused ? '#faf5ff' : '#f9fafb',
+          border: `2px solid ${focused ? '#C9973A' : '#e5e7eb'}`,
+          background: focused ? 'rgba(201,151,58,0.12)' : 'var(--bg-secondary)',
         }}
       >
         {Icon && (
-          <div className="absolute left-4 flex items-center justify-center" style={{ color: focused ? '#8b5cf6' : '#9ca3af' }}>
+          <div className="absolute left-4 flex items-center justify-center" style={{ color: focused ? '#C9973A' : 'var(--text-muted)' }}>
             <Icon size={16} />
           </div>
         )}
@@ -66,7 +66,7 @@ function FloatingInput({
               transform: active ? 'none' : 'translateY(-50%)',
               fontSize: active ? '10px' : '14px',
               fontWeight: active ? 700 : 500,
-              color: focused ? '#8b5cf6' : '#9ca3af',
+              color: focused ? '#C9973A' : 'var(--text-muted)',
               textTransform: active ? 'uppercase' : 'none',
               letterSpacing: active ? '0.06em' : 'normal',
               transition: 'all 0.15s ease',
@@ -133,10 +133,10 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         style={{
           width: '100%', maxWidth: '440px',
-          background: 'white',
+          background: 'var(--bg-card)',
           borderRadius: '24px',
           padding: '32px',
-          boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+          boxShadow: '0 32px 64px rgba(201,151,58,0.2), 0 8px 24px rgba(0,0,0,0.12)',
         }}
       >
         {/* Header */}
@@ -145,26 +145,26 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
-              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-              boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
+              boxShadow: '0 8px 20px rgba(201,151,58,0.35)',
             }}>
               <User size={22} color="white" />
             </div>
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
               Edit Profile
             </h2>
-            <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Update your personal information</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Update your personal information</p>
           </div>
           <button
             onClick={onClose}
             style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: '#f3f4f6', border: 'none', cursor: 'pointer',
+              background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280', transition: 'all 0.15s',
+              color: 'var(--text-muted)', transition: 'all 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = '#6b7280'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
             <X size={16} />
           </button>
@@ -180,8 +180,8 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             style={{
               flex: 1, padding: '13px', borderRadius: '12px',
-              border: '2px solid #e5e7eb', background: 'white',
-              fontSize: '14px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+              border: '2px solid #e5e7eb', background: 'var(--bg-card)',
+              fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer',
               transition: 'all 0.15s',
             }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#d1d5db'}
@@ -194,12 +194,12 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
             disabled={saving}
             style={{
               flex: 1, padding: '13px', borderRadius: '12px',
-              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
               border: 'none', fontSize: '14px', fontWeight: 700,
               color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.8 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 14px rgba(139,92,246,0.4)',
+              boxShadow: '0 4px 14px rgba(201,151,58,0.4)',
               transition: 'all 0.15s',
             }}
           >
@@ -248,8 +248,8 @@ function AddressFormModal({ existing, onClose, onSave }: {
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         style={{
           width: '100%', maxWidth: '520px', maxHeight: '92vh', overflowY: 'auto',
-          background: 'white', borderRadius: '24px', padding: '32px',
-          boxShadow: '0 32px 64px rgba(139,92,246,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+          background: 'var(--bg-card)', borderRadius: '24px', padding: '32px',
+          boxShadow: '0 32px 64px rgba(201,151,58,0.2), 0 8px 24px rgba(0,0,0,0.12)',
         }}
       >
         {/* Header */}
@@ -258,15 +258,15 @@ function AddressFormModal({ existing, onClose, onSave }: {
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
-              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-              boxShadow: '0 8px 20px rgba(139,92,246,0.35)',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
+              boxShadow: '0 8px 20px rgba(201,151,58,0.35)',
             }}>
               <MapPin size={22} color="white" />
             </div>
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
               {existing ? 'Edit Address' : 'New Address'}
             </h2>
-            <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
               {existing ? 'Update your delivery address' : 'Add a new delivery address'}
             </p>
           </div>
@@ -274,11 +274,11 @@ function AddressFormModal({ existing, onClose, onSave }: {
             onClick={onClose}
             style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: '#f3f4f6', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280',
+              background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = '#6b7280'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
             <X size={16} />
           </button>
@@ -286,7 +286,7 @@ function AddressFormModal({ existing, onClose, onSave }: {
 
         {/* Label Pills */}
         <div style={{ marginBottom: '24px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Address Type</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Address Type</p>
           <div style={{ display: 'flex', gap: '8px' }}>
             {LABELS.map(l => (
               <button
@@ -295,9 +295,9 @@ function AddressFormModal({ existing, onClose, onSave }: {
                 style={{
                   padding: '7px 18px', borderRadius: '999px',
                   fontSize: '13px', fontWeight: 700, cursor: 'pointer', border: 'none',
-                  background: label === l ? 'linear-gradient(135deg,#8b5cf6,#7c3aed)' : '#f3f4f6',
-                  color: label === l ? 'white' : '#6b7280',
-                  boxShadow: label === l ? '0 4px 12px rgba(139,92,246,0.35)' : 'none',
+                  background: label === l ? 'linear-gradient(135deg,#C9973A,#C9973A)' : 'var(--bg-tertiary)',
+                  color: label === l ? 'white' : 'var(--text-muted)',
+                  boxShadow: label === l ? '0 4px 12px rgba(201,151,58,0.35)' : 'none',
                   transition: 'all 0.2s',
                 }}
               >
@@ -320,12 +320,12 @@ function AddressFormModal({ existing, onClose, onSave }: {
         <FloatingInput label="State" value={state} onChange={setState} placeholder="e.g. Tamil Nadu" />
 
         {/* Default toggle */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '24px', padding: '14px 16px', borderRadius: '12px', background: '#f9fafb', border: '1.5px solid #e5e7eb' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '24px', padding: '14px 16px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1.5px solid #e5e7eb' }}>
           <div
             onClick={() => setIsDefault(!isDefault)}
             style={{
               width: '44px', height: '24px', borderRadius: '999px', flexShrink: 0,
-              background: isDefault ? '#8b5cf6' : '#d1d5db',
+              background: isDefault ? '#C9973A' : '#d1d5db',
               position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
             }}
           >
@@ -333,13 +333,13 @@ function AddressFormModal({ existing, onClose, onSave }: {
               position: 'absolute', top: '3px',
               left: isDefault ? '23px' : '3px',
               width: '18px', height: '18px', borderRadius: '50%',
-              background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+              background: 'var(--bg-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
               transition: 'left 0.2s',
             }} />
           </div>
           <div>
-            <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>Set as default address</p>
-            <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Use this address by default at checkout</p>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Set as default address</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Use this address by default at checkout</p>
           </div>
         </label>
 
@@ -349,8 +349,8 @@ function AddressFormModal({ existing, onClose, onSave }: {
             onClick={onClose}
             style={{
               flex: 1, padding: '13px', borderRadius: '12px',
-              border: '2px solid #e5e7eb', background: 'white',
-              fontSize: '14px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+              border: '2px solid #e5e7eb', background: 'var(--bg-card)',
+              fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer',
             }}
           >
             Cancel
@@ -359,10 +359,10 @@ function AddressFormModal({ existing, onClose, onSave }: {
             onClick={handleSave}
             style={{
               flex: 2, padding: '13px', borderRadius: '12px',
-              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
               border: 'none', fontSize: '14px', fontWeight: 700, color: 'white', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 14px rgba(139,92,246,0.4)',
+              boxShadow: '0 4px 14px rgba(201,151,58,0.4)',
             }}
           >
             <Save size={15} /> Save Address
@@ -414,7 +414,7 @@ export default function AccountPage() {
                 width: '72px', height: '72px', borderRadius: '50%', margin: '0 auto 14px',
                 background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: '28px', fontWeight: 800, color: 'white',
-                overflow: 'hidden', boxShadow: '0 8px 24px rgba(139,92,246,0.35)',
+                overflow: 'hidden', boxShadow: '0 8px 24px rgba(201,151,58,0.35)',
               }}>
                 {profile?.avatar_url
                   ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -428,7 +428,7 @@ export default function AccountPage() {
               </p>
               {profile?.role === 'admin' && (
                 <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 12px', borderRadius: '999px', background: 'var(--purple-100)', color: 'var(--purple-700)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 12px', borderRadius: '999px', background: 'rgba(201,151,58,0.15)', color: '#D4A935' }}>
                     Admin
                   </span>
                 </div>
@@ -458,7 +458,7 @@ export default function AccountPage() {
           {/* ── Main Content ───────────────────── */}
           <div className="account-main">
             <header style={{ marginBottom: '28px' }}>
-              <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--purple-500)', marginBottom: '6px' }}>My Account</p>
+              <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#C9973A', marginBottom: '6px' }}>My Account</p>
               <h1 className="account-page-title">{meta.title}</h1>
               <p className="account-page-subtitle">{meta.subtitle}</p>
             </header>
@@ -513,11 +513,11 @@ function ProfileTab() {
   };
 
   const cardStyle: React.CSSProperties = {
-    background: 'white',
+    background: 'var(--bg-card)',
     borderRadius: '20px',
     padding: '28px',
-    border: '1px solid #f0edfb',
-    boxShadow: '0 2px 12px rgba(139,92,246,0.07)',
+    border: '1px solid rgba(201,151,58,0.15)',
+    boxShadow: '0 2px 12px rgba(201,151,58,0.07)',
     marginBottom: '20px',
   };
 
@@ -528,24 +528,24 @@ function ProfileTab() {
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg,#C9973A,#C9973A)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(201,151,58,0.3)' }}>
               <User size={18} color="white" />
             </div>
             <div>
-              <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Personal Information</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Your basic profile details</p>
+              <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' , fontFamily: 'var(--font-display)' }}>Personal Information</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Your basic profile details</p>
             </div>
           </div>
           <button
             onClick={() => setShowEditModal(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
-              borderRadius: '10px', border: '1.5px solid #e5e7eb', background: 'white',
-              fontSize: '13px', fontWeight: 700, color: '#6b7280', cursor: 'pointer',
+              borderRadius: '10px', border: '1.5px solid #e5e7eb', background: 'var(--bg-card)',
+              fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer',
               transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.color = '#8b5cf6'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#6b7280'; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#C9973A'; e.currentTarget.style.color = '#C9973A'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
             <Edit3 size={13} /> Edit
           </button>
@@ -553,18 +553,18 @@ function ProfileTab() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
           {[
-            { label: 'Full Name',    value: profile?.name || '—',                                  icon: User,    iconBg: '#f5f3ff', iconColor: '#8b5cf6' },
-            { label: 'Email Address', value: user?.email || '—',                                   icon: Mail,    iconBg: '#eff6ff', iconColor: '#3b82f6' },
+            { label: 'Full Name',    value: profile?.name || '—',                                  icon: User,    iconBg: '#f5f3ff', iconColor: '#C9973A' },
+            { label: 'Email Address', value: user?.email || '—',                                   icon: Mail,    iconBg: 'rgba(201,151,58,0.15)', iconColor: '#C9973A' },
             { label: 'Phone Number', value: profile?.phone || 'Not added yet',                     icon: Phone,   iconBg: '#f0fdf4', iconColor: '#10b981' },
-            { label: 'Account Type', value: profile?.role === 'admin' ? 'Administrator' : 'Customer', icon: Shield, iconBg: '#fffbeb', iconColor: '#f59e0b' },
+            { label: 'Account Type', value: profile?.role === 'admin' ? 'Administrator' : 'Customer', icon: Shield, iconBg: 'rgba(232,184,75,0.15)', iconColor: '#E8B84B' },
           ].map(f => (
-            <div key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', borderRadius: '14px', background: '#fafafa', border: '1px solid #f3f4f6' }}>
+            <div key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', borderRadius: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--bg-tertiary)' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: f.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <f.icon size={16} style={{ color: f.iconColor }} />
               </div>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '5px' }}>{f.label}</p>
-                <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', wordBreak: 'break-word' }}>{f.value}</p>
+                <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '5px' }}>{f.label}</p>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{f.value}</p>
               </div>
             </div>
           ))}
@@ -576,7 +576,7 @@ function ProfileTab() {
         {/* Loyalty */}
         <div style={{
           borderRadius: '20px', padding: '22px 20px', position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+          background: 'linear-gradient(135deg,#C9973A,#A07828)',
           boxShadow: '0 8px 24px rgba(124,58,237,0.35)',
         }}>
           <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
@@ -586,19 +586,19 @@ function ProfileTab() {
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>1 pt per ₹10</p>
         </div>
         {/* Member Since */}
-        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'white', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.06)' }}>
+        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'var(--bg-card)', border: '1px solid rgba(201,151,58,0.15)', boxShadow: '0 2px 12px rgba(201,151,58,0.06)' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-            <Calendar size={18} style={{ color: '#8b5cf6' }} />
+            <Calendar size={18} style={{ color: '#C9973A' }} />
           </div>
-          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '6px' }}>Member Since</p>
-          <p style={{ fontSize: '14px', fontWeight: 800, color: '#111827' }}>{memberSince}</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '6px' }}>Member Since</p>
+          <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{memberSince}</p>
         </div>
         {/* Status */}
-        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'white', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.06)' }}>
+        <div style={{ borderRadius: '20px', padding: '22px 20px', background: 'var(--bg-card)', border: '1px solid rgba(201,151,58,0.15)', boxShadow: '0 2px 12px rgba(201,151,58,0.06)' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
             <Shield size={18} style={{ color: '#10b981' }} />
           </div>
-          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '6px' }}>Status</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '6px' }}>Status</p>
           <p style={{ fontSize: '14px', fontWeight: 800, color: '#10b981' }}>✓ Verified</p>
         </div>
       </div>
@@ -611,8 +611,8 @@ function ProfileTab() {
               <MapPin size={18} color="white" />
             </div>
             <div>
-              <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Saved Addresses</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Manage your delivery locations</p>
+              <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>Saved Addresses</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Manage your delivery locations</p>
             </div>
           </div>
           <button
@@ -620,9 +620,9 @@ function ProfileTab() {
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
               borderRadius: '10px', border: 'none',
-              background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
               fontSize: '13px', fontWeight: 700, color: 'white', cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(139,92,246,0.3)', transition: 'all 0.15s',
+              boxShadow: '0 4px 12px rgba(201,151,58,0.3)', transition: 'all 0.15s',
             }}
           >
             <Plus size={13} /> Add New
@@ -630,12 +630,12 @@ function ProfileTab() {
         </div>
 
         {addresses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 20px', borderRadius: '16px', background: '#fafafa', border: '2px dashed #e5e7eb' }}>
+          <div style={{ textAlign: 'center', padding: '48px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '2px dashed #e5e7eb' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <MapPin size={26} style={{ color: '#8b5cf6' }} />
+              <MapPin size={26} style={{ color: '#C9973A' }} />
             </div>
             <p style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>No addresses saved</p>
-            <p style={{ fontSize: '13px', color: '#9ca3af' }}>Add an address to speed up checkout</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Add an address to speed up checkout</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
@@ -644,8 +644,8 @@ function ProfileTab() {
                 key={addr.id}
                 style={{
                   borderRadius: '16px', padding: '18px',
-                  background: addr.is_default ? 'linear-gradient(135deg,#faf5ff,#f3e8ff)' : '#fafafa',
-                  border: `2px solid ${addr.is_default ? '#c4b5fd' : '#e5e7eb'}`,
+                  background: addr.is_default ? 'linear-gradient(135deg,rgba(201,151,58,0.12),#f3e8ff)' : 'var(--bg-secondary)',
+                  border: `2px solid ${addr.is_default ? '#D4A935' : '#e5e7eb'}`,
                   position: 'relative', transition: 'all 0.2s',
                 }}
               >
@@ -654,26 +654,26 @@ function ProfileTab() {
                     position: 'absolute', top: '12px', right: '12px',
                     fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
                     padding: '3px 9px', borderRadius: '999px',
-                    background: '#8b5cf6', color: 'white',
+                    background: '#C9973A', color: 'white',
                   }}>Default</span>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                  <MapPin size={13} style={{ color: '#8b5cf6' }} />
-                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8b5cf6' }}>{addr.label}</span>
+                  <MapPin size={13} style={{ color: '#C9973A' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#C9973A' }}>{addr.label}</span>
                 </div>
-                <p style={{ fontSize: '14px', fontWeight: 800, color: '#111827', marginBottom: '3px' }}>{addr.name}</p>
-                <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '3px' }}>{addr.phone}</p>
-                <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '3px' }}>{addr.name}</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '3px' }}>{addr.phone}</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
                   {[addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
                   <button onClick={() => { setEditingAddress(addr); setShowAddressForm(true); }}
-                    style={{ fontSize: '12px', fontWeight: 700, color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    style={{ fontSize: '12px', fontWeight: 700, color: '#C9973A', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Edit3 size={11} /> Edit
                   </button>
                   {!addr.is_default && (
                     <button onClick={() => handleSetDefault(addr.id)}
-                      style={{ fontSize: '12px', fontWeight: 700, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Star size={11} /> Default
                     </button>
                   )}
@@ -733,7 +733,7 @@ function OrdersTab({ userId }: { userId: string }) {
       {!isLoading && orders.length > 0 && (
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', marginTop: '-8px' }}>
           {orders.length} order{orders.length !== 1 ? 's' : ''} ·{' '}
-          <Link to="/products" style={{ color: 'var(--purple-600)', fontWeight: 700, textDecoration: 'none' }}>
+          <Link to="/products" style={{ color: '#E8B84B', fontWeight: 700, textDecoration: 'none' }}>
             Continue Shopping <ArrowRight size={11} style={{ display: 'inline' }} />
           </Link>
         </p>
@@ -746,12 +746,12 @@ function OrdersTab({ userId }: { userId: string }) {
       )}
 
       {!isLoading && orders.length === 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'white', border: '1px solid #f0edfb' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 12px 28px rgba(139,92,246,0.35)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid rgba(201,151,58,0.15)' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg,#C9973A,#C9973A)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 12px 28px rgba(201,151,58,0.35)' }}>
             <ShoppingBag size={36} color="white" strokeWidth={1.5} />
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No orders yet</h3>
-          <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '28px', maxWidth: '320px' }}>Your order history will appear here once you place your first order.</p>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No orders yet</h3>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', maxWidth: '320px' }}>Your order history will appear here once you place your first order.</p>
           <Link to="/products" className="btn btn-primary no-underline">Start Shopping</Link>
         </div>
       )}
@@ -777,18 +777,18 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }}
-      style={{ background: 'white', borderRadius: '20px', border: '1px solid #f0edfb', boxShadow: '0 2px 12px rgba(139,92,246,0.07)', overflow: 'hidden' }}
+      style={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid rgba(201,151,58,0.15)', boxShadow: '0 2px 12px rgba(201,151,58,0.07)', overflow: 'hidden' }}
     >
       {/* Header */}
-      <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f3f4f6' }}>
+      <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--bg-tertiary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div>
-            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '4px' }}>Order ID</p>
-            <p style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'monospace', color: '#7c3aed' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
+            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '4px' }}>Order ID</p>
+            <p style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'monospace', color: '#E8B84B' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
           </div>
-          <div style={{ width: '1px', height: '40px', background: '#f3f4f6' }} />
+          <div style={{ width: '1px', height: '40px', background: 'var(--bg-tertiary)' }} />
           <div>
-            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '4px' }}>Order Date</p>
+            <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '4px' }}>Order Date</p>
             <p style={{ fontSize: '13px', fontWeight: 700, color: '#374151' }}>
               {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
@@ -799,7 +799,7 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
             <button onClick={onCancel}
               style={{
                 padding: '7px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
-                background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fecaca', cursor: 'pointer',
+                background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1.5px solid rgba(239,68,68,0.3)', cursor: 'pointer',
               }}>
               Cancel
             </button>
@@ -816,7 +816,7 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
 
       {/* Progress */}
       {!isCancelled && (
-        <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6', background: '#fafafa' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--bg-tertiary)', background: 'var(--bg-secondary)' }}>
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             {STATUS_STEPS.map((step, i) => {
               const s = STATUS_META[step];
@@ -830,14 +830,14 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
                       width: '40px', height: '40px', borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: done ? (active ? meta.color : '#10b981') : '#e5e7eb',
-                      color: done ? 'white' : '#9ca3af',
+                      color: done ? 'white' : 'var(--text-muted)',
                       boxShadow: active ? `0 0 0 5px ${meta.color}25` : 'none',
                       transform: active ? 'scale(1.15)' : 'scale(1)',
                       transition: 'all 0.3s',
                     }}>
                       {done && !active ? <CheckCircle2 size={17} strokeWidth={2.5} /> : done && active ? <span style={{ display: 'flex' }}>{s.icon}</span> : <Circle size={17} strokeWidth={2} />}
                     </div>
-                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? '#374151' : '#9ca3af', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
+                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? '#374151' : 'var(--text-muted)', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
                   </div>
                   {!isLast && <div style={{ flex: 1, height: '3px', margin: '0 4px', borderRadius: '999px', background: i < stepIdx ? '#10b981' : '#e5e7eb', marginBottom: '20px' }} />}
                 </div>
@@ -849,23 +849,23 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
 
       {/* Items */}
       {order.order_items?.length > 0 && (
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-          <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '14px' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--bg-tertiary)' }}>
+          <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '14px' }}>
             Order Items ({order.order_items.length})
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {order.order_items.map((item: any) => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', borderRadius: '12px', background: '#fafafa' }}>
-                <div style={{ width: '52px', height: '60px', borderRadius: '10px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                  {item.image_url ? <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PackageIcon size={20} style={{ color: '#c4b5fd' }} />}
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', borderRadius: '12px', background: 'var(--bg-secondary)' }}>
+                <div style={{ width: '52px', height: '60px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                  {item.image_url ? <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PackageIcon size={20} style={{ color: '#D4A935' }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name || 'Product'}</p>
-                  <p style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name || 'Product'}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     {item.size && `Size ${item.size}`}{item.size && item.color_name && ' · '}{item.color_name} · Qty {item.quantity}
                   </p>
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: 900, color: '#7c3aed', flexShrink: 0 }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                <p style={{ fontSize: '15px', fontWeight: 900, color: '#E8B84B', flexShrink: 0 }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
               </div>
             ))}
           </div>
@@ -876,18 +876,18 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
       <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         {delivery && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MapPin size={14} style={{ color: '#8b5cf6', flexShrink: 0 }} />
-            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>
+            <MapPin size={14} style={{ color: '#C9973A', flexShrink: 0 }} />
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
               {typeof delivery === 'object' ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') : delivery}
             </p>
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CreditCard size={14} style={{ color: '#9ca3af' }} />
-            <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
+            <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
           </div>
-          <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)' }}>
+          <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#C9973A,#C9973A)' }}>
             <p style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
           </div>
         </div>
@@ -915,12 +915,12 @@ function WishlistTab() {
   if (items.length === 0) {
     return (
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'white', border: '1px solid #f0edfb' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', borderRadius: '20px', background: 'var(--bg-card)', border: '1px solid rgba(201,151,58,0.15)' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
             <Heart size={36} style={{ color: '#ef4444' }} />
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No saved items</h3>
-          <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '28px', maxWidth: '300px' }}>Heart a product while browsing to save it here.</p>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No saved items</h3>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', maxWidth: '300px' }}>Heart a product while browsing to save it here.</p>
           <Link to="/products" className="btn btn-primary no-underline">Browse Products</Link>
         </div>
       </motion.div>
@@ -939,9 +939,9 @@ function WishlistTab() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {items.map(id => (
-            <Link key={id} to={`/product/${id}`} className="no-underline rounded-2xl p-4 flex flex-col gap-3 transition-all" style={{ background: 'white', border: '1px solid #f0edfb' }}>
+            <Link key={id} to={`/product/${id}`} className="no-underline rounded-2xl p-4 flex flex-col gap-3 transition-all" style={{ background: 'var(--bg-card)', border: '1px solid rgba(201,151,58,0.15)' }}>
               <div className="w-full aspect-square rounded-xl flex items-center justify-center" style={{ background: '#f5f3ff' }}><Heart size={28} style={{ color: '#ef4444' }} /></div>
-              <span className="text-xs font-semibold" style={{ color: '#8b5cf6' }}>View →</span>
+              <span className="text-xs font-semibold" style={{ color: '#C9973A' }}>View →</span>
             </Link>
           ))}
         </div>

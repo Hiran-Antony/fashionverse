@@ -62,8 +62,8 @@ export const SORT_OPTIONS = [
 
 export const ORDER_STATUSES = [
   { value: 'pending', label: 'Order Placed', color: '#F59E0B' },
-  { value: 'packed', label: 'Packed', color: '#8B5CF6' },
-  { value: 'shipped', label: 'Shipped', color: '#3B82F6' },
+  { value: 'packed', label: 'Packed', color: '#C9973A' },
+  { value: 'shipped', label: 'Shipped', color: '#E8B84B' },
   { value: 'delivered', label: 'Delivered', color: '#10B981' },
   { value: 'cancelled', label: 'Cancelled', color: '#EF4444' },
 ] as const;

@@ -11,6 +11,7 @@ import { supabase } from './lib/supabase';
 import Layout from './components/layout/Layout';
 import SmoothScroll from './components/SmoothScroll';
 import PageTransition from './components/PageTransition';
+import GoldParticles from './components/GoldParticles';
 import HomePage from './pages/HomePage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
@@ -90,6 +91,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <GoldParticles />
       <BrowserRouter>
         <SmoothScroll>
           <PageTransition>
