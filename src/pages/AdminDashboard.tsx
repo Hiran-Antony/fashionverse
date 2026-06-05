@@ -513,8 +513,8 @@ function ProductsTab() {
               onClick={()=>!saving&&setShowModal(false)}
               style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(6px)',zIndex:1000}}/>
             <motion.div key="md" initial={{opacity:0,scale:0.95,y:24}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.95}}
-              style={{position:'fixed',inset:0,zIndex:1001,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
-              <div style={{width:'100%',maxWidth:640,maxHeight:'90vh',overflowY:'auto',borderRadius:24,background:'var(--bg-card)',boxShadow:'0 24px 60px rgba(0,0,0,0.2)'}}>
+              style={{position:'fixed',inset:0,zIndex:1001,display:'flex',alignItems:'center',justifyContent:'center',padding:16,pointerEvents:'none'}}>
+              <div onClick={e=>e.stopPropagation()} style={{pointerEvents:'auto',width:'100%',maxWidth:640,maxHeight:'90vh',overflowY:'auto',borderRadius:24,background:'var(--bg-card)',boxShadow:'0 24px 60px rgba(0,0,0,0.2)'}}>
                 {/* Header */}
                 <div style={{position:'sticky',top:0,background:'var(--bg-card)',padding:'22px 28px 18px',borderBottom:'1px solid rgba(26,15,8,0.9)',display:'flex',alignItems:'center',justifyContent:'space-between',zIndex:10}}>
                   <div>
@@ -532,17 +532,17 @@ function ProductsTab() {
                     <div style={{fontSize:11,fontWeight:800,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:16}}>Basic Information</div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                       <div style={{gridColumn:'1/-1'}}>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Product Name *</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Product Name *</label>
                         <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Premium Slim Fit Oxford Shirt"
                           style={inp} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
                       <div>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Brand Name *</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Brand Name *</label>
                         <input value={form.brand} onChange={e=>setForm(f=>({...f,brand:e.target.value}))} placeholder="e.g. Louis Philippe"
                           style={inp} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
                       <div>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Category *</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Category *</label>
                         <div style={{position:'relative'}}>
                           <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value,sub_category:''}))} style={{...inp,appearance:'none',paddingRight:36}}>
                             {CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
@@ -551,7 +551,7 @@ function ProductsTab() {
                         </div>
                       </div>
                       <div>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Product Type</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Product Type</label>
                         <div style={{position:'relative'}}>
                           <select value={form.sub_category} onChange={e=>setForm(f=>({...f,sub_category:e.target.value}))} style={{...inp,appearance:'none',paddingRight:36}}>
                             <option value="">Select Type</option>
@@ -561,22 +561,22 @@ function ProductsTab() {
                         </div>
                       </div>
                       <div>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Sale Price (₹) *</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Sale Price (₹) *</label>
                         <input value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="1499" type="number"
                           style={inp} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
                       <div>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Original MRP (₹)</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Original MRP (₹)</label>
                         <input value={form.original_price} onChange={e=>setForm(f=>({...f,original_price:e.target.value}))} placeholder="2499" type="number"
                           style={inp} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
                       <div style={{gridColumn:'1/-1'}}>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Description</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Description</label>
                         <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Describe the product..." rows={3}
                           style={{...inp,resize:'none'}} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
                       <div style={{gridColumn:'1/-1'}}>
-                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#374151',marginBottom:6}}>Tags (comma separated)</label>
+                        <label style={{display:'block',fontSize:12,fontWeight:700,color:'#E8B84B',marginBottom:6}}>Tags (comma separated)</label>
                         <input value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))} placeholder="casual, summer, cotton"
                           style={inp} onFocus={e=>(e.target.style.borderColor='#C9973A')} onBlur={e=>(e.target.style.borderColor='rgba(201,151,58,0.15)')}/>
                       </div>
