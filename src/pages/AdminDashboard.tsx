@@ -5,8 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, LogOut,
   Plus, Edit2, Trash2, X, Upload, ChevronDown, Search,
-  Truck, Home as HomeIcon, XCircle, CheckCircle2,
-  TrendingUp, ArrowUpRight, Eye, Image as ImageIcon,
+  Home as HomeIcon, Eye, Image as ImageIcon,
   Star, IndianRupee, ShoppingCart, Bell, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';

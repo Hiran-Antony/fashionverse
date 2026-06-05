@@ -6,7 +6,6 @@ import {
   ShoppingBag,
   Heart,
   User,
-  Menu,
   X,
   Sun,
   Moon,
@@ -19,7 +18,8 @@ import { useThemeStore } from '../../store/themeStore';
 import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
 import { useAuthStore } from '../../store/authStore';
-import { APP_NAME, CATEGORIES } from '../../utils/constants';
+import { CATEGORIES } from '../../utils/constants';
+import BrandLogo from './BrandLogo';
 
 export default function Navbar() {
   const location = useLocation();
@@ -37,13 +37,26 @@ export default function Navbar() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const prevCartCount = useRef(0);
+  const [cartBounce, setCartBounce] = useState(false);
   const cartCount = getItemCount();
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (cartCount > prevCartCount.current) {
+      setCartBounce(true);
+      const t = setTimeout(() => setCartBounce(false), 650);
+      prevCartCount.current = cartCount;
+      return () => clearTimeout(t);
+    }
+    prevCartCount.current = cartCount;
+  }, [cartCount]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -90,51 +103,15 @@ export default function Navbar() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled || !isHomePage ? 'shadow-lg' : ''
-        }`}
-        style={{
-          height: 'var(--nav-height)',
-          background:
-            isScrolled || !isHomePage
-              ? 'var(--bg-primary)'
-              : 'transparent',
-          borderBottom:
-            isScrolled || !isHomePage
-              ? '1px solid var(--border-color)'
-              : '1px solid transparent',
-        }}
+        className={`cinematic-nav fixed top-0 left-0 right-0 z-50${isScrolled || !isHomePage ? ' cinematic-nav--scrolled' : ''}`}
       >
         <div className="container h-full flex items-center justify-between">
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 no-underline shrink-0">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base"
-              style={{ background: 'var(--gradient-primary)' }}
-            >
-              FV
-            </div>
-            <div>
-              <span
-                className="block text-lg font-bold tracking-tight"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  color: isScrolled || !isHomePage ? 'var(--text-primary)' : 'white',
-                }}
-              >
-                {APP_NAME}
-              </span>
-              <span
-                className="block text-[0.55rem] tracking-[0.18em] uppercase font-semibold"
-                style={{
-                  color: isScrolled || !isHomePage ? 'var(--purple-500)' : 'rgba(255,255,255,0.55)',
-                }}
-              >
-                Where Style Meets Intelligence
-              </span>
-            </div>
-          </Link>
+          <BrandLogo
+            size="md"
+            showWordmark={false}
+            className="brand-logo-link--spin"
+          />
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-10">
@@ -265,29 +242,19 @@ export default function Navbar() {
             </Link>
 
             <button
+              id="nav-cart-btn"
               onClick={openCart}
-              className="relative w-10 h-10 flex items-center justify-center rounded-xl transition-colors"
-              style={{
-                color: !isScrolled && isHomePage ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = !isScrolled && isHomePage ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
+              className={`cinematic-nav-icon relative${cartBounce ? ' cart-bounce' : ''}`}
+              data-light={!isScrolled && isHomePage ? 'true' : 'false'}
               aria-label="Cart"
             >
               <ShoppingBag size={19} />
               {cartCount > 0 && (
                 <motion.span
+                  key={cartCount}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute top-1 right-1 w-4 h-4 rounded-full text-white text-[0.6rem] font-bold flex items-center justify-center"
-                  style={{ background: 'var(--purple-600)' }}
+                  className="cinematic-nav-badge"
                 >
                   {cartCount}
                 </motion.span>
@@ -376,16 +343,14 @@ export default function Navbar() {
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl lg:hidden transition-colors"
-              style={{
-                color: !isScrolled && isHomePage ? 'rgba(255,255,255,0.85)' : 'var(--text-primary)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className={`cinematic-hamburger lg:hidden${isMobileMenuOpen ? ' is-open' : ''}`}
+              data-light={!isScrolled && isHomePage ? 'true' : 'false'}
               aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
             >
-              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              <span className="cinematic-hamburger-line" />
+              <span className="cinematic-hamburger-line" />
+              <span className="cinematic-hamburger-line" />
             </button>
           </div>
         </div>
@@ -434,17 +399,24 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu — full-screen dark overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            className="fixed inset-0 z-40 lg:hidden overflow-y-auto"
-            style={{ top: 'var(--nav-height)', background: 'var(--bg-primary)' }}
-          >
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="cinematic-mobile-backdrop lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              className="cinematic-mobile-menu lg:hidden"
+            >
             <div className="p-8 flex flex-col gap-1">
               <MobileNavLink to="/" label="Home" onClick={() => setIsMobileMenuOpen(false)} />
 
@@ -497,7 +469,8 @@ export default function Navbar() {
                 </Link>
               )}
             </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
@@ -520,29 +493,9 @@ function NavLink({
   return (
     <Link
       to={to}
-      className="relative text-sm font-medium tracking-wide no-underline transition-colors py-2"
-      style={{
-        color: isActive
-          ? isLight ? 'white' : 'var(--purple-600)'
-          : isLight ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = isLight ? 'white' : 'var(--text-primary)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = isActive
-          ? isLight ? 'white' : 'var(--purple-600)'
-          : isLight ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)';
-      }}
+      className={`cinematic-nav-link${isActive ? ' is-active' : ''}${isLight ? ' is-light' : ''}`}
     >
       {label}
-      {isActive && (
-        <motion.span
-          layoutId="nav-underline"
-          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-          style={{ background: isLight ? 'white' : 'var(--purple-500)' }}
-        />
-      )}
     </Link>
   );
 }

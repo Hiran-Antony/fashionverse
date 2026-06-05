@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Shield, Truck, RotateCcw, Award } from 'lucide-react';
+import gsap from 'gsap';
+import { Heart, ShoppingBag, Star, Shield, Truck, RotateCcw, Award, Rotate3D } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
+import ProductCard from '../components/product/ProductCard';
 
 const TRUST_BADGES = [
   { icon: <Truck size={18} />, label: 'Free delivery', sub: 'On orders above ₹999' },
@@ -14,11 +16,52 @@ const TRUST_BADGES = [
   { icon: <Award size={18} />, label: 'Premium quality', sub: 'Satisfaction guaranteed' },
 ];
 
+function MagneticSwatch({
+  color,
+  isSelected,
+  onClick,
+}: {
+  color: any;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  const handleMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const dx = (e.clientX - rect.left - rect.width / 2) * 0.35;
+    const dy = (e.clientY - rect.top - rect.height / 2) * 0.35;
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(1.12)`;
+  };
+
+  const handleLeave = () => {
+    if (ref.current) ref.current.style.transform = '';
+  };
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      title={color.color_name}
+      className={`pdp-color-swatch${isSelected ? ' is-selected' : ''}`}
+      style={{ background: color.hex_code || '#888' }}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      aria-label={`Color ${color.color_name}`}
+    />
+  );
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
+  const [is360Active, setIs360Active] = useState(false);
+  const mainImageRef = useRef<HTMLImageElement>(null);
 
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
@@ -37,36 +80,87 @@ export default function ProductDetailPage() {
     enabled: !!id,
   });
 
+  const { data: relatedProducts = [] } = useQuery({
+    queryKey: ['product-related', id, product?.category],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, product_colors(*), product_sizes(*)')
+        .eq('category', product.category)
+        .eq('is_active', true)
+        .neq('id', id)
+        .limit(3);
+      if (error) throw error;
+      return (data || []).map((p: any) => ({
+        ...p,
+        colors: p.product_colors,
+        sizes: p.product_sizes,
+      }));
+    },
+    enabled: !!product?.category && !!id,
+  });
+
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid var(--purple-200)', borderTopColor: 'var(--purple-600)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          Loading product...
-        </div>
+      <div className="pdp-loading">
+        <div className="spinner" />
+        <p>Loading product...</p>
       </div>
     );
   }
 
   if (isError || !product) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
-        <p style={{ fontSize: 18, marginBottom: 16 }}>Product not found.</p>
-        <Link to="/products" style={{ color: 'var(--purple-600)' }}>← Browse Products</Link>
+      <div className="pdp-not-found">
+        <p>Product not found.</p>
+        <Link to="/products">← Browse Products</Link>
       </div>
     );
   }
 
   const colors: any[] = product.colors || [];
   const sizes: any[] = product.sizes || [];
-
-  // Default to first color
   const selectedColor = colors.find((c: any) => c.id === selectedColorId) || colors[0];
+  const activeColorIndex = Math.max(0, colors.findIndex((c: any) => c.id === (selectedColor?.id)));
   const inWishlist = isInWishlist(product.id);
 
   const discount = product.original_price && product.original_price > product.price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
+
+  const flyToCart = () => {
+    const img = mainImageRef.current;
+    const cartBtn = document.getElementById('nav-cart-btn');
+    if (!img || !cartBtn) return;
+
+    const imgRect = img.getBoundingClientRect();
+    const cartRect = cartBtn.getBoundingClientRect();
+    const clone = img.cloneNode(true) as HTMLImageElement;
+
+    Object.assign(clone.style, {
+      position: 'fixed',
+      left: `${imgRect.left}px`,
+      top: `${imgRect.top}px`,
+      width: `${imgRect.width}px`,
+      height: `${imgRect.height}px`,
+      objectFit: 'cover',
+      borderRadius: '12px',
+      zIndex: '99999',
+      pointerEvents: 'none',
+    });
+
+    document.body.appendChild(clone);
+    gsap.to(clone, {
+      left: cartRect.left + cartRect.width / 2 - 20,
+      top: cartRect.top + cartRect.height / 2 - 20,
+      width: 40,
+      height: 40,
+      opacity: 0.15,
+      duration: 0.65,
+      ease: 'power2.in',
+      onComplete: () => clone.remove(),
+    });
+  };
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -74,6 +168,7 @@ export default function ProductDetailPage() {
       setTimeout(() => setSizeError(false), 2500);
       return;
     }
+    flyToCart();
     addItem({
       product_id: product.id,
       color_name: selectedColor?.color_name || '',
@@ -87,342 +182,182 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
-      <div className="container mx-auto px-4 py-8" style={{ maxWidth: '1300px' }}>
-
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 mb-8 text-sm" style={{ color: 'var(--text-muted)' }}>
-          <Link to="/" className="no-underline hover:underline" style={{ color: 'var(--text-muted)' }}>Home</Link>
+    <div className="pdp-page">
+      <div className="container pdp-container">
+        <nav className="pdp-breadcrumb">
+          <Link to="/">Home</Link>
           <span>/</span>
-          <Link to="/products" className="no-underline hover:underline" style={{ color: 'var(--text-muted)' }}>Products</Link>
+          <Link to="/products">Products</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{product.name}</span>
+          <span>{product.name}</span>
         </nav>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-
-          {/* ── LEFT: Image Gallery ─────────────────────────── */}
-          <div>
-            {/* Main Image */}
-            <div
-              className="relative rounded-3xl overflow-hidden mb-4"
-              style={{ aspectRatio: '3/4', background: 'var(--bg-secondary)' }}
-            >
+        <div className="pdp-layout">
+          {/* Left — sticky gallery (60%) */}
+          <div className="pdp-gallery-col">
+            <div className={`pdp-gallery-main${is360Active ? ' is-rotating' : ''}`}>
               <AnimatePresence mode="wait">
                 <motion.img
+                  ref={mainImageRef}
                   key={selectedColor?.image_url}
                   src={selectedColor?.image_url || ''}
                   alt={`${product.name} in ${selectedColor?.color_name || ''}`}
-                  initial={{ opacity: 0, scale: 1.04 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.35 }}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  className="pdp-gallery-image"
+                  loading="lazy"
+                  decoding="async"
                 />
               </AnimatePresence>
 
-              {/* Discount Badge */}
-              {discount > 0 && (
-                <div
-                  className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-xs font-bold"
-                  style={{ background: 'var(--error)' }}
-                >
-                  -{discount}% OFF
-                </div>
-              )}
+              {discount > 0 && <span className="pdp-discount-badge">-{discount}% OFF</span>}
 
-              {/* Wishlist button on image */}
               <button
+                type="button"
                 onClick={() => toggleItem(product.id)}
-                className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.9)',
-                  backdropFilter: 'blur(8px)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: inWishlist ? '#ef4444' : 'var(--text-secondary)',
-                }}
+                className="pdp-wishlist-btn"
+                aria-label="Toggle wishlist"
               >
                 <Heart size={18} fill={inWishlist ? '#ef4444' : 'none'} />
               </button>
+
+              <button
+                type="button"
+                className={`pdp-360-btn${is360Active ? ' is-active' : ''}`}
+                onClick={() => setIs360Active((v) => !v)}
+              >
+                <Rotate3D size={14} />
+                360° View
+              </button>
             </div>
 
-            {/* Color Thumbnails */}
             {colors.length > 0 && (
-              <div className="flex gap-3">
+              <div className="pdp-gallery-dots" role="tablist" aria-label="Product images">
                 {colors.map((color: any) => (
                   <button
                     key={color.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedColor?.id === color.id}
+                    className={`pdp-gallery-dot${selectedColor?.id === color.id ? ' is-active' : ''}`}
                     onClick={() => setSelectedColorId(color.id)}
-                    className="relative rounded-2xl overflow-hidden transition-all"
-                    style={{
-                      width: '80px',
-                      height: '100px',
-                      border: (selectedColor?.id === color.id)
-                        ? '2.5px solid var(--purple-600)'
-                        : '2.5px solid transparent',
-                      outline: (selectedColor?.id === color.id) ? '2px solid var(--purple-200)' : 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      background: 'var(--bg-secondary)',
-                    }}
+                    title={color.color_name}
                   >
-                    <img
-                      src={color.image_url}
-                      alt={color.color_name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
+                    <img src={color.image_url} alt="" loading="lazy" />
                   </button>
                 ))}
+                <span className="pdp-dot-counter">{activeColorIndex + 1} / {colors.length}</span>
               </div>
             )}
           </div>
 
-          {/* ── RIGHT: Product Info ─────────────────────────── */}
-          <div className="flex flex-col gap-6">
+          {/* Right — scrollable info (40%) */}
+          <div className="pdp-info-col">
+            <p className="pdp-brand">{product.brand}</p>
+            <h1 className="pdp-title">{product.name}</h1>
 
-            {/* Brand & Title */}
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--purple-600)' }}>
-                {product.brand}
-              </p>
-              <h1
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-                  fontWeight: 800,
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.25,
-                  letterSpacing: '-0.02em',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                {product.name}
-              </h1>
+            {product.rating > 0 && (
+              <div className="pdp-rating">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={15}
+                    fill={star <= Math.round(product.rating) ? '#f59e0b' : 'none'}
+                    color={star <= Math.round(product.rating) ? '#f59e0b' : 'var(--border-color)'}
+                  />
+                ))}
+                <span>{product.rating}</span>
+                {product.review_count > 0 && <span className="pdp-review-count">({product.review_count} reviews)</span>}
+              </div>
+            )}
 
-              {/* Rating */}
-              {product.rating > 0 && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={15}
-                        fill={star <= Math.round(product.rating) ? '#f59e0b' : 'none'}
-                        color={star <= Math.round(product.rating) ? '#f59e0b' : 'var(--border-color)'}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {product.rating}
-                  </span>
-                  {product.review_count > 0 && (
-                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                      ({product.review_count.toLocaleString()} reviews)
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Price */}
-            <div className="flex items-center gap-4">
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '2rem',
-                  fontWeight: 800,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                ₹{product.price.toLocaleString()}
-              </span>
+            <div className="pdp-price-row">
+              <span className="pdp-price">₹{product.price.toLocaleString()}</span>
               {product.original_price && product.original_price > product.price && (
                 <>
-                  <span className="text-lg line-through" style={{ color: 'var(--text-muted)' }}>
-                    ₹{product.original_price.toLocaleString()}
-                  </span>
-                  <span
-                    className="text-sm font-bold px-2.5 py-1 rounded-full"
-                    style={{ background: 'rgba(16,185,129,0.12)', color: '#059669' }}
-                  >
-                    Save ₹{(product.original_price - product.price).toLocaleString()}
-                  </span>
+                  <span className="pdp-price-old">₹{product.original_price.toLocaleString()}</span>
+                  <span className="pdp-save">Save ₹{(product.original_price - product.price).toLocaleString()}</span>
                 </>
               )}
             </div>
 
-            {/* Color Selection */}
             {colors.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                  Color: <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedColor?.color_name}</span>
+              <div className="pdp-section">
+                <p className="pdp-label">
+                  Color: <strong>{selectedColor?.color_name}</strong>
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="pdp-colors">
                   {colors.map((color: any) => (
-                    <button
+                    <MagneticSwatch
                       key={color.id}
+                      color={color}
+                      isSelected={selectedColor?.id === color.id}
                       onClick={() => setSelectedColorId(color.id)}
-                      title={color.color_name}
-                      className="w-8 h-8 rounded-full transition-all"
-                      style={{
-                        background: color.hex_code || '#ccc',
-                        border: (selectedColor?.id === color.id)
-                          ? '3px solid var(--purple-600)'
-                          : '3px solid transparent',
-                        outline: (selectedColor?.id === color.id) ? '2px solid var(--purple-300)' : 'none',
-                        outlineOffset: '2px',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                      }}
                     />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Size Selection */}
             {sizes.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Size:{' '}
-                    {selectedSize && (
-                      <span style={{ color: 'var(--purple-600)', fontWeight: 700 }}>{selectedSize}</span>
-                    )}
-                  </p>
-                  <button
-                    className="text-xs font-medium underline"
-                    style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Size guide
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2.5">
+              <div className="pdp-section">
+                <p className="pdp-label">
+                  Size {selectedSize && <strong>{selectedSize}</strong>}
+                </p>
+                <div className="pdp-sizes">
                   {sizes.map((s: any) => (
                     <button
-                      key={s.id}
+                      key={s.id || s.size}
+                      type="button"
+                      disabled={s.is_out_of_stock || s.stock <= 0}
                       onClick={() => {
-                        if (!s.is_out_of_stock) {
+                        if (!s.is_out_of_stock && s.stock > 0) {
                           setSelectedSize(s.size);
                           setSizeError(false);
                         }
                       }}
-                      disabled={s.is_out_of_stock}
-                      className="relative w-14 h-12 rounded-xl text-sm font-semibold transition-all"
-                      style={{
-                        background: selectedSize === s.size ? 'var(--purple-600)' : 'var(--bg-secondary)',
-                        color: selectedSize === s.size ? 'white' : s.is_out_of_stock ? 'var(--text-muted)' : 'var(--text-primary)',
-                        border: selectedSize === s.size
-                          ? '2px solid var(--purple-600)'
-                          : sizeError
-                            ? '2px solid var(--error)'
-                            : '2px solid var(--border-color)',
-                        cursor: s.is_out_of_stock ? 'not-allowed' : 'pointer',
-                        opacity: s.is_out_of_stock ? 0.45 : 1,
-                      }}
+                      className={`pdp-size-pill${selectedSize === s.size ? ' is-selected' : ''}${sizeError && !selectedSize ? ' has-error' : ''}`}
                     >
                       {s.size}
                     </button>
                   ))}
                 </div>
-                {sizeError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-xs font-medium mt-2"
-                    style={{ color: 'var(--error)' }}
-                  >
-                    Please select a size to continue.
-                  </motion.p>
-                )}
+                {sizeError && <p className="pdp-size-error">Please select a size to continue.</p>}
               </div>
             )}
 
-            {/* CTA Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddToCart}
-                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-2xl text-sm font-bold transition-all"
-                style={{
-                  background: 'var(--gradient-primary)',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
-                  fontSize: '0.9375rem',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(124,58,237,0.45)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,58,237,0.35)'; }}
-              >
+            <div className="pdp-cta-row">
+              <button type="button" onClick={handleAddToCart} className="pdp-add-btn" id="pdp-add-btn">
                 <ShoppingBag size={18} />
                 Add to Bag
               </button>
-              <button
-                onClick={() => toggleItem(product.id)}
-                className="w-14 h-14 flex items-center justify-center rounded-2xl transition-all"
-                style={{
-                  background: 'var(--bg-secondary)',
-                  border: inWishlist ? '2px solid #ef4444' : '2px solid var(--border-color)',
-                  color: inWishlist ? '#ef4444' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                }}
-              >
+              <button type="button" onClick={() => toggleItem(product.id)} className="pdp-wishlist-secondary">
                 <Heart size={20} fill={inWishlist ? '#ef4444' : 'none'} />
               </button>
             </div>
 
-            {/* Trust Badges */}
-            <div
-              className="grid grid-cols-2 gap-3 p-5 rounded-2xl"
-              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
-            >
+            <div className="pdp-trust-grid">
               {TRUST_BADGES.map((badge) => (
-                <div key={badge.label} className="flex items-start gap-3">
-                  <div style={{ color: 'var(--purple-600)', marginTop: '2px', flexShrink: 0 }}>
-                    {badge.icon}
-                  </div>
+                <div key={badge.label} className="pdp-trust-item">
+                  <div className="pdp-trust-icon">{badge.icon}</div>
                   <div>
-                    <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '2px' }}>
-                      {badge.label}
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {badge.sub}
-                    </p>
+                    <p>{badge.label}</p>
+                    <span>{badge.sub}</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Description */}
             {product.description && (
-              <div>
-                <h3
-                  className="text-base font-bold mb-3"
-                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-                >
-                  Product Details
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', lineHeight: 1.85 }}>
-                  {product.description}
-                </p>
+              <div className="pdp-section">
+                <h3 className="pdp-details-title">Product Details</h3>
+                <p className="pdp-description">{product.description}</p>
                 {product.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="pdp-tags">
                     {product.tags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 rounded-full text-xs font-medium capitalize"
-                        style={{
-                          background: 'var(--purple-50)',
-                          color: 'var(--purple-700)',
-                          border: '1px solid var(--purple-100)',
-                        }}
-                      >
-                        {tag}
-                      </span>
+                      <span key={tag} className="pdp-tag">{tag}</span>
                     ))}
                   </div>
                 )}
@@ -430,6 +365,18 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
+
+        {relatedProducts.length > 0 && (
+          <section className="pdp-complete-look">
+            <p className="pdp-complete-eyebrow">Styled For You</p>
+            <h2 className="pdp-complete-title">Complete the Look</h2>
+            <div className="product-grid product-grid--editorial">
+              {relatedProducts.map((p: any, i: number) => (
+                <ProductCard key={p.id} product={p} featured={i === 0} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

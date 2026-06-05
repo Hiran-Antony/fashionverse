@@ -13,10 +13,6 @@ export default defineConfig({
       '@': '/src',
     },
   },
-  server: {
-    // Serve index.html for all routes — fixes white page on refresh in SPA
-    historyApiFallback: true,
-  },
   build: {
     rollupOptions: {
       output: {

@@ -9,6 +9,8 @@ import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 
 import Layout from './components/layout/Layout';
+import SmoothScroll from './components/SmoothScroll';
+import PageTransition from './components/PageTransition';
 import HomePage from './pages/HomePage';
 import PlaceholderPage from './pages/PlaceholderPage';
 
@@ -21,8 +23,8 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
-const TryOnPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Virtual Try-On ✨" description="AI-powered fitting room — see clothes on yourself. Coming in Phase 4!" /> })));
-const StyleBuilderPage = lazy(() => import('./pages/PlaceholderPage').then(m => ({ default: () => <m.default title="Style Builder" description="Build complete outfits and add them to cart. Coming in Phase 4!" /> })));
+const TryOnPage = lazy(() => import('./pages/TryOnPage'));
+const StyleBuilderPage = lazy(() => import('./pages/StyleBuilderPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 // ─── Loading Spinner ─────────────────────────────────────────
@@ -89,30 +91,34 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* ── Standalone pages (no Navbar/Footer) ─── */}
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+        <SmoothScroll>
+          <PageTransition>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* ── Standalone pages (no Navbar/Footer) ─── */}
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
 
-            {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
-            <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
+                {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
+                <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
 
-            {/* ── Main app with Navbar + Footer ──────── */}
-            <Route element={<Layout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products" element={<ProductListPage />} />
-              <Route path="/product/:id" element={<ProductDetailPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/account/*" element={<AccountPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/try-on" element={<TryOnPage />} />
-              <Route path="/style-builder" element={<StyleBuilderPage />} />
-              <Route path="*" element={<PlaceholderPage title="404 — Page Not Found" description="The page you're looking for doesn't exist." />} />
-            </Route>
-          </Routes>
-        </Suspense>
+                {/* ── Main app with Navbar + Footer ──────── */}
+                <Route element={<Layout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductListPage />} />
+                  <Route path="/product/:id" element={<ProductDetailPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/account/*" element={<AccountPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/try-on" element={<TryOnPage />} />
+                  <Route path="/style-builder" element={<StyleBuilderPage />} />
+                  <Route path="*" element={<PlaceholderPage title="404 — Page Not Found" description="The page you're looking for doesn't exist." />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </PageTransition>
+        </SmoothScroll>
       </BrowserRouter>
       <Toaster
         position="bottom-right"

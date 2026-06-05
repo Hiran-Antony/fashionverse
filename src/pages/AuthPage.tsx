@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { ShoppingBag, Heart, Sparkles, Shield } from 'lucide-react';
-import { APP_NAME } from '../utils/constants';
+import BrandLogo from '../components/layout/BrandLogo';
 
 const PERKS = [
   {
@@ -79,25 +79,8 @@ export default function AuthPage() {
         {/* Content */}
         <div style={{ position: 'relative', zIndex: 10, padding: '3rem 3.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: 'auto' }}>
-            <div style={{
-              width: '44px', height: '44px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: '1rem', color: 'white',
-              border: '1px solid rgba(255,255,255,0.25)',
-            }}>
-              FV
-            </div>
-            <div>
-              <p style={{ color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', lineHeight: 1, margin: 0 }}>
-                {APP_NAME}
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', margin: '3px 0 0' }}>
-                Where Style Meets Intelligence
-              </p>
-            </div>
+          <div style={{ marginBottom: 'auto' }}>
+            <BrandLogo size="lg" showWordmark={false} />
           </div>
 
           {/* Main copy — vertically centred */}
@@ -180,21 +163,8 @@ export default function AuthPage() {
         className="flex-1 flex flex-col items-center justify-center"
         style={{ padding: '3rem 2rem', background: 'var(--bg-primary)' }}
       >
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-3" style={{ marginBottom: '3rem' }}>
-          <div
-            style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'var(--gradient-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontWeight: 700,
-            }}
-          >
-            FV
-          </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-            {APP_NAME}
-          </span>
+        <div className="lg:hidden" style={{ marginBottom: '3rem' }}>
+          <BrandLogo size="md" showWordmark={false} />
         </div>
 
         <motion.div
