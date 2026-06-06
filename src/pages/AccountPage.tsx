@@ -634,7 +634,7 @@ function ProfileTab() {
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <MapPin size={26} style={{ color: '#C9973A' }} />
             </div>
-            <p style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>No addresses saved</p>
+            <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>No addresses saved</p>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Add an address to speed up checkout</p>
           </div>
         ) : (

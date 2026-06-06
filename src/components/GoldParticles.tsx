@@ -9,7 +9,6 @@ export default function GoldParticles() {
 
     const particles: HTMLDivElement[] = [];
     const count = 25;
-
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('div');
       const isLeaf = Math.random() > 0.5;
@@ -46,7 +45,7 @@ export default function GoldParticles() {
         position: 'fixed',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 9999,
+        zIndex: 45,
         overflow: 'hidden',
       }}
     />

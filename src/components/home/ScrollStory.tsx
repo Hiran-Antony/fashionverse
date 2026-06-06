@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { Eye, Sparkles, Search, ArrowRight } from 'lucide-react';
 import { usePrefersReducedMotionStatic } from '../../hooks/useScrollAnimation';
+import TextType from '../ui/TextType';
 
-const PANEL_DURATION_MS = 2800;
+const PANEL_DURATION_MS = 4800;
 const FADE_DURATION = 0.42;
 
 const PANELS = [
@@ -192,7 +193,19 @@ export default function ScrollStory() {
             <div className="scroll-story-panel-inner">
               {'features' in panel && panel.features ? (
                 <>
-                  <h2 className="scroll-story-title">{panel.title}</h2>
+                  <h2 className="scroll-story-title">
+                    {activeIndex === i ? (
+                      <TextType
+                        text={panel.title}
+                        typingSpeed={50}
+                        showCursor={true}
+                        cursorBlinkDuration={0.4}
+                        loop={false}
+                      />
+                    ) : (
+                      panel.title
+                    )}
+                  </h2>
                   <div className="scroll-story-features">
                     {panel.features.map((f) => (
                       <div key={f.title} className="scroll-story-feature-card">
@@ -205,7 +218,19 @@ export default function ScrollStory() {
                 </>
               ) : (
                 <>
-                  <h2 className="scroll-story-title">{panel.title}</h2>
+                  <h2 className="scroll-story-title">
+                    {activeIndex === i ? (
+                      <TextType
+                        text={panel.title}
+                        typingSpeed={50}
+                        showCursor={true}
+                        cursorBlinkDuration={0.4}
+                        loop={false}
+                      />
+                    ) : (
+                      panel.title
+                    )}
+                  </h2>
                   {panel.subtitle && <p className="scroll-story-subtitle">{panel.subtitle}</p>}
                   {'cta' in panel && panel.cta && (
                     <Link to="/products" className="scroll-story-cta-btn no-underline">

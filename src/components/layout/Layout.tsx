@@ -9,7 +9,7 @@ import ScrollRevealProvider from '../ScrollRevealProvider';
 export default function Layout() {
   return (
     <ScrollRevealProvider>
-    <div className="flex flex-col min-h-screen" style={{ position: 'relative', zIndex: 2 }}>
+    <div className="flex flex-col min-h-screen" style={{ position: 'relative' }}>
       <MicroInteractions />
       <Navbar />
       <main className="flex-1" style={{ marginTop: 'var(--nav-height)' }}>
