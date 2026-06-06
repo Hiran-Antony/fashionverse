@@ -4231,3 +4231,9 @@ a:hover {
   border-color: rgba(201, 151, 58, 0.4);
   color: #E8B84B;
 }
+
+/* ─── Style Builder Custom Gold Scrollbar (Override) ───────── */
+/* Ensures mouse wheel scrolling works in product list */
+.style-builder-scroll {
+  touch-action: pan-y;
+}

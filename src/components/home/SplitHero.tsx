@@ -4,13 +4,10 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight } from 'lucide-react';
 import { animateCountUp, usePrefersReducedMotionStatic } from '../../hooks/useScrollAnimation';
-
-gsap.registerPlugin(ScrollTrigger);
-
-const HEADLINE_WORDS = ['Discover', 'Your', 'Perfect', 'Style'];
+import TextType from './TextType';
 
 const LOOKBOOK_VIDEOS = [
-  { src: '/videos/hero.mp4', label: 'SS 2025 Lookbook' },
+  { src: '/videos/hero-man.mp4', label: 'SS 2025 Lookbook' },
 ];
 
 const TICKER_ITEMS = [
@@ -59,20 +56,15 @@ export default function SplitHero() {
   const [progress, setProgress] = useState(0);
   const reducedMotion = usePrefersReducedMotionStatic();
 
-  // GSAP headline + subtext on load
+  // GSAP subtext & CTA on load
   useEffect(() => {
     if (reducedMotion) return;
 
-    const words = wordsRef.current.filter(Boolean);
-    if (!words.length) return;
-
-    gsap.set(words, { y: 80, opacity: 0 });
     if (subtextRef.current) gsap.set(subtextRef.current, { opacity: 0, y: 20 });
     if (ctaRef.current) gsap.set(ctaRef.current, { opacity: 0, y: 20 });
 
     const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
-    tl.to(words, { y: 0, opacity: 1, duration: 0.9, stagger: 0.12 })
-      .to(subtextRef.current, { opacity: 1, y: 0, duration: 0.7 }, '-=0.35')
+    tl.to(subtextRef.current, { opacity: 1, y: 0, duration: 0.7, delay: 0.3 })
       .to(ctaRef.current, { opacity: 1, y: 0, duration: 0.7 }, '-=0.45');
 
     return () => {
@@ -149,16 +141,16 @@ export default function SplitHero() {
           <div className="split-hero-content">
             <p className="split-hero-tag">SS 2025 — AI-POWERED FASHION</p>
 
-            <h1 className="split-hero-headline">
-              {HEADLINE_WORDS.map((word, i) => (
-                <span
-                  key={word}
-                  ref={(el) => { wordsRef.current[i] = el; }}
-                  className="split-hero-word"
-                >
-                  {word}{' '}
-                </span>
-              ))}
+            <h1 className="split-hero-headline min-h-[1.2em]">
+              <TextType 
+                text={['Discover Your Perfect Style', 'Curate Your Wardrobe', 'Elevate Your Look']} 
+                typingSpeed={70}
+                deletingSpeed={40}
+                pauseDuration={2500}
+                cursorCharacter="_"
+                loop={true}
+                className="gradient-text-gold"
+              />
             </h1>
 
             <p ref={subtextRef} className="split-hero-subtext">
@@ -209,6 +201,9 @@ export default function SplitHero() {
               muted
               loop
               playsInline
+              disablePictureInPicture
+              controlsList="nodownload noplaybackrate nofullscreen"
+              style={{ objectPosition: '50% center' }}
               preload="auto"
               aria-label={LOOKBOOK_VIDEOS[activeVideo].label}
             >

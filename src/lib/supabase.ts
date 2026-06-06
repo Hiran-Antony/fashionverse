@@ -1,5 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+export interface Product {
+  id: string;
+  name: string;
+  brand?: string;
+  price: number;
+  images?: string[];
+  category?: string;
+  sub_category?: string;
+  color?: string;
+  [key: string]: any;
+}
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
