@@ -74,7 +74,7 @@ const RHF_FloatingInput = forwardRef<
         }}
       >
         {Icon && (
-          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#C9973A' : '#9ca3af' }}>
+          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#C9973A' : '#fff' }}>
             <Icon size={16} />
           </div>
         )}
@@ -87,7 +87,7 @@ const RHF_FloatingInput = forwardRef<
               transform: active ? 'none' : 'translateY(-50%)',
               fontSize: active ? '10px' : '14px',
               fontWeight: active ? 700 : 500,
-              color: error ? '#ef4444' : focused ? '#C9973A' : '#9ca3af',
+              color: error ? '#ef4444' : focused ? '#C9973A' : '#fff',
               textTransform: active ? 'uppercase' : 'none',
               letterSpacing: active ? '0.06em' : 'normal',
               transition: 'all 0.15s ease',
@@ -106,7 +106,7 @@ const RHF_FloatingInput = forwardRef<
                 onBlur={handleBlur}
                 onFocus={() => setFocused(true)}
                 className="appearance-none w-full bg-transparent border-none outline-none"
-                style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', lineHeight: '1.4', cursor: 'pointer' }}
+                style={{ fontSize: '15px', fontWeight: 600, color: '#fff', lineHeight: '1.4', cursor: 'pointer' }}
                 {...(rest as any)}
               >
                 <option value="" disabled hidden></option>
@@ -114,7 +114,7 @@ const RHF_FloatingInput = forwardRef<
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9ca3af' }} />
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#fff' }} />
             </>
           ) : (
             <input
@@ -126,7 +126,7 @@ const RHF_FloatingInput = forwardRef<
               onFocus={() => setFocused(true)}
               placeholder={active ? placeholder : ''}
               className="w-full bg-transparent border-none outline-none"
-              style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', lineHeight: '1.4' }}
+              style={{ fontSize: '15px', fontWeight: 600, color: '#fff', lineHeight: '1.4' }}
               {...(rest as any)}
             />
           )}
@@ -369,17 +369,17 @@ export default function CheckoutPage() {
                   <MapPin size={22} color="white" />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', fontFamily: 'var(--font-display)', marginBottom: '2px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginBottom: '2px' }}>
                     Delivery Address
                   </h2>
-                  <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Where should we send your order?</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Where should we send your order?</p>
                 </div>
               </div>
 
               {/* Saved address cards */}
               {savedAddresses.length > 0 && (
                 <div style={{ marginBottom: '28px' }}>
-                  <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9ca3af', marginBottom: '12px' }}>Saved Addresses</p>
+                  <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '12px' }}>Saved Addresses</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px', marginBottom: '12px' }}>
                     {savedAddresses.map(addr => {
                       const isSelected = selectedSaved?.id === addr.id;
@@ -399,8 +399,8 @@ export default function CheckoutPage() {
                             <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#C9973A' }}>{addr.label}</span>
                             {isSelected && <CheckCircle2 size={16} style={{ color: '#C9973A' }} />}
                           </div>
-                          <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827', marginBottom: '2px' }}>{addr.name}</p>
-                          <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                          <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '2px' }}>{addr.name}</p>
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
                             {[addr.line1, addr.city, addr.pincode].filter(Boolean).join(', ')}
                           </p>
                         </button>
@@ -420,8 +420,8 @@ export default function CheckoutPage() {
                         <Plus size={16} style={{ color: '#C9973A' }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#111827', display: 'block' }}>New Address</span>
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Deliver to a different location</span>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>New Address</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Deliver to a different location</span>
                       </div>
                     </button>
                   </div>
@@ -538,8 +538,8 @@ export default function CheckoutPage() {
                         }} />
                       </div>
                       <div>
-                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>Save this address to my profile</p>
-                        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>You can use it for faster checkout next time</p>
+                        <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Save this address to my profile</p>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>You can use it for faster checkout next time</p>
                       </div>
                     </label>
                   )}
@@ -566,7 +566,7 @@ export default function CheckoutPage() {
               }}
             >
               <h2
-                style={{ fontSize: '20px', fontWeight: 800, color: '#111827', fontFamily: 'var(--font-display)', marginBottom: '24px' }}
+                style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginBottom: '24px' }}
               >
                 Order Summary
               </h2>
@@ -586,14 +586,14 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.product_name}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600 }}>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
                         {item.color_name} · {item.size} · Qty {item.quantity}
                       </p>
                     </div>
-                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', flexShrink: 0 }}>
                       ₹{(item.product_price * item.quantity).toLocaleString()}
                     </span>
                   </div>
@@ -610,23 +610,23 @@ export default function CheckoutPage() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>Subtotal ({getItemCount()} items)</span>
-                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700 }}>₹{subtotal.toLocaleString()}</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>Subtotal ({getItemCount()} items)</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 700 }}>₹{subtotal.toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>
                     <Truck size={14} /> Delivery
                   </span>
                   {deliveryFee === 0 ? (
                     <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '999px', background: '#d1fae5', color: '#059669' }}>FREE</span>
                   ) : (
-                    <span style={{ fontSize: '14px', color: '#111827', fontWeight: 700 }}>₹{deliveryFee}</span>
+                    <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 700 }}>₹{deliveryFee}</span>
                   )}
                 </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>Total</span>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>Total</span>
                 <span style={{ fontSize: '22px', fontWeight: 900, color: '#E8B84B' }}>₹{total.toLocaleString()}</span>
               </div>
 
@@ -653,8 +653,8 @@ export default function CheckoutPage() {
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-                <Lock size={12} style={{ color: '#9ca3af' }} />
-                <p style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>
+                <Lock size={12} style={{ color: 'var(--text-muted)' }} />
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
                   Your data is encrypted and secure
                 </p>
               </div>
@@ -694,10 +694,10 @@ export default function CheckoutPage() {
                   }}>
                     <CreditCard size={22} color="white" />
                   </div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#111827', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
                     Payment Method
                   </h2>
-                  <p style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>Choose how you want to pay</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>Choose how you want to pay</p>
                 </div>
                 <button
                   onClick={() => !isPlacing && setShowPaymentModal(false)}
@@ -706,7 +706,7 @@ export default function CheckoutPage() {
                     width: '36px', height: '36px', borderRadius: '10px',
                     background: 'var(--bg-tertiary)', border: 'none', cursor: isPlacing ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#6b7280', transition: 'all 0.15s',
+                    color: 'var(--text-muted)', transition: 'all 0.15s',
                   }}
                 >
                   <X size={16} />
@@ -741,8 +741,8 @@ export default function CheckoutPage() {
                       <Package size={20} />
                     </div>
                     <div>
-                      <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827', marginBottom: '2px' }}>Cash on Delivery</p>
-                      <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Pay when your order arrives</p>
+                      <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '2px' }}>Cash on Delivery</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Pay when your order arrives</p>
                     </div>
                   </div>
                 </label>
@@ -774,12 +774,12 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#111827' }}>Pay Online</p>
+                        <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Pay Online</p>
                         <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px', borderRadius: '999px', background: '#fef3c7', color: '#d97706' }}>
                           Soon
                         </span>
                       </div>
-                      <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>UPI, Cards, Net Banking</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>UPI, Cards, Net Banking</p>
                     </div>
                   </div>
                 </label>

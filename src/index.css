@@ -1695,31 +1695,38 @@ a:hover {
    SECTION 2 — Split Cinematic Hero
 ═══════════════════════════════════════════════════════════ */
 .split-hero {
-  display: flex;
-  flex-direction: column-reverse;
+  position: relative;
+  width: 100%;
+  height: 100vh;
   min-height: 100vh;
   margin-top: calc(-1 * var(--nav-height));
   padding-top: var(--nav-height);
-  background: var(--gradient-hero);
+  background-image: url('/photos/hero-bg.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+/* Full-bleed hero: left panel holds the text, max 50% wide on desktop */
+.split-hero-left {
   position: relative;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 @media (min-width: 900px) {
-  .split-hero {
-    flex-direction: row;
-    min-height: calc(100vh + var(--nav-height));
+  .split-hero-left {
+    width: 52%;
+    pointer-events: auto;
   }
-}
-
-.split-hero-left {
-  flex: 0 0 100%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  position: relative;
-  z-index: 2;
-  overflow: hidden;
 }
 
 /* Starlit particle field — hero only */
@@ -1774,20 +1781,14 @@ a:hover {
   100% { transform: translateY(6px) translateX(-3px); opacity: 0.9; }
 }
 
-@media (min-width: 900px) {
-  .split-hero-left {
-    flex: 0 0 52%;
-    clip-path: polygon(0 0, 92% 0, 100% 100%, 0 100%);
-  }
-}
-
 .split-hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 4;
   width: 100%;
   max-width: 640px;
   padding: 3rem 1.5rem 3.5rem;
   margin: 0 auto;
+  pointer-events: auto;
 }
 
 @media (min-width: 900px) {
@@ -1918,16 +1919,21 @@ a:hover {
   margin-top: 0.35rem;
 }
 
+/* Full-bleed: video panel sits absolute on the right */
 .split-hero-right {
-  flex: 0 0 100%;
-  position: relative;
-  min-height: 30vh;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 55%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
 }
 
-@media (min-width: 900px) {
+@media (max-width: 899px) {
   .split-hero-right {
-    flex: 0 0 48%;
-    min-height: auto;
+    width: 100%;
+    opacity: 0.35;
   }
 }
 
@@ -1935,14 +1941,12 @@ a:hover {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 30vh;
   overflow: hidden;
-  background: #111;
 }
 
 @media (min-width: 900px) {
   .split-hero-video-wrap {
-    min-height: calc(100vh + var(--nav-height));
+    height: 100%;
   }
 }
 
@@ -1960,12 +1964,35 @@ a:hover {
   }
 }
 
+/* Overlay on entire hero — keeps text readable */
+.hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(10, 6, 2, 0.72) 0%,
+    rgba(10, 6, 2, 0.45) 30%,
+    rgba(10, 6, 2, 0.15) 55%,
+    rgba(10, 6, 2, 0.05) 75%,
+    transparent 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Fade on video left edge into the dark background */
 .split-hero-video-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, #120a06 0%, transparent 28%);
+  background: linear-gradient(
+    to right,
+    rgba(10, 6, 2, 1) 0%,
+    rgba(10, 6, 2, 0.6) 15%,
+    rgba(10, 6, 2, 0.1) 35%,
+    transparent 55%
+  );
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
 }
 
 .split-hero-dots {
@@ -3782,7 +3809,19 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #120a06;
+  background-color: #120a06;
+  background-image: url('/photos/hero-bg.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.page-loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 2, 0.45); /* Lighter overlay so image is clearly visible */
+  z-index: -1;
 }
 
 .page-loader-inner {
@@ -4566,4 +4605,308 @@ a:hover {
     padding: 0.75rem 0.75rem;
     font-size: 0.75rem;
   }
+/* ─── AUTH PAGE UI OVERRIDES ─────────────────────────────── */
+
+.auth-card {
+  padding: 48px 40px;
+  gap: 24px;
+  max-width: 440px;
+  width: 100%;
+  background: rgba(22, 14, 6, 0.97);
+  border: 1px solid rgba(201, 151, 58, 0.2);
+  border-radius: 24px;
+  backdrop-filter: blur(24px);
+}
+
+.auth-toggle-wrapper {
+  display: flex;
+  background: rgba(10, 6, 2, 0.8);
+  border: 1px solid rgba(201, 151, 58, 0.2);
+  border-radius: 50px;
+  padding: 4px;
+  margin-bottom: 32px;
+  gap: 4px;
+}
+
+.auth-toggle-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: transparent;
+  color: rgba(245, 237, 212, 0.5);
+  letter-spacing: 0.02em;
+}
+
+.auth-toggle-btn.active {
+  background: linear-gradient(
+    135deg, #C9973A, #E8B84B
+  );
+  color: #120a06;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(201,151,58,0.3);
+}
+
+.auth-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #F5EDD4;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.auth-subheading {
+  font-size: 14px;
+  color: rgba(245, 237, 212, 0.55);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.auth-input-wrapper {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 16px 48px 16px 18px;
+  background: rgba(10, 6, 2, 0.7);
+  border: 1px solid rgba(201, 151, 58, 0.2);
+  border-radius: 12px;
+  color: #F5EDD4;
+  font-size: 15px;
+  font-family: 'Syne', sans-serif;
+  transition: all 0.2s ease;
+  outline: none;
+  /* Remove browser autofill styling */
+  -webkit-box-shadow: 0 0 0 100px rgba(10,6,2,0.7) 
+                      inset !important;
+  -webkit-text-fill-color: #F5EDD4 !important;
+}
+
+.auth-input::placeholder {
+  color: rgba(201, 151, 58, 0.4);
+  font-style: normal;
+  /* NO icon in placeholder — text only */
+}
+
+.auth-input:focus {
+  border-color: rgba(201, 151, 58, 0.6);
+  background: rgba(18, 10, 6, 0.9);
+  box-shadow: 0 0 0 3px rgba(201,151,58,0.1);
+}
+
+/* Remove all icons FROM INSIDE inputs */
+/* Icons go in wrapper — not in placeholder */
+.auth-input-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(201, 151, 58, 0.4);
+  pointer-events: none;
+  width: 18px;
+  height: 18px;
+}
+
+/* Password eye icon — clickable */
+.auth-password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(201, 151, 58, 0.5);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: color 0.2s;
+}
+.auth-password-toggle:hover {
+  color: #E8B84B;
+}
+
+.auth-forgot-link {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  margin-bottom: 24px;
+}
+.auth-forgot-link a {
+  font-size: 13px;
+  color: rgba(201, 151, 58, 0.7);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.auth-forgot-link a:hover {
+  color: #E8B84B;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #C9973A, #E8B84B);
+  color: #120a06;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(201,151,58,0.4);
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+}
+.auth-submit-btn:hover {
+  box-shadow: 0 12px 40px rgba(201,151,58,0.55);
+  transform: translateY(-2px);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(201, 151, 58, 0.15);
+}
+.auth-divider-text {
+  font-size: 11px;
+  color: rgba(201, 151, 58, 0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.auth-google-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(201, 151, 58, 0.2);
+  border-radius: 12px;
+  color: #F5EDD4;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+}
+.auth-google-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(201, 151, 58, 0.4);
+  transform: translateY(-1px);
+}
+
+.auth-terms {
+  font-size: 12px;
+  color: rgba(245, 237, 212, 0.4);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.auth-terms a {
+  color: rgba(201, 151, 58, 0.7);
+  text-decoration: none;
+}
+.auth-terms a:hover {
+  color: #E8B84B;
+}
+
+.auth-guest-link {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(201, 151, 58, 0.6);
+  cursor: pointer;
+  transition: color 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-guest-link:hover {
+  color: #E8B84B;
+}
+
+.auth-error-msg {
+  background: rgba(220, 80, 60, 0.1);
+  border: 1px solid rgba(220, 80, 60, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #ff8a7a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-error-google {
+  background: rgba(201, 151, 58, 0.08);
+  border: 1px solid rgba(201, 151, 58, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #E8B84B;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-success-msg {
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #4ade80;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@keyframes pulseGold {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(201,151,58,0); 
+  }
+  50% { 
+    box-shadow: 0 0 0 6px rgba(201,151,58,0.2); 
+  }
+}
+.auth-google-btn.highlighted {
+  animation: pulseGold 1.5s ease infinite;
+  border-color: rgba(201, 151, 58, 0.5);
+}
+
+/* Fix browser autofill white background globally */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 100px #1a0f08 inset !important; /* Matches --bg-secondary approx */
+  -webkit-text-fill-color: #F5EDD4 !important; /* Matches --text-primary */
+  caret-color: #F5EDD4 !important;
+  border-color: rgba(201,151,58,0.3) !important;
+}
+
+/* Fix select dropdown options styling globally */
+select {
+  background-color: transparent;
+}
+
+select option {
+  background-color: #1a0f08 !important; /* Matches --bg-secondary */
+  color: #F5EDD4 !important; /* Matches --text-primary */
 }

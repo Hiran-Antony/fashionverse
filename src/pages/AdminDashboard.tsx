@@ -8,7 +8,7 @@ import {
   Home as HomeIcon, Eye, Image as ImageIcon,
   Star, IndianRupee, ShoppingCart, Bell, TrendingUp,
   TrendingDown, Crown, CheckCircle, Clock, Truck,
-  ArrowUpRight, BarChart3, Filter,
+  ArrowUpRight, BarChart3, Filter, ChevronLeft, ChevronRight, AlertTriangle,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -280,9 +280,29 @@ const blurInp = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HT
 // ROOT
 // ══════════════════════════════════════════════════════════════
 export default function AdminDashboard() {
+  const qc = useQueryClient();
   const { user, profile, isLoading } = useAuthStore();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ['admin-pending-orders'],
+    queryFn: async () => {
+      const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      return count || 0;
+    },
+  });
+
+  useEffect(() => {
+    const sub = supabase.channel('pending-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        qc.invalidateQueries({ queryKey: ['admin-pending-orders'] });
+        qc.invalidateQueries({ queryKey: ['admin-recent-orders'] });
+        qc.invalidateQueries({ queryKey: ['admin-cancelled-orders'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [qc]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -524,18 +544,38 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {/* Bell */}
               <div style={{ position: 'relative' }}>
-                <button style={{
-                  width: 40, height: 40, borderRadius: 12,
-                  background: T.glass, border: `1px solid ${T.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                }}>
+                <button 
+                  onClick={() => setActiveTab('orders')}
+                  style={{
+                    width: 40, height: 40, borderRadius: 12,
+                    background: T.glass, border: `1px solid ${T.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.gold}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.border}
+                >
                   <Bell size={16} color={T.textMuted}/>
                 </button>
-                <div style={{
-                  position: 'absolute', top: 6, right: 6,
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: T.danger, border: '2px solid #0F0A06',
-                }}/>
+                <AnimatePresence>
+                  {pendingCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      style={{
+                        position: 'absolute', top: -6, right: -6,
+                        minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10,
+                        background: T.danger, color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 800, fontFamily: "'Inter', sans-serif",
+                        border: '2px solid #0F0A06', zIndex: 10, pointerEvents: 'none'
+                      }}
+                    >
+                      {pendingCount}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               {/* Avatar */}
               <div style={{
@@ -570,6 +610,35 @@ export default function AdminDashboard() {
 // OVERVIEW TAB
 // ══════════════════════════════════════════════════════════════
 function OverviewTab() {
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const currentMonth = calendarDate.toLocaleString('default', { month: 'long' });
+  const currentYear = calendarDate.getFullYear();
+  const daysInMonth = new Date(currentYear, calendarDate.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, calendarDate.getMonth(), 1).getDay();
+  const calendarGrid = Array.from({ length: firstDayOfMonth }).map(() => null).concat(
+    Array.from({ length: daysInMonth }).map((_, i) => i + 1)
+  );
+  
+  const handlePrevMonth = () => setCalendarDate(new Date(currentYear, calendarDate.getMonth() - 1, 1));
+  const handleNextMonth = () => setCalendarDate(new Date(currentYear, calendarDate.getMonth() + 1, 1));
+  const today = new Date();
+  
+  const { data: lowStockAlerts = [] } = useQuery({
+    queryKey: ['admin-low-stock'],
+    queryFn: async () => {
+      const { data } = await supabase.from('products').select('name, product_sizes(size, stock), product_colors(image_url)').eq('is_active', true);
+      const alerts: any[] = [];
+      (data || []).forEach((p: any) => {
+        const image = p.product_colors?.[0]?.image_url || '';
+        (p.product_sizes || []).forEach((s: any) => {
+          if (s.stock < 5) alerts.push({ name: p.name, size: s.size, stock: s.stock, image });
+        });
+      });
+      return alerts.sort((a, b) => a.stock - b.stock).slice(0, 6);
+    }
+  });
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -579,8 +648,9 @@ function OverviewTab() {
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
       ]);
       const orderData = orders.data || [];
-      const revenue = orderData.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
-      return { products: products.count ?? 0, orders: orderData.length, revenue, customers: customers.count ?? 0, orderData };
+      const validOrders = orderData.filter((o: any) => o.status !== 'cancelled');
+      const revenue = validOrders.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+      return { products: products.count ?? 0, orders: validOrders.length, revenue, customers: customers.count ?? 0, orderData: validOrders };
     },
     placeholderData: { products: 0, orders: 0, revenue: 0, customers: 0, orderData: [] },
   });
@@ -591,8 +661,22 @@ function OverviewTab() {
       const { data } = await supabase
         .from('orders')
         .select('id,total_amount,status,created_at,address')
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
         .limit(6);
+      return data || [];
+    },
+  });
+
+  const { data: cancelledOrders = [] } = useQuery({
+    queryKey: ['admin-cancelled-orders'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('id,total_amount,created_at,profiles:user_id(name)')
+        .eq('status', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(4);
       return data || [];
     },
   });
@@ -704,49 +788,45 @@ function OverviewTab() {
           </ResponsiveContainer>
         </GlassCard>
 
-        {/* Donut chart */}
-        <GlassCard style={{ padding: 24 }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
-              By Category
-            </div>
-            <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Product distribution</div>
-          </div>
-          <div style={{ position: 'relative' }}>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={catData || []} cx="50%" cy="50%" innerRadius={48} outerRadius={72}
-                  paddingAngle={3} dataKey="value">
-                  {(catData || []).map((_: any, i: number) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="transparent"/>
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip/>}/>
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Center label */}
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center', pointerEvents: 'none',
-            }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>
-                {totalCatProducts}
+        {/* Calendar Widget */}
+        <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                Calendar
               </div>
-              <div style={{ fontSize: 9, color: T.textMuted, letterSpacing: '0.08em' }}>PRODUCTS</div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{currentMonth} {currentYear}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handlePrevMonth} style={{ background: 'rgba(201,168,76,0.1)', border: `1px solid ${T.gold}30`, borderRadius: 8, padding: 4, cursor: 'pointer', color: T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronLeft size={16} />
+              </button>
+              <button onClick={handleNextMonth} style={{ background: 'rgba(201,168,76,0.1)', border: `1px solid ${T.gold}30`, borderRadius: 8, padding: 4, cursor: 'pointer', color: T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
-          {/* Legend */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-            {(catData || []).map((c: any, i: number) => (
-              <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }}/>
-                  <span style={{ fontSize: 11, color: T.textMuted, textTransform: 'capitalize' }}>{c.name}</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: T.lightGold, fontFamily: "'Space Grotesk', monospace" }}>{c.value}</span>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, textAlign: 'center', marginBottom: 12 }}>
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+              <div key={day} style={{ fontSize: 11, fontWeight: 800, color: T.textMuted, fontFamily: "'Inter', sans-serif" }}>{day}</div>
             ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px 4px', textAlign: 'center' }}>
+            {calendarGrid.map((day, i) => {
+              const isToday = day === today.getDate() && calendarDate.getMonth() === today.getMonth() && calendarDate.getFullYear() === today.getFullYear();
+              return (
+                <div key={i} style={{ 
+                  height: 32, width: 32, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  fontSize: 13, background: isToday ? T.gold : (day ? 'rgba(255,255,255,0.02)' : 'transparent'),
+                  color: isToday ? '#000' : (day ? T.textPrim : 'transparent'),
+                  border: day && !isToday ? `1px solid ${T.border}40` : 'none',
+                  borderRadius: '50%', fontWeight: isToday ? 800 : 500,
+                  fontFamily: "'Space Grotesk', monospace", transition: 'all 0.2s', cursor: day ? 'pointer' : 'default'
+                }}>
+                  {day || ''}
+                </div>
+              );
+            })}
           </div>
         </GlassCard>
       </div>
@@ -774,90 +854,170 @@ function OverviewTab() {
             <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
               tickFormatter={v => v === 0 ? '₹0' : `₹${(v/1000).toFixed(0)}k`}/>
-            <Tooltip content={<ChartTooltip/>}/>
-            <Bar dataKey="revenue" fill="url(#barGold)" radius={[8, 8, 0, 0]} maxBarSize={52}/>
+            <Tooltip content={<ChartTooltip/>} cursor={{ fill: 'transparent' }}/>
+            <Bar 
+              dataKey="revenue" 
+              fill="url(#barGold)" 
+              radius={[8, 8, 0, 0]} 
+              maxBarSize={52}
+              activeBar={{ fill: '#E8B84B', filter: 'drop-shadow(0px 0px 10px rgba(232,184,75,0.5))' }}
+            />
           </BarChart>
         </ResponsiveContainer>
       </GlassCard>
 
-      {/* Recent Orders Table */}
-      <GlassCard style={{ overflow: 'hidden' }}>
-        <div style={{
-          padding: '20px 24px 16px', borderBottom: `1px solid ${T.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
-              Recent Orders
-            </div>
-            <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Latest transactions</div>
-          </div>
-          <span style={{
-            fontSize: 11, fontWeight: 700, padding: '4px 14px', borderRadius: 999,
-            background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30`,
+      {/* Bottom Section (Alerts + Orders) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        
+        {/* Recent Orders Table */}
+        <GlassCard style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{
+            padding: '20px 24px 16px', borderBottom: `1px solid ${T.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            {recentOrders.length} orders
-          </span>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: 'rgba(20,12,5,0.6)' }}>
-                {['Order ID', 'Customer', 'Amount', 'Status', 'Date'].map(h => (
-                  <th key={h} style={{
-                    padding: '12px 20px', textAlign: 'left',
-                    fontSize: 9, fontWeight: 800, color: T.textMuted,
-                    textTransform: 'uppercase', letterSpacing: '0.14em',
-                    fontFamily: "'Inter', sans-serif", fontVariant: 'small-caps',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '60px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
-                  No orders yet
-                </td></tr>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                Recent Orders
+              </div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Latest transactions</div>
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: '4px 14px', borderRadius: 999,
+              background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30`,
+            }}>
+              {recentOrders.length} orders
+            </span>
+          </div>
+          <div style={{ overflowX: 'auto', flex: 1 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'rgba(20,12,5,0.6)' }}>
+                  {['Order ID', 'Customer', 'Amount', 'Status', 'Date'].map(h => (
+                    <th key={h} style={{
+                      padding: '12px 20px', textAlign: 'left',
+                      fontSize: 9, fontWeight: 800, color: T.textMuted,
+                      textTransform: 'uppercase', letterSpacing: '0.14em',
+                      fontFamily: "'Inter', sans-serif", fontVariant: 'small-caps',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: '60px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+                    No orders yet
+                  </td></tr>
+                ) : (
+                  recentOrders.map((order: any, i: number) => {
+                    const orderNum = 100 + recentOrders.length - i;
+                    return (
+                      <tr key={order.id}
+                        style={{ borderBottom: `1px solid ${T.border}30`, transition: 'all 0.15s' }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLTableRowElement).style.background = `${T.gold}06`;
+                          (e.currentTarget as HTMLTableRowElement).style.borderLeft = `3px solid ${T.gold}40`;
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLTableRowElement).style.background = 'transparent';
+                          (e.currentTarget as HTMLTableRowElement).style.borderLeft = 'none';
+                        }}
+                      >
+                        <td style={{ padding: '14px 20px' }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.gold, fontFamily: "'Space Grotesk', monospace" }}>
+                            #{orderNum}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 600, color: T.textPrim }}>
+                          {order.address?.name || 'Customer'}
+                        </td>
+                        <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>
+                          ₹{order.total_amount?.toLocaleString('en-IN')}
+                        </td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <StatusBadge status={order.status}/>
+                        </td>
+                        <td style={{ padding: '14px 20px', fontSize: 12, color: T.textMuted }}>
+                          {new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+
+        {/* Alerts Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {/* Low Stock Alerts */}
+          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                  Inventory Alerts
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Low stock items</div>
+              </div>
+              <AlertTriangle size={18} color={T.danger} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+              {lowStockAlerts.length === 0 ? (
+                <div style={{ color: T.textMuted, fontSize: 13, textAlign: 'center', padding: '40px 0' }}>All stock levels are healthy!</div>
               ) : (
-                recentOrders.map((order: any, i: number) => {
-                  const orderNum = 100 + recentOrders.length - i;
-                  return (
-                    <tr key={order.id}
-                      style={{ borderBottom: `1px solid ${T.border}30`, transition: 'all 0.15s' }}
-                      onMouseEnter={e => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = `${T.gold}06`;
-                        (e.currentTarget as HTMLTableRowElement).style.borderLeft = `3px solid ${T.gold}40`;
-                      }}
-                      onMouseLeave={e => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = 'transparent';
-                        (e.currentTarget as HTMLTableRowElement).style.borderLeft = 'none';
-                      }}
-                    >
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: T.gold, fontFamily: "'Space Grotesk', monospace" }}>
-                          #{orderNum}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 600, color: T.textPrim }}>
-                        {order.address?.name || 'Customer'}
-                      </td>
-                      <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>
-                        ₹{order.total_amount?.toLocaleString('en-IN')}
-                      </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <StatusBadge status={order.status}/>
-                      </td>
-                      <td style={{ padding: '14px 20px', fontSize: 12, color: T.textMuted }}>
-                        {new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </td>
-                    </tr>
-                  );
-                })
+                lowStockAlerts.map((alert: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottom: i < lowStockAlerts.length - 1 ? `1px solid ${T.border}30` : 'none' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={getOptimizedUrl(alert.image, 80)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alert.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                        <span style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(201,168,76,0.1)', color: T.gold, borderRadius: 4, fontFamily: "'Space Grotesk', monospace", fontWeight: 700 }}>Size {alert.size}</span>
+                        <span style={{ fontSize: 11, color: T.danger, fontWeight: 700 }}>{alert.stock} left</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
-            </tbody>
-          </table>
+            </div>
+          </GlassCard>
+
+          {/* Cancelled Orders Notifications */}
+          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${T.danger}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={20} color={T.danger}/>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                  Cancelled Orders
+                </h3>
+                <p style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Customer cancellation alerts</p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+              {cancelledOrders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: T.textMuted, fontSize: 13 }}>No recent cancellations.</div>
+              ) : (
+                cancelledOrders.map((co: any, i: number) => (
+                  <div key={co.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottom: i < cancelledOrders.length - 1 ? `1px solid ${T.border}30` : 'none' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: T.textPrim }}>Order #{co.id.slice(0,6).toUpperCase()}</p>
+                      <p style={{ fontSize: 12, color: T.textMuted }}>{co.profiles?.name || 'Customer'} cancelled</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: T.danger }}>-₹{co.total_amount?.toLocaleString()}</p>
+                      <p style={{ fontSize: 10, color: T.textMuted }}>{new Date(co.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </GlassCard>
         </div>
-      </GlassCard>
+      </div>
     </motion.div>
   );
 }

@@ -34,11 +34,20 @@ const KidsPage = lazy(() => import('./pages/KidsPage'));
 // ─── Loading Spinner ─────────────────────────────────────────
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="spinner" />
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Loading...
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50 bg-black"
+      style={{
+        backgroundImage: 'url("/photos/hero-bg.jpeg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-0" />
+      <div className="relative z-10 flex flex-col items-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#C9973A]/20 border-t-[#C9973A] rounded-full animate-spin" />
+        <p className="text-sm tracking-[0.2em] uppercase font-bold text-[#C9973A]">
+          Loading FashionVerse
         </p>
       </div>
     </div>
