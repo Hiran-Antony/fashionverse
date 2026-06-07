@@ -1,9 +1,10 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { ShoppingBag, Heart, Sparkles, Shield } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ShoppingBag, Heart, Sparkles, Shield, Mail, Lock, User, Eye, EyeOff, Loader, ArrowRight } from 'lucide-react';
 import BrandLogo from '../components/layout/BrandLogo';
+import { supabase } from '../lib/supabase';
 
 const PERKS = [
   {
@@ -31,10 +32,92 @@ const PERKS = [
 export default function AuthPage() {
   const { user, signInWithGoogle } = useAuthStore();
   const navigate = useNavigate();
+  
+  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isGoogleError, setIsGoogleError] = useState(false);
 
   useEffect(() => {
     if (user) navigate('/', { replace: true });
   }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+    setIsGoogleError(false);
+
+    const cleanEmail = email.trim();
+
+    try {
+      if (mode === 'signUp') {
+        // Step 1: Check if an account with this email already exists
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', cleanEmail)
+          .single();
+
+        if (existingUser) {
+          setError('An account with this email already exists. Please sign in instead.');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            }
+          }
+        });
+        if (error) throw error;
+        if (data.user && !data.session) {
+          setSuccess('Registration successful! Please check your email to confirm your account.');
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Step 1: Check if this email was registered via Google OAuth
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('provider')
+          .eq('email', cleanEmail)
+          .single();
+
+        // Step 2: If Google user tries to use email/password — show friendly message
+        if (userData?.provider === 'google') {
+          setIsGoogleError(true);
+          setError(
+            'This account was created with Google. Please use "Continue with Google" to sign in.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Step 3: Otherwise proceed with normal email/password sign in
+        const { error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
@@ -78,7 +161,6 @@ export default function AuthPage() {
 
         {/* Content */}
         <div style={{ position: 'relative', zIndex: 10, padding: '3rem 3.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-
           <div style={{ marginBottom: 'auto' }}>
             <BrandLogo size="lg" showWordmark={false} />
           </div>
@@ -138,7 +220,6 @@ export default function AuthPage() {
                     {perk.icon}
                   </div>
                   <div>
-                    {/* ← This was the broken line — now explicitly white */}
                     <p style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.9375rem', margin: '0 0 3px', lineHeight: 1.3 }}>
                       {perk.title}
                     </p>
@@ -151,7 +232,6 @@ export default function AuthPage() {
             </div>
           </motion.div>
 
-          {/* Bottom trust badge */}
           <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '0.75rem', letterSpacing: '0.04em' }}>
             Trusted by 50,000+ shoppers across India
           </p>
@@ -160,10 +240,10 @@ export default function AuthPage() {
 
       {/* ── RIGHT PANEL ────────────────────────────── */}
       <div
-        className="flex-1 flex flex-col items-center justify-center"
+        className="flex-1 flex flex-col items-center justify-center relative"
         style={{ padding: '3rem 2rem', background: 'var(--bg-primary)' }}
       >
-        <div className="lg:hidden" style={{ marginBottom: '3rem' }}>
+        <div className="lg:hidden" style={{ marginBottom: '2.5rem' }}>
           <BrandLogo size="md" showWordmark={false} />
         </div>
 
@@ -171,50 +251,152 @@ export default function AuthPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          style={{ width: '100%', maxWidth: '360px' }}
+          className="auth-card"
         >
-          {/* Heading */}
-          <div style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.75rem',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              marginBottom: '0.5rem',
-            }}>
-              Welcome back
+          {/* Mode Toggle */}
+          <div className="auth-toggle-wrapper">
+            <button
+              onClick={() => { setMode('signIn'); setError(null); setSuccess(null); setIsGoogleError(false); }}
+              className={`auth-toggle-btn ${mode === 'signIn' ? 'active' : ''}`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => { setMode('signUp'); setError(null); setSuccess(null); setIsGoogleError(false); }}
+              className={`auth-toggle-btn ${mode === 'signUp' ? 'active' : ''}`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          <div>
+            <h2 className="auth-heading">
+              {mode === 'signIn' ? 'Welcome back' : 'Create an account'}
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', lineHeight: 1.65 }}>
-              Sign in to your account to continue shopping.
+            <p className="auth-subheading">
+              {mode === 'signIn' 
+                ? 'Sign in to your account to continue shopping.' 
+                : 'Enter your details below to join FashionVerse.'}
             </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <AnimatePresence mode="popLayout">
+              {mode === 'signUp' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="auth-input-wrapper"
+                >
+                  <input
+                    type="text"
+                    required
+                    placeholder="Full Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="auth-input"
+                  />
+                  <div className="auth-input-icon">
+                    <User size={18} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="auth-input-wrapper">
+              <input
+                type="email"
+                required
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="auth-input"
+              />
+              <div className="auth-input-icon">
+                <Mail size={18} />
+              </div>
+            </div>
+
+            <div className="auth-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="auth-password-toggle"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {mode === 'signIn' && (
+              <div className="auth-forgot-link">
+                <a href="#">
+                  Forgot Password?
+                </a>
+              </div>
+            )}
+
+            {error && (
+              <div className={isGoogleError ? "auth-error-google" : "auth-error-msg"}>
+                {isGoogleError && (
+                   <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                    <path d="M47.532 24.552c0-1.636-.147-3.2-.422-4.704H24.48v8.898h12.985c-.56 3.02-2.256 5.578-4.804 7.294v6.065h7.776c4.548-4.19 7.093-10.356 7.093-17.553z" fill="#4285F4"/>
+                    <path d="M24.48 48c6.515 0 11.985-2.16 15.98-5.855l-7.776-6.065c-2.159 1.446-4.919 2.302-8.204 2.302-6.31 0-11.655-4.262-13.566-9.988H2.867v6.254C6.844 42.858 15.08 48 24.48 48z" fill="#34A853"/>
+                    <path d="M10.914 28.394A14.45 14.45 0 0 1 10.15 24c0-1.528.262-3.01.764-4.394v-6.254H2.867A23.952 23.952 0 0 0 .48 24c0 3.862.926 7.52 2.387 10.648l8.047-6.254z" fill="#FBBC05"/>
+                    <path d="M24.48 9.618c3.557 0 6.75 1.224 9.263 3.628l6.95-6.95C36.454 2.39 30.989 0 24.48 0 15.08 0 6.844 5.142 2.867 13.352l8.047 6.254c1.911-5.726 7.256-9.988 13.566-9.988z" fill="#EA4335"/>
+                  </svg>
+                )}
+                <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="auth-success-msg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>{success}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="auth-submit-btn"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {isLoading ? (
+                <Loader className="animate-spin" size={20} />
+              ) : (
+                <>
+                  {mode === 'signIn' ? 'Sign In' : 'Create Account'}
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="auth-divider">
+            <div className="auth-divider-line" />
+            <span className="auth-divider-text">or continue with</span>
+            <div className="auth-divider-line" />
           </div>
 
           {/* Google Sign-In */}
           <button
             onClick={signInWithGoogle}
-            style={{
-              width: '100%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.875rem',
-              padding: '0.9375rem 1.5rem',
-              background: 'var(--bg-card)',
-              color: 'var(--text-primary)',
-              border: '1.5px solid var(--border-color)',
-              borderRadius: '14px',
-              fontSize: '0.9375rem', fontWeight: 600,
-              boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              marginBottom: '1.25rem',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.13)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
+            className={`auth-google-btn ${isGoogleError ? 'highlighted' : ''}`}
           >
             <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
               <path d="M47.532 24.552c0-1.636-.147-3.2-.422-4.704H24.48v8.898h12.985c-.56 3.02-2.256 5.578-4.804 7.294v6.065h7.776c4.548-4.19 7.093-10.356 7.093-17.553z" fill="#4285F4"/>
@@ -226,47 +408,15 @@ export default function AuthPage() {
           </button>
 
           {/* Privacy note */}
-          <div style={{
-            background: 'var(--bg-secondary)', borderRadius: '12px',
-            padding: '0.875rem 1.125rem', marginBottom: '2rem',
-          }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.78125rem', lineHeight: 1.7, textAlign: 'center', margin: 0 }}>
-              By continuing, you agree to our{' '}
-              <a href="#" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>Terms of Service</a>
-              {' '}and{' '}
-              <a href="#" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</a>.
-              <br />We never post without your permission.
-            </p>
-          </div>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', fontWeight: 500 }}>
-              No account needed to browse
-            </span>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
+          <div className="auth-terms">
+            By continuing, you agree to our{' '}
+            <a href="#">Terms of Service</a>
+            {' '}and{' '}
+            <a href="#">Privacy Policy</a>.
           </div>
 
           {/* Guest link */}
-          <a
-            href="/"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '100%', padding: '0.875rem',
-              color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500,
-              border: '1.5px solid var(--border-color)', borderRadius: '14px',
-              textDecoration: 'none', transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-secondary)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
+          <a href="/" className="auth-guest-link">
             Continue browsing as guest
           </a>
         </motion.div>

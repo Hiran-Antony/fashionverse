@@ -7,7 +7,7 @@ import { animateCountUp, usePrefersReducedMotionStatic } from '../../hooks/useSc
 import TextType from './TextType';
 
 const LOOKBOOK_VIDEOS = [
-  { src: '/videos/hero-man.mp4', label: 'SS 2025 Lookbook' },
+  { src: '/videos/hero1.mp4', label: 'SS 2025 Lookbook' },
 ];
 
 const TICKER_ITEMS = [
@@ -136,7 +136,10 @@ export default function SplitHero() {
   return (
     <>
       <section className="split-hero hero-section hero-container">
-        {/* Left panel — text */}
+        {/* Full-screen dark gradient overlay — keeps text readable */}
+        <div className="hero-bg-overlay" aria-hidden="true" />
+
+        {/* Left panel — text content (z-index: 3) */}
         <div ref={leftRef} className="split-hero-left">
           <div className="split-hero-content">
             <p className="split-hero-tag">SS 2025 — AI-POWERED FASHION</p>
@@ -190,7 +193,7 @@ export default function SplitHero() {
           </div>
         </div>
 
-        {/* Right panel — video */}
+        {/* Right panel — video (absolute positioned, z-index: 1) */}
         <div className="split-hero-right">
           <div className="split-hero-video-wrap hero-video-panel">
             <video

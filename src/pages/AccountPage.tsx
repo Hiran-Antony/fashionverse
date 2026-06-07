@@ -89,7 +89,7 @@ function FloatingInput({
               outline: 'none',
               fontSize: '15px',
               fontWeight: 600,
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               lineHeight: '1.4',
             }}
           />
@@ -710,7 +710,7 @@ function OrdersTab({ userId }: { userId: string }) {
     queryKey: ['my-orders', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('orders').select('*, order_items(*)').eq('user_id', userId)
+        .from('orders').select('*, order_items(*)').eq('user_id', userId).neq('status', 'cancelled')
         .order('created_at', { ascending: false }).limit(30);
       if (error) throw error;
       return data || [];
@@ -721,7 +721,7 @@ function OrdersTab({ userId }: { userId: string }) {
   const cancelMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const { error } = await supabase.from('orders').update({ status: 'cancelled' })
-        .eq('id', orderId).eq('user_id', userId).eq('status', 'pending');
+        .eq('id', orderId).eq('user_id', userId).in('status', ['pending', 'packed']);
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['my-orders', userId] }); toast.success('Order cancelled.'); },
@@ -795,7 +795,7 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {order.status === 'pending' && (
+          {(order.status === 'pending' || order.status === 'packed') && (
             <button onClick={onCancel}
               style={{
                 padding: '7px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
