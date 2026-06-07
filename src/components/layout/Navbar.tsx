@@ -12,13 +12,11 @@ import {
   LogOut,
   Package,
   MapPin,
-  ChevronDown,
 } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
 import { useAuthStore } from '../../store/authStore';
-import { CATEGORIES } from '../../utils/constants';
 import BrandLogo from './BrandLogo';
 
 export default function Navbar() {
@@ -122,52 +120,25 @@ export default function Navbar() {
               isLight={!isScrolled && isHomePage}
             />
 
-            {/* Categories Dropdown */}
-            <div className="relative group">
-              <button
-                className="flex items-center gap-1.5 text-sm font-medium tracking-wide transition-colors"
-                style={{
-                  color: !isScrolled && isHomePage ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0.5rem 0',
-                }}
-              >
-                Categories
-                <ChevronDown size={13} className="transition-transform duration-200 group-hover:rotate-180" />
-              </button>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-                <div
-                  className="rounded-2xl overflow-hidden shadow-2xl"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-color)',
-                    minWidth: '180px',
-                    padding: '0.5rem',
-                  }}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <Link
-                      key={cat.value}
-                      to={`/products?category=${cat.value}`}
-                      className="flex items-center px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors"
-                      style={{ color: 'var(--text-secondary)' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--bg-secondary)';
-                        e.currentTarget.style.color = 'var(--purple-600)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }}
-                    >
-                      {cat.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+            {/* Direct Category Links */}
+            <NavLink
+              to="/men"
+              label="Men"
+              isActive={location.pathname === '/men'}
+              isLight={!isScrolled && isHomePage}
+            />
+            <NavLink
+              to="/women"
+              label="Women"
+              isActive={location.pathname === '/women'}
+              isLight={!isScrolled && isHomePage}
+            />
+            <NavLink
+              to="/kids"
+              label="Kids"
+              isActive={location.pathname === '/kids'}
+              isLight={!isScrolled && isHomePage}
+            />
 
             <NavLink
               to="/products"
@@ -413,15 +384,24 @@ export default function Navbar() {
                   Categories
                 </p>
                 <div className="flex flex-col gap-1">
-                  {CATEGORIES.map((cat) => (
-                    <MobileNavLink
-                      key={cat.value}
-                      to={`/products?category=${cat.value}`}
-                      label={cat.label}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      secondary
-                    />
-                  ))}
+                  <MobileNavLink
+                    to="/men"
+                    label="Men"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    secondary
+                  />
+                  <MobileNavLink
+                    to="/women"
+                    label="Women"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    secondary
+                  />
+                  <MobileNavLink
+                    to="/kids"
+                    label="Kids"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    secondary
+                  />
                 </div>
               </div>
 
