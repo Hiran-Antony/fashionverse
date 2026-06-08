@@ -27,6 +27,9 @@ const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage')
 const TryOnPage = lazy(() => import('./pages/TryOnPage'));
 const StyleBuilderPage = lazy(() => import('./pages/StyleBuilderPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const MenPage = lazy(() => import('./pages/MenPage'));
+const WomenPage = lazy(() => import('./pages/WomenPage'));
+const KidsPage = lazy(() => import('./pages/KidsPage'));
 
 // ─── Loading Spinner ─────────────────────────────────────────
 function PageLoader() {
@@ -118,6 +121,9 @@ function App() {
                 {/* ── Main app with Navbar + Footer ──────── */}
                 <Route element={<Layout />}>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/men" element={<MenPage />} />
+                  <Route path="/women" element={<WomenPage />} />
+                  <Route path="/kids" element={<KidsPage />} />
                   <Route path="/products" element={<ProductListPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
