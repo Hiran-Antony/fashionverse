@@ -65,23 +65,24 @@ export default function ProductCarousel({
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex items-end justify-between mb-10"
+          className="flex items-end justify-between"
+          style={{ marginBottom: '3.5rem' }}
         >
           <div>
             <p
-              className="text-xs font-semibold uppercase tracking-widest mb-2"
-              style={{ color: accentVar }}
+              className="text-xs md:text-sm font-bold uppercase mb-4"
+              style={{ color: accentVar, letterSpacing: '0.15em' }}
             >
               {subtitle}
             </p>
             <h2
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
-                fontWeight: 700,
+                fontSize: 'clamp(2.25rem, 4vw, 3.5rem)',
+                fontWeight: 600,
                 color: 'var(--text-primary)',
-                lineHeight: 1.15,
-                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                letterSpacing: '0',
               }}
             >
               {title}

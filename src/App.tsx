@@ -31,15 +31,17 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 // ─── Loading Spinner ─────────────────────────────────────────
 function PageLoader() {
   return (
-    <div 
-      className="fixed inset-0 flex items-center justify-center z-50 bg-black"
-      style={{
-        backgroundImage: 'url("/photos/hero-bg.jpeg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black overflow-hidden">
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url("/photos/hero-bg.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          transform: 'scale(1.05)',
+        }}
+      />
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-0" />
       <div className="relative z-10 flex flex-col items-center gap-6">
         <div className="w-16 h-16 border-4 border-[#C9973A]/20 border-t-[#C9973A] rounded-full animate-spin" />

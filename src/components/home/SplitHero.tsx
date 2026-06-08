@@ -142,11 +142,11 @@ export default function SplitHero() {
         {/* Left panel — text content (z-index: 3) */}
         <div ref={leftRef} className="split-hero-left">
           <div className="split-hero-content">
-            <p className="split-hero-tag">SS 2025 — AI-POWERED FASHION</p>
+            <p className="split-hero-tag">AI-DRIVEN STYLE EXPERIENCE</p>
 
             <h1 className="split-hero-headline min-h-[1.2em]">
               <TextType 
-                text={['Discover Your Perfect Style', 'Curate Your Wardrobe', 'Elevate Your Look']} 
+                text={['Discover Your\nPerfect Style', 'Curate Your\nWardrobe', 'Elevate Your\nLook']} 
                 typingSpeed={70}
                 deletingSpeed={40}
                 pauseDuration={2500}

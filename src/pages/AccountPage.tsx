@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWishlistStore } from '../store/wishlistStore';
@@ -226,6 +226,15 @@ function AddressFormModal({ existing, onClose, onSave }: {
   const [pincode, setPincode] = useState(existing?.pincode || '');
   const [isDefault, setIsDefault] = useState(existing?.is_default || false);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
+
   const handleSave = () => {
     if (!name || !phone || !line1 || !city || !state || !pincode) {
       toast.error('Please fill all required fields'); return;
@@ -237,69 +246,41 @@ function AddressFormModal({ existing, onClose, onSave }: {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+      className="new-address-overlay"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
+        className="new-address-modal"
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 24 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        style={{
-          width: '100%', maxWidth: '520px', maxHeight: '92vh', overflowY: 'auto',
-          background: 'var(--bg-card)', borderRadius: '24px', padding: '32px',
-          boxShadow: '0 32px 64px rgba(201,151,58,0.2), 0 8px 24px rgba(0,0,0,0.12)',
-        }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <div>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
-              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
-              boxShadow: '0 8px 20px rgba(201,151,58,0.35)',
-            }}>
-              <MapPin size={22} color="white" />
-            </div>
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
-              {existing ? 'Edit Address' : 'New Address'}
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              {existing ? 'Update your delivery address' : 'Add a new delivery address'}
-            </p>
+        <div style={{ position: 'relative', marginBottom: '24px' }}>
+          <div className="modal-icon-wrap">
+            <MapPin className="modal-icon" />
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-          >
+          <h2 className="modal-title">{existing ? 'Edit Address' : 'New Address'}</h2>
+          <p className="modal-subtitle">{existing ? 'Update your delivery address' : 'Add a new delivery address'}</p>
+          
+          <button className="modal-close" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
 
         {/* Label Pills */}
-        <div style={{ marginBottom: '24px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Address Type</p>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div>
+          <p className="address-type-label">Address Type</p>
+          <div className="address-type-pills">
             {LABELS.map(l => (
               <button
                 key={l}
                 onClick={() => setLabel(l)}
-                style={{
-                  padding: '7px 18px', borderRadius: '999px',
-                  fontSize: '13px', fontWeight: 700, cursor: 'pointer', border: 'none',
-                  background: label === l ? 'linear-gradient(135deg,#C9973A,#C9973A)' : 'var(--bg-tertiary)',
-                  color: label === l ? 'white' : 'var(--text-muted)',
-                  boxShadow: label === l ? '0 4px 12px rgba(201,151,58,0.35)' : 'none',
-                  transition: 'all 0.2s',
-                }}
+                className={`address-type-pill ${label === l ? 'active' : ''}`}
               >
                 {l}
               </button>
@@ -308,63 +289,63 @@ function AddressFormModal({ existing, onClose, onSave }: {
         </div>
 
         {/* Fields */}
-        <FloatingInput label="Full Name" value={name} onChange={setName} placeholder="Recipient's full name" icon={User} />
-        <FloatingInput label="Phone Number" value={phone} onChange={setPhone} type="tel" placeholder="10-digit mobile number" icon={Phone} />
-        <FloatingInput label="Address Line 1" value={line1} onChange={setLine1} placeholder="House / Flat, Building, Street" icon={MapPin} />
-        <FloatingInput label="Address Line 2 (Optional)" value={line2} onChange={setLine2} placeholder="Area, Landmark" />
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <FloatingInput label="City" value={city} onChange={setCity} placeholder="e.g. Chennai" />
-          <FloatingInput label="Pincode" value={pincode} onChange={setPincode} placeholder="6-digit code" />
+        <div className="address-input-group">
+          <div className="address-input-wrap">
+            <User className="address-input-icon" />
+            <input className="address-input" value={name} onChange={e => setName(e.target.value)} placeholder="Recipient's full name" />
+          </div>
         </div>
-        <FloatingInput label="State" value={state} onChange={setState} placeholder="e.g. Tamil Nadu" />
+        
+        <div className="address-input-group">
+          <div className="address-input-wrap">
+            <Phone className="address-input-icon" />
+            <input className="address-input" value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="10-digit mobile number" />
+          </div>
+        </div>
+
+        <div className="address-input-group">
+          <div className="address-input-wrap">
+            <MapPin className="address-input-icon" />
+            <input className="address-input" value={line1} onChange={e => setLine1(e.target.value)} placeholder="House / Flat, Building, Street" />
+          </div>
+        </div>
+
+        <div className="address-input-group">
+          <div className="address-input-wrap">
+            <input className="address-input no-icon" value={line2} onChange={e => setLine2(e.target.value)} placeholder="Area, Landmark (Optional)" />
+          </div>
+        </div>
+
+        <div className="address-input-row">
+          <div className="address-input-wrap">
+            <input className="address-input no-icon" value={city} onChange={e => setCity(e.target.value)} placeholder="City (e.g. Chennai)" />
+          </div>
+          <div className="address-input-wrap">
+            <input className="address-input no-icon" value={pincode} onChange={e => setPincode(e.target.value)} placeholder="Pincode (6-digits)" />
+          </div>
+        </div>
+        
+        <div className="address-input-group">
+          <div className="address-input-wrap">
+            <input className="address-input no-icon" value={state} onChange={e => setState(e.target.value)} placeholder="State (e.g. Tamil Nadu)" />
+          </div>
+        </div>
 
         {/* Default toggle */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '24px', padding: '14px 16px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1.5px solid #e5e7eb' }}>
-          <div
-            onClick={() => setIsDefault(!isDefault)}
-            style={{
-              width: '44px', height: '24px', borderRadius: '999px', flexShrink: 0,
-              background: isDefault ? '#C9973A' : '#d1d5db',
-              position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
-            }}
-          >
-            <div style={{
-              position: 'absolute', top: '3px',
-              left: isDefault ? '23px' : '3px',
-              width: '18px', height: '18px', borderRadius: '50%',
-              background: 'var(--bg-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-              transition: 'left 0.2s',
-            }} />
+        <div className="default-address-wrap" onClick={() => setIsDefault(!isDefault)} style={{ cursor: 'pointer' }}>
+          <div className="default-address-text">
+            <h4>Set as default address</h4>
+            <p>Use this address by default at checkout</p>
           </div>
-          <div>
-            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Set as default address</p>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Use this address by default at checkout</p>
+          <div className={`toggle-switch ${isDefault ? 'on' : ''}`}>
+            <div className="toggle-knob" />
           </div>
-        </label>
+        </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '13px', borderRadius: '12px',
-              border: '2px solid #e5e7eb', background: 'var(--bg-card)',
-              fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            style={{
-              flex: 2, padding: '13px', borderRadius: '12px',
-              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
-              border: 'none', fontSize: '14px', fontWeight: 700, color: 'white', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 14px rgba(201,151,58,0.4)',
-            }}
-          >
+        <div className="modal-buttons">
+          <button className="modal-cancel-btn" onClick={onClose}>Cancel</button>
+          <button className="modal-save-btn" onClick={handleSave}>
             <Save size={15} /> Save Address
           </button>
         </div>
@@ -789,7 +770,7 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
           <div style={{ width: '1px', height: '40px', background: 'var(--bg-tertiary)' }} />
           <div>
             <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '4px' }}>Order Date</p>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: '#374151' }}>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
               {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
@@ -837,7 +818,7 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
                     }}>
                       {done && !active ? <CheckCircle2 size={17} strokeWidth={2.5} /> : done && active ? <span style={{ display: 'flex' }}>{s.icon}</span> : <Circle size={17} strokeWidth={2} />}
                     </div>
-                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? '#374151' : 'var(--text-muted)', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
+                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
                   </div>
                   {!isLast && <div style={{ flex: 1, height: '3px', margin: '0 4px', borderRadius: '999px', background: i < stepIdx ? '#10b981' : '#e5e7eb', marginBottom: '20px' }} />}
                 </div>

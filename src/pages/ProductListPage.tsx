@@ -1,16 +1,18 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { X, Search, ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
-import { CATEGORIES, SUB_CATEGORIES } from '../utils/constants';
+import { CATEGORIES, SUB_CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
 import ProductCard from '../components/product/ProductCard';
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [selectedGroupHeader, setSelectedGroupHeader] = useState<string | null>(null);
 
   const categoryQuery = searchParams.get('category');
   const searchQuery = searchParams.get('search');
@@ -96,6 +98,7 @@ export default function ProductListPage() {
       newParams.delete('types');
     }
     setSearchParams(newParams);
+    setSelectedGroupHeader(null);
   };
 
   const handleTypeToggle = (typeValue: string) => {
@@ -117,7 +120,7 @@ export default function ProductListPage() {
   return (
     <div className="container py-8 md:py-12">
       {/* Page Header */}
-      <div className="mb-8 md:mb-12 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="mb-6 md:mb-8 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
             {categoryQuery
@@ -131,6 +134,37 @@ export default function ProductListPage() {
           </p>
         </div>
       </div>
+
+      {/* Horizontal Group Navigation */}
+      {categoryQuery && GROUPED_CATEGORIES[categoryQuery] && (
+        <div className="w-full border-y border-[rgba(201,151,58,0.15)] bg-[rgba(18,10,6,0.3)] mb-8 overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-6 md:gap-10 px-4 md:px-0 min-w-max">
+            <button
+              onClick={() => setSelectedGroupHeader(null)}
+              className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors ${
+                selectedGroupHeader === null
+                  ? 'border-[#C9973A] text-[#E8B84B]'
+                  : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
+              }`}
+            >
+              All
+            </button>
+            {GROUPED_CATEGORIES[categoryQuery].map((group) => (
+              <button
+                key={group.heading}
+                onClick={() => setSelectedGroupHeader(group.heading)}
+                className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors ${
+                  selectedGroupHeader === group.heading
+                    ? 'border-[#C9973A] text-[#E8B84B]'
+                    : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
+                }`}
+              >
+                {group.heading}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Mobile Filter Toggle */}
@@ -199,35 +233,35 @@ export default function ProductListPage() {
                 </div>
 
                 {/* Categories */}
-                <div>
-                  <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Categories
+                <div style={{ marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(201,151,58,0.55)', marginBottom: '10px' }}>
+                    Browse
                   </h4>
-                  <ul className="space-y-2">
+                  <ul style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <li>
                       <button
                         onClick={() => handleCategorySelect(null)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          !categoryQuery ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-100'
-                        }`}
                         style={{
-                          background: !categoryQuery ? 'var(--purple-50)' : 'transparent',
-                          color: !categoryQuery ? 'var(--purple-600)' : 'var(--text-secondary)'
+                          width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: '8px',
+                          fontSize: '13px', fontWeight: 500, cursor: 'pointer', border: 'none',
+                          background: !categoryQuery ? 'rgba(201,151,58,0.12)' : 'transparent',
+                          color: !categoryQuery ? '#E8B84B' : 'rgba(245,237,212,0.6)',
+                          transition: 'all 0.15s',
                         }}
                       >
-                        All Categories
+                        All Products
                       </button>
                     </li>
                     {CATEGORIES.map((cat) => (
                       <li key={cat.value}>
                         <button
                           onClick={() => handleCategorySelect(cat.value)}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            categoryQuery === cat.value ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-100'
-                          }`}
                           style={{
-                            background: categoryQuery === cat.value ? 'var(--purple-50)' : 'transparent',
-                            color: categoryQuery === cat.value ? 'var(--purple-600)' : 'var(--text-secondary)'
+                            width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: '8px',
+                            fontSize: '13px', fontWeight: 500, cursor: 'pointer', border: 'none',
+                            background: categoryQuery === cat.value ? 'rgba(201,151,58,0.12)' : 'transparent',
+                            color: categoryQuery === cat.value ? '#E8B84B' : 'rgba(245,237,212,0.6)',
+                            transition: 'all 0.15s',
                           }}
                         >
                           {cat.label}
@@ -237,38 +271,104 @@ export default function ProductListPage() {
                   </ul>
                 </div>
 
-                {/* Product Type Filters */}
-                {categoryQuery && SUB_CATEGORIES[categoryQuery] && (
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
-                      Product Type
+                {/* Grouped Type Filters — shown when men/women/kids selected */}
+                {categoryQuery && GROUPED_CATEGORIES[categoryQuery] && (
+                  <div style={{ borderTop: '1px solid rgba(201,151,58,0.12)', paddingTop: '16px' }}>
+                    <h4 style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(201,151,58,0.55)', marginBottom: '10px' }}>
+                      Categories
                     </h4>
-                    <div className="space-y-3">
-                      {SUB_CATEGORIES[categoryQuery].map((type) => {
-                        const isChecked = activeTypes.includes(type.value);
-                        return (
-                          <label key={type.value} className="flex items-center gap-3 cursor-pointer group">
-                            <div
-                              className="w-5 h-5 rounded border flex items-center justify-center transition-all"
-                              style={{
-                                background: isChecked ? 'var(--purple-600)' : 'transparent',
-                                borderColor: isChecked ? 'var(--purple-600)' : 'var(--border-color)',
-                              }}
-                            >
-                              {isChecked && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {selectedGroupHeader ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          {GROUPED_CATEGORIES[categoryQuery]
+                            .find(g => g.heading === selectedGroupHeader)?.items.map((item) => {
+                              const isActive = activeTypes.includes(item.value);
+                              return (
+                                <button
+                                  key={item.value}
+                                  onClick={() => handleTypeToggle(item.value)}
+                                  style={{
+                                    width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px',
+                                    fontSize: '13px', fontWeight: isActive ? 600 : 400, border: 'none', cursor: 'pointer',
+                                    background: isActive ? 'rgba(201,151,58,0.12)' : 'transparent',
+                                    color: isActive ? '#E8B84B' : 'rgba(245,237,212,0.7)',
+                                    borderLeft: isActive ? '2px solid #C9973A' : '2px solid transparent',
+                                    transition: 'all 0.15s',
+                                  }}
+                                >
+                                  {item.label}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      ) : (
+                        GROUPED_CATEGORIES[categoryQuery].map((group) => {
+                          const isOpen = activeGroup === group.heading;
+                          const hasActive = group.items.some(i => activeTypes.includes(i.value));
+                          return (
+                            <div key={group.heading}>
+                              {/* Group heading — clickable to expand */}
+                              <button
+                                onClick={() => setActiveGroup(isOpen ? null : group.heading)}
+                                style={{
+                                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                  background: isOpen || hasActive ? 'rgba(201,151,58,0.08)' : 'transparent',
+                                  color: isOpen || hasActive ? '#C9973A' : 'rgba(245,237,212,0.75)',
+                                  fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                                  transition: 'all 0.15s',
+                                }}
+                              >
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {hasActive && (
+                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C9973A', flexShrink: 0 }} />
+                                  )}
+                                  {group.heading}
+                                </span>
+                                <ChevronRight
+                                  size={13}
+                                  style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                                />
+                              </button>
+
+                              {/* Subcategory items */}
+                              <AnimatePresence initial={false}>
+                                {isOpen && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                                    style={{ overflow: 'hidden' }}
+                                  >
+                                    <div style={{ paddingLeft: '12px', paddingBottom: '4px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                      {group.items.map((item) => {
+                                        const isActive = activeTypes.includes(item.value);
+                                        return (
+                                          <button
+                                            key={item.value}
+                                            onClick={() => handleTypeToggle(item.value)}
+                                            style={{
+                                              width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: '6px',
+                                              fontSize: '13px', fontWeight: isActive ? 600 : 400, border: 'none', cursor: 'pointer',
+                                              background: isActive ? 'rgba(201,151,58,0.12)' : 'transparent',
+                                              color: isActive ? '#E8B84B' : 'rgba(245,237,212,0.55)',
+                                              borderLeft: isActive ? '2px solid #C9973A' : '2px solid transparent',
+                                              transition: 'all 0.15s',
+                                            }}
+                                          >
+                                            {item.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                            <span className="text-sm font-medium transition-colors" style={{ color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                              {type.label}
-                            </span>
-                            <input
-                              type="checkbox"
-                              className="hidden"
-                              checked={isChecked}
-                              onChange={() => handleTypeToggle(type.value)}
-                            />
-                          </label>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}

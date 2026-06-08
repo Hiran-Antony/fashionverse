@@ -2,12 +2,13 @@ import { useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
-import { Heart, ShoppingBag, Star, Shield, Truck, RotateCcw, Award, Rotate3D } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Shield, Truck, RotateCcw, Award, Rotate3D, Ruler } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
 import ProductCard from '../components/product/ProductCard';
+import SizeGuideModal from '../components/product/SizeGuideModal';
 
 const TRUST_BADGES = [
   { icon: <Truck size={18} />, label: 'Free delivery', sub: 'On orders above ₹999' },
@@ -61,6 +62,7 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
   const [is360Active, setIs360Active] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const mainImageRef = useRef<HTMLImageElement>(null);
 
   const { addItem, openCart } = useCartStore();
@@ -303,9 +305,14 @@ export default function ProductDetailPage() {
 
             {sizes.length > 0 && (
               <div className="pdp-section">
-                <p className="pdp-label">
-                  Size {selectedSize && <strong>{selectedSize}</strong>}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <p className="pdp-label" style={{ marginBottom: 0 }}>
+                    Size {selectedSize && <strong>{selectedSize}</strong>}
+                  </p>
+                  <button type="button" className="size-guide-btn" onClick={() => setIsSizeGuideOpen(true)}>
+                    <Ruler size={14} /> Size Guide
+                  </button>
+                </div>
                 <div className="pdp-sizes">
                   {sizes.map((s: any) => (
                     <button
@@ -378,6 +385,11 @@ export default function ProductDetailPage() {
           </section>
         )}
       </div>
+      
+      <SizeGuideModal 
+        isOpen={isSizeGuideOpen} 
+        onClose={() => setIsSizeGuideOpen(false)} 
+      />
     </div>
   );
 }
