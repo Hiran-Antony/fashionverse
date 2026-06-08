@@ -939,13 +939,14 @@ a:hover {
 .editorial-product-name {
   display: block;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #f5f5f0;
+  font-weight: 700;
+  color: #ffffff !important;
   line-height: 1.35;
   margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-decoration: none !important;
 }
 
 .editorial-product-name:hover {

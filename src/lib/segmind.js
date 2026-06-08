@@ -7,7 +7,7 @@ const SPACE_URL = "/api/tryon";
 // Real space URL — used for constructing file result URLs
 const REAL_SPACE_URL = "https://kwai-kolors-kolors-virtual-try-on.hf.space";
 
-console.log("🔑 Env Check:", {
+console.log("≡ƒöæ Env Check:", {
   hasHfToken: !!HF_TOKEN,
   hasCloudName: !!CLOUD_NAME,
   hfPrefix: HF_TOKEN ? HF_TOKEN.substring(0, 12) + "..." : "MISSING",
@@ -94,7 +94,7 @@ async function joinQueue(personFileData, garmentFileData, sessionHash, signal) {
   }
 
   const data = await res.json();
-  console.log("📋 Queue join response:", data);
+  console.log("≡ƒôï Queue join response:", data);
   if (!data.event_id) throw new Error("Queue join returned no event_id");
   return data.event_id;
 }
@@ -105,7 +105,7 @@ async function joinQueue(personFileData, garmentFileData, sessionHash, signal) {
 function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
   return new Promise((resolve, reject) => {
     const url = `${SPACE_URL}/queue/data?session_hash=${sessionHash}`;
-    console.log("📡 Polling SSE:", url);
+    console.log("≡ƒôí Polling SSE:", url);
 
     const headers = {};
     if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
@@ -151,7 +151,7 @@ function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
               continue;
             }
 
-            console.log("📡 SSE event:", event.msg, event);
+            console.log("≡ƒôí SSE event:", event.msg, event);
 
             if (event.msg === "process_completed") {
               clearTimeout(timeoutId);
@@ -203,7 +203,7 @@ function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
                 return;
               }
 
-              console.log("🖼️ Result image URL:", imgUrl);
+              console.log("≡ƒû╝∩╕Å Result image URL:", imgUrl);
 
               // Fetch the image through the Vite proxy and convert to blob URL
               try {
@@ -260,7 +260,7 @@ export async function runVirtualTryOn(modelFile, garmentFile, _garmentDescriptio
   }
 
   const sessionHash = Math.random().toString(36).substring(2, 12);
-  console.log("🔑 Session hash:", sessionHash);
+  console.log("≡ƒöæ Session hash:", sessionHash);
 
   console.log("📤 Uploading images to HF Space...");
   const [personFileData, garmentFileData] = await Promise.all([

@@ -12,7 +12,6 @@ import {
   LogOut,
   Package,
   MapPin,
-  ArrowRight,
 } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useCartStore } from '../../store/cartStore';
@@ -20,218 +19,10 @@ import { useWishlistStore } from '../../store/wishlistStore';
 import { useAuthStore } from '../../store/authStore';
 import BrandLogo from './BrandLogo';
 
-// ─── Mega Menu Data ──────────────────────────────────────────────
-
-const MEN_MENU = [
-  {
-    heading: 'TOPWEAR',
-    items: [
-      { label: 'T-Shirts', to: '/products?category=men&types=T-Shirts' },
-      { label: 'Casual Shirts', to: '/products?category=men&types=Casual Shirts' },
-      { label: 'Formal Shirts', to: '/products?category=men&types=Formal Shirts' },
-      { label: 'Sweatshirts', to: '/products?category=men&types=Sweatshirts' },
-      { label: 'Jackets', to: '/products?category=men&types=Jackets' },
-      { label: 'Blazers & Suits', to: '/products?category=men&types=Blazers & Suits' },
-    ],
-  },
-  {
-    heading: 'BOTTOMWEAR',
-    items: [
-      { label: 'Jeans', to: '/products?category=men&types=Jeans' },
-      { label: 'Trousers', to: '/products?category=men&types=Trousers' },
-      { label: 'Cargo', to: '/products?category=men&types=Cargo' },
-      { label: 'Shorts', to: '/products?category=men&types=Shorts' },
-      { label: 'Track Pants', to: '/products?category=men&types=Track Pants' },
-    ],
-  },
-  {
-    heading: 'FOOTWEAR',
-    items: [
-      { label: 'Casual Shoes', to: '/products?category=men&types=Casual Shoes' },
-      { label: 'Formal Shoes', to: '/products?category=men&types=Formal Shoes' },
-      { label: 'Sneakers', to: '/products?category=men&types=Sneakers' },
-      { label: 'Sandals', to: '/products?category=men&types=Sandals' },
-      { label: 'Sports Shoes', to: '/products?category=men&types=Sports Shoes' },
-    ],
-  },
-  {
-    heading: 'ETHNIC & FESTIVE',
-    items: [
-      { label: 'Kurtas', to: '/products?category=men&types=Kurtas' },
-      { label: 'Sherwanis', to: '/products?category=men&types=Sherwanis' },
-      { label: 'Nehru Jackets', to: '/products?category=men&types=Nehru Jackets' },
-      { label: 'Dhotis', to: '/products?category=men&types=Dhotis' },
-    ],
-  },
-  {
-    heading: 'ACCESSORIES',
-    items: [
-      { label: 'Watches', to: '/products?category=men&types=Watches' },
-      { label: 'Wallets', to: '/products?category=men&types=Wallets' },
-      { label: 'Belts', to: '/products?category=men&types=Belts' },
-      { label: 'Caps & Hats', to: '/products?category=men&types=Caps & Hats' },
-      { label: 'Sunglasses', to: '/products?category=men&types=Sunglasses' },
-    ],
-  },
-];
-
-const WOMEN_MENU = [
-  {
-    heading: 'TOPWEAR',
-    items: [
-      { label: 'Tops & Tees', to: '/products?category=women&types=Tops & Tees' },
-      { label: 'Shirts', to: '/products?category=women&types=Shirts' },
-      { label: 'Blouses', to: '/products?category=women&types=Blouses' },
-      { label: 'Sweaters', to: '/products?category=women&types=Sweaters' },
-      { label: 'Jackets', to: '/products?category=women&types=Jackets' },
-    ],
-  },
-  {
-    heading: 'BOTTOMWEAR',
-    items: [
-      { label: 'Jeans', to: '/products?category=women&types=Jeans' },
-      { label: 'Trousers', to: '/products?category=women&types=Trousers' },
-      { label: 'Skirts', to: '/products?category=women&types=Skirts' },
-      { label: 'Shorts', to: '/products?category=women&types=Shorts' },
-      { label: 'Leggings', to: '/products?category=women&types=Leggings' },
-    ],
-  },
-  {
-    heading: 'ETHNIC WEAR',
-    items: [
-      { label: 'Sarees', to: '/products?category=women&types=Sarees' },
-      { label: 'Kurtis', to: '/products?category=women&types=Kurtis' },
-      { label: 'Salwar Suits', to: '/products?category=women&types=Salwar Suits' },
-      { label: 'Lehenga', to: '/products?category=women&types=Lehenga' },
-      { label: 'Dupatta', to: '/products?category=women&types=Dupatta' },
-    ],
-  },
-  {
-    heading: 'FOOTWEAR',
-    items: [
-      { label: 'Heels', to: '/products?category=women&types=Heels' },
-      { label: 'Flats', to: '/products?category=women&types=Flats' },
-      { label: 'Sneakers', to: '/products?category=women&types=Sneakers' },
-      { label: 'Sandals', to: '/products?category=women&types=Sandals' },
-      { label: 'Boots', to: '/products?category=women&types=Boots' },
-    ],
-  },
-  {
-    heading: 'ACCESSORIES',
-    items: [
-      { label: 'Handbags', to: '/products?category=women&types=Handbags' },
-      { label: 'Jewellery', to: '/products?category=women&types=Jewellery' },
-      { label: 'Watches', to: '/products?category=women&types=Watches' },
-      { label: 'Sunglasses', to: '/products?category=women&types=Sunglasses' },
-      { label: 'Scarves', to: '/products?category=women&types=Scarves' },
-    ],
-  },
-];
-
-const KIDS_MENU = [
-  {
-    heading: 'BOYS',
-    items: [
-      { label: 'T-Shirts', to: '/products?category=kids&types=T-Shirts' },
-      { label: 'Shirts', to: '/products?category=kids&types=Shirts' },
-      { label: 'Jeans', to: '/products?category=kids&types=Jeans' },
-      { label: 'Shorts', to: '/products?category=kids&types=Shorts' },
-      { label: 'Track Pants', to: '/products?category=kids&types=Track Pants' },
-    ],
-  },
-  {
-    heading: 'GIRLS',
-    items: [
-      { label: 'Tops', to: '/products?category=kids&types=Tops' },
-      { label: 'Dresses', to: '/products?category=kids&types=Dresses' },
-      { label: 'Skirts', to: '/products?category=kids&types=Skirts' },
-      { label: 'Leggings', to: '/products?category=kids&types=Leggings' },
-      { label: 'Ethnic Wear', to: '/products?category=kids&types=Ethnic Wear' },
-    ],
-  },
-  {
-    heading: 'FOOTWEAR',
-    items: [
-      { label: 'Boys Shoes', to: '/products?category=kids&types=Boys Shoes' },
-      { label: 'Girls Shoes', to: '/products?category=kids&types=Girls Shoes' },
-      { label: 'Sandals', to: '/products?category=kids&types=Sandals' },
-      { label: 'Sports Shoes', to: '/products?category=kids&types=Sports Shoes' },
-    ],
-  },
-  {
-    heading: 'SCHOOL & SPORTS',
-    items: [
-      { label: 'School Uniforms', to: '/products?category=kids&types=School Uniforms' },
-      { label: 'Sports Wear', to: '/products?category=kids&types=Sports Wear' },
-      { label: 'Bags', to: '/products?category=kids&types=Bags' },
-    ],
-  },
-  {
-    heading: 'ACCESSORIES',
-    items: [
-      { label: 'Caps', to: '/products?category=kids&types=Caps' },
-      { label: 'Belts', to: '/products?category=kids&types=Belts' },
-      { label: 'Socks', to: '/products?category=kids&types=Socks' },
-      { label: 'Watches', to: '/products?category=kids&types=Watches' },
-    ],
-  },
-];
-
-const MEGA_MENUS: Record<string, { columns: typeof MEN_MENU; viewAllTo: string }> = {
-  men: { columns: MEN_MENU, viewAllTo: '/products?category=men' },
-  women: { columns: WOMEN_MENU, viewAllTo: '/products?category=women' },
-  kids: { columns: KIDS_MENU, viewAllTo: '/products?category=kids' },
-};
-
-// ─── Mega Menu Component ─────────────────────────────────────────
-
-function MegaMenu({
-  menuKey,
-  onMouseEnter,
-  onMouseLeave,
-  onLinkClick,
-}: {
-  menuKey: string;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-  onLinkClick: () => void;
-}) {
-  const menu = MEGA_MENUS[menuKey];
-  if (!menu) return null;
-  return (
-    <div
-      className="mega-menu"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <div className="mega-menu-grid">
-        {menu.columns.map((col) => (
-          <div key={col.heading}>
-            <p className="mega-menu-heading">{col.heading}</p>
-            {col.items.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                className="mega-menu-item"
-                onClick={onLinkClick}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="mega-view-all">
-        <Link to={menu.viewAllTo} onClick={onLinkClick}>
-          View All {menuKey.charAt(0).toUpperCase() + menuKey.slice(1)}
-          <ArrowRight size={13} />
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Navbar ─────────────────────────────────────────────────
+
+
 
 export default function Navbar() {
   const location = useLocation();
@@ -246,36 +37,14 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeMega, setActiveMega] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const prevCartCount = useRef(0);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cartBounce, setCartBounce] = useState(false);
   const cartCount = getItemCount();
 
-  const handleNavEnter = (menu: string) => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setActiveMega(menu);
-  };
 
-  const handleNavLeave = () => {
-    closeTimer.current = setTimeout(() => setActiveMega(null), 300);
-  };
-
-  const handleMenuEnter = () => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-  };
-
-  const handleMenuLeave = () => {
-    closeTimer.current = setTimeout(() => setActiveMega(null), 300);
-  };
-
-  const closeMega = () => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setActiveMega(null);
-  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 80);
@@ -298,7 +67,6 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
     setIsUserMenuOpen(false);
-    closeMega();
   }, [location.pathname]);
 
   useEffect(() => {
@@ -359,47 +127,25 @@ export default function Navbar() {
               isLight={!isScrolled && isHomePage}
             />
 
-            {/* Men */}
-            <div
-              onMouseEnter={() => handleNavEnter('men')}
-              onMouseLeave={handleNavLeave}
-            >
-              <Link
-                to="/products?category=men"
-                className={`cinematic-nav-link${activeMega === 'men' ? ' is-active' : ''}${!isScrolled && isHomePage ? ' is-light' : ''}`}
-                onClick={closeMega}
-              >
-                Men
-              </Link>
-            </div>
-
-            {/* Women */}
-            <div
-              onMouseEnter={() => handleNavEnter('women')}
-              onMouseLeave={handleNavLeave}
-            >
-              <Link
-                to="/products?category=women"
-                className={`cinematic-nav-link${activeMega === 'women' ? ' is-active' : ''}${!isScrolled && isHomePage ? ' is-light' : ''}`}
-                onClick={closeMega}
-              >
-                Women
-              </Link>
-            </div>
-
-            {/* Kids */}
-            <div
-              onMouseEnter={() => handleNavEnter('kids')}
-              onMouseLeave={handleNavLeave}
-            >
-              <Link
-                to="/products?category=kids"
-                className={`cinematic-nav-link${activeMega === 'kids' ? ' is-active' : ''}${!isScrolled && isHomePage ? ' is-light' : ''}`}
-                onClick={closeMega}
-              >
-                Kids
-              </Link>
-            </div>
+            {/* Direct Category Links */}
+            <NavLink
+              to="/men"
+              label="Men"
+              isActive={location.pathname === '/men'}
+              isLight={!isScrolled && isHomePage}
+            />
+            <NavLink
+              to="/women"
+              label="Women"
+              isActive={location.pathname === '/women'}
+              isLight={!isScrolled && isHomePage}
+            />
+            <NavLink
+              to="/kids"
+              label="Kids"
+              isActive={location.pathname === '/kids'}
+              isLight={!isScrolled && isHomePage}
+            />
 
             <NavLink
               to="/try-on"
@@ -572,26 +318,6 @@ export default function Navbar() {
         </div>
       </motion.nav>
 
-      {/* Mega Menu — rendered outside nav so it spans full width */}
-      <AnimatePresence>
-        {activeMega && (
-          <motion.div
-            key={activeMega}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.05, ease: 'linear' }}
-            style={{ position: 'fixed', top: 72, left: 0, right: 0, zIndex: 49 }}
-          >
-            <MegaMenu
-              menuKey={activeMega}
-              onMouseEnter={handleMenuEnter}
-              onMouseLeave={handleMenuLeave}
-              onLinkClick={closeMega}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Search Bar */}
       <AnimatePresence>
@@ -660,9 +386,9 @@ export default function Navbar() {
                     Categories
                   </p>
                   <div className="flex flex-col gap-1">
-                    <MobileNavLink to="/products?category=men" label="Men" onClick={() => setIsMobileMenuOpen(false)} secondary />
-                    <MobileNavLink to="/products?category=women" label="Women" onClick={() => setIsMobileMenuOpen(false)} secondary />
-                    <MobileNavLink to="/products?category=kids" label="Kids" onClick={() => setIsMobileMenuOpen(false)} secondary />
+                    <MobileNavLink to="/men" label="Men" onClick={() => setIsMobileMenuOpen(false)} secondary />
+                    <MobileNavLink to="/women" label="Women" onClick={() => setIsMobileMenuOpen(false)} secondary />
+                    <MobileNavLink to="/kids" label="Kids" onClick={() => setIsMobileMenuOpen(false)} secondary />
                   </div>
                 </div>
 

@@ -714,6 +714,29 @@ function OverviewTab() {
     return months;
   })();
 
+  // Calculate explicit clean ticks based on actual data
+  const calcTicks = (maxVal: number): number[] => {
+    if (maxVal === 0) return [0];
+    // Find a nice round step so we get ~4-5 ticks
+    const rawStep = maxVal / 4;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    const count = Math.ceil(maxVal / step);
+    return Array.from({ length: count + 1 }, (_, i) => i * step);
+  };
+
+  const weeklyMax = Math.max(...weeklySales.map(d => d.revenue), 0);
+  const weeklyTicks = calcTicks(weeklyMax);
+
+  const monthlyMax = Math.max(...monthlyRevenue.map(d => d.revenue), 0);
+  const monthlyTicks = calcTicks(monthlyMax);
+
+  const fmtTick = (v: number) => {
+    if (v === 0) return '₹0';
+    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
+    return `₹${v}`;
+  };
+
   // Category donut
   const { data: catData } = useQuery({
     queryKey: ['admin-category-counts'],
@@ -779,8 +802,8 @@ function OverviewTab() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
               <XAxis dataKey="day" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
-              <YAxis tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
-                tickFormatter={v => v === 0 ? '₹0' : `₹${(v/1000).toFixed(0)}k`}/>
+              <YAxis ticks={weeklyTicks} domain={[0, weeklyTicks[weeklyTicks.length - 1]]} tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
+                tickFormatter={fmtTick}/>
               <Tooltip content={<ChartTooltip/>}/>
               <Area type="monotone" dataKey="revenue" stroke={T.gold} strokeWidth={2.5}
                 fill="url(#goldGrad)" dot={{ fill: T.gold, strokeWidth: 0, r: 4 }} activeDot={{ r: 6, fill: T.lightGold }}/>
@@ -852,8 +875,8 @@ function OverviewTab() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
             <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
-            <YAxis tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
-              tickFormatter={v => v === 0 ? '₹0' : `₹${(v/1000).toFixed(0)}k`}/>
+            <YAxis ticks={monthlyTicks} domain={[0, monthlyTicks[monthlyTicks.length - 1]]} tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
+              tickFormatter={fmtTick}/>
             <Tooltip content={<ChartTooltip/>} cursor={{ fill: 'transparent' }}/>
             <Bar 
               dataKey="revenue" 
@@ -1033,6 +1056,16 @@ function ProductsTab() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [showModal]);
+
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
@@ -1101,12 +1134,6 @@ function ProductsTab() {
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif", margin: 0 }}>Product Catalog</h1>
-        <p style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>Manage your luxury inventory</p>
-      </div>
 
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1212,21 +1239,24 @@ function ProductsTab() {
         {showModal && (
           <>
             <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => !saving && setShowModal(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000 }}/>
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, overflow: 'hidden' }}/>
             <motion.div key="md" initial={{ opacity: 0, scale: 0.95, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-              style={{ position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, pointerEvents: 'none' }}>
-              <div onClick={e => e.stopPropagation()} style={{
-                pointerEvents: 'auto', width: '100%', maxWidth: 700, maxHeight: '92vh', overflowY: 'auto',
+              onClick={(e) => { if (e.target === e.currentTarget && !saving) setShowModal(false); }}
+              style={{ position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflow: 'hidden' }}>
+              <div 
+                onWheel={e => e.stopPropagation()}
+                onScroll={e => e.stopPropagation()}
+                style={{
+                width: '100%', maxWidth: 700, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto', overscrollBehavior: 'contain', pointerEvents: 'auto', WebkitOverflowScrolling: 'touch',
                 borderRadius: 24,
-                background: 'rgba(20,12,5,0.97)',
+                background: 'rgba(44,27,16,0.97)',
                 backdropFilter: 'blur(24px)',
                 border: `1px solid ${T.border}`,
                 boxShadow: SHADOW_LG,
               }}>
                 {/* Modal Header */}
                 <div style={{
-                  position: 'sticky', top: 0, background: 'rgba(20,12,5,0.98)', backdropFilter: 'blur(16px)',
+                  position: 'sticky', top: 0, background: 'rgba(44,27,16,0.98)', backdropFilter: 'blur(16px)',
                   padding: '22px 28px 18px', borderBottom: `1px solid ${T.border}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10,
                 }}>
@@ -1394,7 +1424,7 @@ function ProductsTab() {
 
                 {/* Modal Footer */}
                 <div style={{
-                  position: 'sticky', bottom: 0, background: 'rgba(20,12,5,0.98)', backdropFilter: 'blur(16px)',
+                  position: 'sticky', bottom: 0, background: 'rgba(44,27,16,0.98)', backdropFilter: 'blur(16px)',
                   padding: '16px 28px', borderTop: `1px solid ${T.border}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12,
                 }}>
@@ -1494,12 +1524,6 @@ function OrdersTab() {
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif", margin: 0 }}>Order Management</h1>
-        <p style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>Track and manage customer orders</p>
-      </div>
 
       {/* Mini stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
@@ -1780,12 +1804,6 @@ function CustomersTab() {
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-      {/* Header */}
-      <div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif", margin: 0 }}>User Management</h1>
-        <p style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>Manage your customer base</p>
-      </div>
 
       {/* Mini stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>

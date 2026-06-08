@@ -620,7 +620,7 @@ export default function VirtualTryOn() {
                   gap: "0.75rem",
                   justifyContent: "center"
                 }}>
-                  {["✦ Realistic Draping", "✦ Preserves Your Look", "✦ Instant Results"].map((feature) => (
+                  {["✨ Realistic Draping", "✨ Preserves Your Look", "✨ Instant Results"].map((feature) => (
                     <span key={feature} style={{
                       border: "1px solid rgba(201,168,76,0.2)",
                       borderRadius: "99px",
