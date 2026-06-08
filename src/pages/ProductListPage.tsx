@@ -5,7 +5,7 @@ import { X, Search, ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
-import { CATEGORIES, SUB_CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
+import { CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
 import ProductCard from '../components/product/ProductCard';
 
 export default function ProductListPage() {
@@ -49,7 +49,6 @@ export default function ProductListPage() {
     // Basic active filters
     const activeFilters = {
       priceRange: searchParams.get('priceRange'), // 'under50', '50to100', 'over100'
-      // Add more as needed
     };
 
     if (activeFilters.priceRange) {
@@ -80,7 +79,7 @@ export default function ProductListPage() {
     }
 
     return sorted;
-  }, [products, sortQuery, searchParams]);
+  }, [products, sortQuery, searchParams, activeTypes]);
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -118,57 +117,63 @@ export default function ProductListPage() {
   };
 
   return (
-    <div className="container py-8 md:py-12">
-      {/* Page Header */}
-      <div className="mb-6 md:mb-8 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+    <div className="flex flex-col min-h-screen">
+      {/* Cinematic Full-Bleed Page Header */}
+      <div className="relative py-16 md:py-24 overflow-hidden flex items-center justify-center text-center mb-8" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid var(--color-border)' }}>
+        {/* Floating Particles for Wow Factor */}
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-[var(--color-gold-primary)] rounded-full animate-pulse"
+              style={{
+                width: Math.random() * 4 + 2 + 'px',
+                height: Math.random() * 4 + 2 + 'px',
+                left: Math.random() * 100 + '%',
+                top: Math.random() * 100 + '%',
+                animationDuration: Math.random() * 3 + 2 + 's',
+                animationDelay: Math.random() * 2 + 's',
+                boxShadow: 'var(--glow-gold-soft)',
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="container relative z-10">
+          <motion.p
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="uppercase tracking-[0.3em] font-bold text-xs md:text-sm mb-4"
+            style={{ color: 'var(--color-gold-primary)' }}
+          >
+            Explore The Collection
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="text-5xl md:text-7xl font-bold mb-6"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+          >
             {categoryQuery
               ? CATEGORIES.find((c) => c.value === categoryQuery)?.label || 'Collection'
               : searchQuery
               ? `"${searchQuery}"`
               : 'All Products'}
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {filteredProducts.length} items found
-          </p>
+          </motion.h1>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="h-px w-32 mx-auto"
+            style={{ background: 'var(--gradient-accent)' }}
+          />
         </div>
       </div>
 
-      {/* Horizontal Group Navigation */}
-      {categoryQuery && GROUPED_CATEGORIES[categoryQuery] && (
-        <div className="w-full border-y border-[rgba(201,151,58,0.15)] bg-[rgba(18,10,6,0.3)] mb-8 overflow-x-auto hide-scrollbar">
-          <div className="flex items-center gap-6 md:gap-10 px-4 md:px-0 min-w-max">
-            <button
-              onClick={() => setSelectedGroupHeader(null)}
-              className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors ${
-                selectedGroupHeader === null
-                  ? 'border-[#C9973A] text-[#E8B84B]'
-                  : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
-              }`}
-            >
-              All
-            </button>
-            {GROUPED_CATEGORIES[categoryQuery].map((group) => (
-              <button
-                key={group.heading}
-                onClick={() => setSelectedGroupHeader(group.heading)}
-                className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors ${
-                  selectedGroupHeader === group.heading
-                    ? 'border-[#C9973A] text-[#E8B84B]'
-                    : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
-                }`}
-              >
-                {group.heading}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="container flex flex-col lg:flex-row gap-8 pb-16">
         {/* Mobile Filter Toggle */}
-        <div className="flex items-center justify-between lg:hidden mb-4 gap-4">
+        <div className="flex items-center justify-between lg:hidden mb-4 gap-4 w-full">
           <button
             onClick={() => setIsFilterOpen(true)}
             className="btn btn-outline flex-1 flex items-center justify-center gap-2"
@@ -198,7 +203,7 @@ export default function ProductListPage() {
 
         {/* Sidebar Filters (Desktop + Mobile overlay) */}
         <AnimatePresence>
-          {(isFilterOpen || window.innerWidth >= 1024) && (
+          {(isFilterOpen || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
             <motion.aside
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -405,6 +410,37 @@ export default function ProductListPage() {
 
         {/* Product Grid */}
         <div className="flex-1">
+          {/* Horizontal Subcategory Navigation */}
+          {categoryQuery && GROUPED_CATEGORIES[categoryQuery] && (
+            <div className="w-full border-y border-[rgba(201,151,58,0.15)] bg-[rgba(18,10,6,0.3)] mb-8 overflow-x-auto hide-scrollbar rounded-lg">
+              <div className="flex items-center gap-6 md:gap-10 px-6 min-w-max">
+                <button
+                  onClick={() => setSelectedGroupHeader(null)}
+                  className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors cursor-pointer ${
+                    selectedGroupHeader === null
+                      ? 'border-[#C9973A] text-[#E8B84B]'
+                      : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
+                  }`}
+                >
+                  All
+                </button>
+                {GROUPED_CATEGORIES[categoryQuery].map((group) => (
+                  <button
+                    key={group.heading}
+                    onClick={() => setSelectedGroupHeader(group.heading)}
+                    className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors cursor-pointer ${
+                      selectedGroupHeader === group.heading
+                        ? 'border-[#C9973A] text-[#E8B84B]'
+                        : 'border-transparent text-[rgba(245,237,212,0.6)] hover:text-[#C9973A]'
+                    }`}
+                  >
+                    {group.heading}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="product-grid product-grid--editorial">
               {[...Array(8)].map((_, i) => (

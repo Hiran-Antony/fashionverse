@@ -1,11 +1,12 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
 import type { ProductCategory } from '../types';
 import ProductCard from '../components/product/ProductCard';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown, X, SlidersHorizontal } from 'lucide-react';
+import { PRICE_RANGES, SIZES } from '../utils/constants';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -27,6 +28,49 @@ export interface CategoryPageConfig {
   heroAccentColor?: string;
 }
 
+// ─── Filter Section Component ────────────────────────────────
+
+function FilterSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="cat-filter-section">
+      <button
+        className="cat-filter-section-header"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+      >
+        <span className="cat-filter-section-title">{title}</span>
+        <ChevronDown
+          size={16}
+          className={`cat-filter-chevron${isOpen ? ' is-open' : ''}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            className="cat-filter-section-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <div className="cat-filter-section-inner">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Shared Category Page ────────────────────────────────────
 
 export default function CategoryPage({
@@ -37,6 +81,12 @@ export default function CategoryPage({
   heroAccentColor = 'rgba(201, 151, 58, 0.12)',
 }: CategoryPageConfig) {
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<number[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedDiscount, setSelectedDiscount] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const subNavRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLButtonElement>(null);
 
@@ -65,16 +115,292 @@ export default function CategoryPage({
     staleTime: 5 * 60 * 1000,
   });
 
-  // ── Client-side sub-tab filtering ─────────────────────────
-  const filteredProducts = useMemo(() => {
-    if (activeTab === 'all') return products;
-    return products.filter(
-      (p) => p.tags && p.tags.some((t) => t === activeTab)
+  // ── Extract unique colors from products ───────────────────
+  const availableColors = useMemo(() => {
+    const colorMap = new Map<string, string>();
+    products.forEach((p) => {
+      const pColors = (p.colors || p.product_colors || []) as any[];
+      pColors.forEach((c: any) => {
+        if (c.color_name && !colorMap.has(c.color_name)) {
+          colorMap.set(c.color_name, c.hex_code || '#888');
+        }
+      });
+    });
+    return Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
+  }, [products]);
+
+  // ── Extract unique sizes from products ───────────────────
+  const availableSizes = useMemo(() => {
+    const sizeSet = new Set<string>();
+    products.forEach((p) => {
+      const pSizes = (p.sizes || p.product_sizes || []) as any[];
+      pSizes.forEach((s: any) => {
+        if (s.size && s.stock > 0) sizeSet.add(s.size);
+      });
+    });
+    // Sort by SIZES constant order
+    const sizeOrder = [...SIZES];
+    return Array.from(sizeSet).sort(
+      (a, b) => sizeOrder.indexOf(a as any) - sizeOrder.indexOf(b as any)
     );
-  }, [products, activeTab]);
+  }, [products]);
+
+  // ── Discount filter options ────────────────────────────────
+  const discountOptions = [
+    { label: '10% and above', value: 10 },
+    { label: '20% and above', value: 20 },
+    { label: '30% and above', value: 30 },
+    { label: '50% and above', value: 50 },
+  ];
+
+  // ── Count active filters ──────────────────────────────────
+  const activeFilterCount =
+    (activeTab !== 'all' ? 1 : 0) +
+    selectedPriceRanges.length +
+    selectedSizes.length +
+    selectedColors.length +
+    (selectedDiscount !== null ? 1 : 0);
+
+  // ── Clear all filters ─────────────────────────────────────
+  const clearAllFilters = useCallback(() => {
+    setActiveTab('all');
+    setSelectedPriceRanges([]);
+    setSelectedSizes([]);
+    setSelectedColors([]);
+    setSelectedDiscount(null);
+  }, []);
+
+  // ── Toggle helpers ─────────────────────────────────────────
+  const togglePriceRange = (idx: number) =>
+    setSelectedPriceRanges((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+
+  const toggleSize = (size: string) =>
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+
+  const toggleColor = (color: string) =>
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    );
+
+  // ── Client-side filtering ─────────────────────────────────
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    // Sub-tab filter
+    if (activeTab !== 'all') {
+      result = result.filter(
+        (p) => p.tags && p.tags.some((t) => t === activeTab)
+      );
+    }
+
+    // Price range filter
+    if (selectedPriceRanges.length > 0) {
+      result = result.filter((p) =>
+        selectedPriceRanges.some((idx) => {
+          const range = PRICE_RANGES[idx];
+          return p.price >= range.min && p.price < (range.max === Infinity ? 999999 : range.max);
+        })
+      );
+    }
+
+    // Size filter
+    if (selectedSizes.length > 0) {
+      result = result.filter((p) => {
+        const pSizes = (p.product_sizes || []) as any[];
+        return pSizes.some(
+          (s: any) => selectedSizes.includes(s.size) && s.stock > 0
+        );
+      });
+    }
+
+    // Color filter
+    if (selectedColors.length > 0) {
+      result = result.filter((p) => {
+        const pColors = (p.colors || p.product_colors || []) as any[];
+        return pColors.some((c: any) => selectedColors.includes(c.color_name));
+      });
+    }
+
+    // Discount filter
+    if (selectedDiscount !== null) {
+      result = result.filter((p) => {
+        if (!p.original_price || p.original_price <= p.price) return false;
+        const discountPct =
+          ((p.original_price - p.price) / p.original_price) * 100;
+        return discountPct >= selectedDiscount;
+      });
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case 'price_low':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price_high':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'popular':
+        result.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
+        break;
+      default: // newest
+        result.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        break;
+    }
+
+    return result;
+  }, [products, activeTab, selectedPriceRanges, selectedSizes, selectedColors, selectedDiscount, sortBy]);
 
   // ── Skeleton placeholders ──────────────────────────────────
   const skeletons = Array.from({ length: 8 });
+
+  // ── Filter Sidebar Content (reused in desktop & mobile) ───
+  const filterContent = (
+    <>
+      {/* Category Section */}
+      <FilterSection title="Category" defaultOpen={true}>
+        <label
+          className={`cat-filter-checkbox-label${activeTab === 'all' ? ' is-checked' : ''}`}
+        >
+          <input
+            type="radio"
+            name="subcategory"
+            checked={activeTab === 'all'}
+            onChange={() => setActiveTab('all')}
+            className="cat-filter-radio"
+          />
+          <span className="cat-filter-radio-custom" />
+          <span className="cat-filter-label-text">
+            All
+            <span className="cat-filter-count">({products.length})</span>
+          </span>
+        </label>
+        {subTabs.map((tab) => {
+          const count = products.filter(
+            (p) => p.tags && p.tags.some((t) => t === tab.value)
+          ).length;
+          return (
+            <label
+              key={tab.value}
+              className={`cat-filter-checkbox-label${activeTab === tab.value ? ' is-checked' : ''}`}
+            >
+              <input
+                type="radio"
+                name="subcategory"
+                checked={activeTab === tab.value}
+                onChange={() => setActiveTab(tab.value)}
+                className="cat-filter-radio"
+              />
+              <span className="cat-filter-radio-custom" />
+              <span className="cat-filter-label-text">
+                {tab.label}
+                {count > 0 && (
+                  <span className="cat-filter-count">({count})</span>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </FilterSection>
+
+      {/* Price Section */}
+      <FilterSection title="Price" defaultOpen={false}>
+        {PRICE_RANGES.map((range, idx) => {
+          const count = products.filter(
+            (p) => p.price >= range.min && p.price < (range.max === Infinity ? 999999 : range.max)
+          ).length;
+          return (
+            <label
+              key={idx}
+              className={`cat-filter-checkbox-label${selectedPriceRanges.includes(idx) ? ' is-checked' : ''}`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedPriceRanges.includes(idx)}
+                onChange={() => togglePriceRange(idx)}
+                className="cat-filter-checkbox"
+              />
+              <span className="cat-filter-check-custom" />
+              <span className="cat-filter-label-text">
+                {range.label}
+                {count > 0 && (
+                  <span className="cat-filter-count">({count})</span>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </FilterSection>
+
+      {/* Size Section */}
+      <FilterSection title="Size" defaultOpen={false}>
+        <div className="cat-filter-size-grid">
+          {availableSizes.map((size) => (
+            <button
+              key={size}
+              onClick={() => toggleSize(size)}
+              className={`cat-filter-size-btn${selectedSizes.includes(size) ? ' is-active' : ''}`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Colour Section */}
+      <FilterSection title="Colour" defaultOpen={false}>
+        <div className="cat-filter-color-grid">
+          {availableColors.map((color) => (
+            <button
+              key={color.name}
+              onClick={() => toggleColor(color.name)}
+              className={`cat-filter-color-btn${selectedColors.includes(color.name) ? ' is-active' : ''}`}
+              title={color.name}
+            >
+              <span
+                className="cat-filter-color-swatch"
+                style={{ backgroundColor: color.hex }}
+              />
+              <span className="cat-filter-color-name">{color.name}</span>
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Discount Section */}
+      <FilterSection title="Discount" defaultOpen={false}>
+        {discountOptions.map((opt) => (
+          <label
+            key={opt.value}
+            className={`cat-filter-checkbox-label${selectedDiscount === opt.value ? ' is-checked' : ''}`}
+          >
+            <input
+              type="radio"
+              name="discount"
+              checked={selectedDiscount === opt.value}
+              onChange={() =>
+                setSelectedDiscount(
+                  selectedDiscount === opt.value ? null : opt.value
+                )
+              }
+              className="cat-filter-radio"
+            />
+            <span className="cat-filter-radio-custom" />
+            <span className="cat-filter-label-text">{opt.label}</span>
+          </label>
+        ))}
+      </FilterSection>
+    </>
+  );
 
   return (
     <div className="cat-page" style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
@@ -155,81 +481,232 @@ export default function CategoryPage({
         </nav>
       </div>
 
-      {/* ── Product Grid Section ─────────────────────────────── */}
-      <section className="cat-product-section container" aria-label="Products">
-
-        {/* Results count */}
-        {!isLoading && (
-          <motion.p
-            className="cat-results-count"
-            key={activeTab}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            {filteredProducts.length === 0
-              ? 'No products found'
-              : `${filteredProducts.length} item${filteredProducts.length !== 1 ? 's' : ''}`}
-          </motion.p>
-        )}
-
-        {isLoading ? (
-          /* Loading skeletons */
-          <div className="cat-product-grid">
-            {skeletons.map((_, i) => (
-              <div key={i} className="editorial-product-card editorial-skeleton">
-                <div className="editorial-product-image-wrap skeleton" />
-                <div className="p-4 space-y-3">
-                  <div className="h-3 w-1/3 skeleton rounded" />
-                  <div className="h-4 w-3/4 skeleton rounded" />
-                  <div className="h-4 w-1/4 skeleton rounded" />
-                </div>
-              </div>
-            ))}
+      {/* ── Main Content: Sidebar + Products ─────────────────── */}
+      <div className="cat-content-layout container">
+        {/* ── Desktop Filter Sidebar ─────────────────────────── */}
+        <aside className="cat-filter-sidebar" aria-label="Filters">
+          <div className="cat-filter-sidebar-header">
+            <h2 className="cat-filter-sidebar-title">
+              <SlidersHorizontal size={16} />
+              Filters
+            </h2>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="cat-filter-clear-btn"
+              >
+                Clear All
+              </button>
+            )}
           </div>
-        ) : filteredProducts.length > 0 ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              className="cat-product-grid"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {filteredProducts.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  featured={(index + 1) % 5 === 0}
-                />
+
+          {/* Active filter tags */}
+          {activeFilterCount > 0 && (
+            <div className="cat-filter-active-tags">
+              {activeTab !== 'all' && (
+                <span className="cat-filter-tag">
+                  {subTabs.find((t) => t.value === activeTab)?.label || activeTab}
+                  <button onClick={() => setActiveTab('all')} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {selectedPriceRanges.map((idx) => (
+                <span key={`price-${idx}`} className="cat-filter-tag">
+                  {PRICE_RANGES[idx].label}
+                  <button onClick={() => togglePriceRange(idx)} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
               ))}
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          /* Empty state */
-          <motion.div
-            className="cat-empty-state"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="cat-empty-icon">
-              <Search size={36} />
+              {selectedSizes.map((size) => (
+                <span key={`size-${size}`} className="cat-filter-tag">
+                  Size: {size}
+                  <button onClick={() => toggleSize(size)} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {selectedColors.map((color) => (
+                <span key={`color-${color}`} className="cat-filter-tag">
+                  {color}
+                  <button onClick={() => toggleColor(color)} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {selectedDiscount !== null && (
+                <span className="cat-filter-tag">
+                  {selectedDiscount}%+ off
+                  <button onClick={() => setSelectedDiscount(null)} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
             </div>
-            <h3 className="cat-empty-title">No products in this category yet</h3>
-            <p className="cat-empty-sub">
-              Check back soon — new styles drop every week.
-            </p>
-            <button
-              onClick={() => setActiveTab('all')}
-              className="btn btn-outline mt-6"
+          )}
+
+          <div className="cat-filter-sections">{filterContent}</div>
+        </aside>
+
+        {/* ── Mobile Filter Toggle ───────────────────────────── */}
+        <button
+          className="cat-mobile-filter-toggle"
+          onClick={() => setMobileFilterOpen(true)}
+        >
+          <SlidersHorizontal size={16} />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="cat-mobile-filter-badge">{activeFilterCount}</span>
+          )}
+        </button>
+
+        {/* ── Mobile Filter Overlay ──────────────────────────── */}
+        <AnimatePresence>
+          {mobileFilterOpen && (
+            <>
+              <motion.div
+                className="cat-mobile-filter-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileFilterOpen(false)}
+              />
+              <motion.aside
+                className="cat-mobile-filter-panel"
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              >
+                <div className="cat-mobile-filter-header">
+                  <h2 className="cat-filter-sidebar-title">
+                    <SlidersHorizontal size={16} />
+                    Filters
+                  </h2>
+                  <button
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="cat-mobile-filter-close"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                {activeFilterCount > 0 && (
+                  <div className="cat-filter-active-tags" style={{ padding: '0 20px 12px' }}>
+                    <button
+                      onClick={clearAllFilters}
+                      className="cat-filter-clear-btn"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
+                <div className="cat-filter-sections">{filterContent}</div>
+                <div className="cat-mobile-filter-footer">
+                  <button
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="cat-mobile-filter-apply"
+                  >
+                    Show {filteredProducts.length} Results
+                  </button>
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* ── Product Grid Section ─────────────────────────────── */}
+        <section className="cat-product-main" aria-label="Products">
+          {/* Sort bar + Results count */}
+          <div className="cat-sort-bar">
+            {!isLoading && (
+              <motion.p
+                className="cat-results-count"
+                key={`${activeTab}-${selectedPriceRanges.join()}-${selectedSizes.join()}-${selectedColors.join()}-${selectedDiscount}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {filteredProducts.length === 0
+                  ? 'No products found'
+                  : `${filteredProducts.length} item${filteredProducts.length !== 1 ? 's' : ''}`}
+              </motion.p>
+            )}
+            <div className="cat-sort-select-wrap">
+              <label className="cat-sort-label" htmlFor="cat-sort">Sort by:</label>
+              <select
+                id="cat-sort"
+                className="cat-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="newest">Newest First</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="rating">Highest Rated</option>
+                <option value="popular">Most Popular</option>
+              </select>
+            </div>
+          </div>
+
+          {isLoading ? (
+            /* Loading skeletons */
+            <div className="cat-product-grid">
+              {skeletons.map((_, i) => (
+                <div key={i} className="editorial-product-card editorial-skeleton">
+                  <div className="editorial-product-image-wrap skeleton" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-3 w-1/3 skeleton rounded" />
+                    <div className="h-4 w-3/4 skeleton rounded" />
+                    <div className="h-4 w-1/4 skeleton rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${activeTab}-${sortBy}`}
+                className="cat-product-grid"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {filteredProducts.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    featured={(index + 1) % 5 === 0}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            /* Empty state */
+            <motion.div
+              className="cat-empty-state"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              View All {heroTitle.split("'")[0].split(' ')[0]} Styles
-            </button>
-          </motion.div>
-        )}
-      </section>
+              <div className="cat-empty-icon">
+                <Search size={36} />
+              </div>
+              <h3 className="cat-empty-title">No products match your filters</h3>
+              <p className="cat-empty-sub">
+                Try adjusting your filters or clearing them to see more results.
+              </p>
+              <button
+                onClick={clearAllFilters}
+                className="btn btn-outline mt-6"
+              >
+                Clear All Filters
+              </button>
+            </motion.div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -52,6 +52,8 @@ export interface Product {
   product_sizes?: ProductSize[];
   // Convenience alias used in components (maps to product_colors)
   colors?: ProductColorWithSizes[];
+  sizes?: ProductSize[];
+  image_url?: string;
 }
 
 export type ProductCategory =
