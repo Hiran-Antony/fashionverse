@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import ProductCard from '../product/ProductCard';
+import CategoryProductCard from '../product/CategoryProductCard';
 
 
 interface ProductCarouselProps {
@@ -186,7 +186,7 @@ export default function ProductCarousel({
                 className="shrink-0"
                 style={{ width: '260px' }}
               >
-                <ProductCard product={product} />
+                <CategoryProductCard product={product} />
               </motion.div>
             ))}
           </div>
