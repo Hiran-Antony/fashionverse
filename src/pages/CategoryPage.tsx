@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
 import type { ProductCategory } from '../types';
-import ProductCard from '../components/product/ProductCard';
+import CategoryProductCard from '../components/product/CategoryProductCard';
 import { Search, ChevronDown, X, SlidersHorizontal } from 'lucide-react';
-import { PRICE_RANGES, SIZES } from '../utils/constants';
+import { PRICE_RANGES, SIZES, GROUPED_CATEGORIES } from '../utils/constants';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -42,28 +42,30 @@ function FilterSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="cat-filter-section">
+    <div className="filter-section">
       <button
-        className="cat-filter-section-header"
+        className="filter-section-title w-full flex justify-between items-center"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
       >
-        <span className="cat-filter-section-title">{title}</span>
+        <span>{title}</span>
         <ChevronDown
           size={16}
-          className={`cat-filter-chevron${isOpen ? ' is-open' : ''}`}
+          className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            className="cat-filter-section-body"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
           >
-            <div className="cat-filter-section-inner">{children}</div>
+            <div className="pt-1 pb-2 flex flex-col gap-1">
+              {children}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -81,9 +83,11 @@ export default function CategoryPage({
   heroAccentColor = 'rgba(201, 151, 58, 0.12)',
 }: CategoryPageConfig) {
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [selectedSubItems, setSelectedSubItems] = useState<string[]>([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<number[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedDiscount, setSelectedDiscount] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<string>('newest');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -93,6 +97,7 @@ export default function CategoryPage({
   // Scroll active tab into view on tab change
   useEffect(() => {
     activeTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    setSelectedSubItems([]); // Reset inner items when main tab changes
   }, [activeTab]);
 
   // ── Fetch products for this category ──────────────────────
@@ -145,6 +150,15 @@ export default function CategoryPage({
     );
   }, [products]);
 
+  // ── Extract unique brands from products ───────────────────
+  const availableBrands = useMemo(() => {
+    const brandSet = new Set<string>();
+    products.forEach((p) => {
+      if (p.brand) brandSet.add(p.brand.trim());
+    });
+    return Array.from(brandSet).sort();
+  }, [products]);
+
   // ── Discount filter options ────────────────────────────────
   const discountOptions = [
     { label: '10% and above', value: 10 },
@@ -159,18 +173,26 @@ export default function CategoryPage({
     selectedPriceRanges.length +
     selectedSizes.length +
     selectedColors.length +
+    selectedBrands.length +
     (selectedDiscount !== null ? 1 : 0);
 
   // ── Clear all filters ─────────────────────────────────────
   const clearAllFilters = useCallback(() => {
     setActiveTab('all');
+    setSelectedSubItems([]);
     setSelectedPriceRanges([]);
     setSelectedSizes([]);
     setSelectedColors([]);
+    setSelectedBrands([]);
     setSelectedDiscount(null);
   }, []);
 
   // ── Toggle helpers ─────────────────────────────────────────
+  const toggleSubItem = (item: string) =>
+    setSelectedSubItems((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+    );
+
   const togglePriceRange = (idx: number) =>
     setSelectedPriceRanges((prev) =>
       prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
@@ -186,15 +208,31 @@ export default function CategoryPage({
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
     );
 
+  const toggleBrand = (brand: string) =>
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    );
+
   // ── Client-side filtering ─────────────────────────────────
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Sub-tab filter
+    // Sub-tab / Category filter
     if (activeTab !== 'all') {
-      result = result.filter(
-        (p) => p.tags && p.tags.some((t) => t === activeTab)
-      );
+      if (selectedSubItems.length > 0) {
+        result = result.filter(
+          (p: any) => selectedSubItems.includes(p.product_type) || (p.tags && p.tags.some((t: string) => selectedSubItems.includes(t)))
+        );
+      } else {
+        const groupItems = GROUPED_CATEGORIES[category]?.find(g => g.heading === activeTab)?.items.map(i => i.value) || [];
+        result = result.filter(
+          (p: any) => 
+            p.product_group === activeTab ||
+            p.product_type === activeTab ||
+            groupItems.includes(p.product_type) ||
+            (p.tags && p.tags.some((t: string) => t === activeTab || groupItems.includes(t)))
+        );
+      }
     }
 
     // Price range filter
@@ -223,6 +261,11 @@ export default function CategoryPage({
         const pColors = (p.colors || p.product_colors || []) as any[];
         return pColors.some((c: any) => selectedColors.includes(c.color_name));
       });
+    }
+
+    // Brand filter
+    if (selectedBrands.length > 0) {
+      result = result.filter((p) => p.brand && selectedBrands.includes(p.brand.trim()));
     }
 
     // Discount filter
@@ -258,7 +301,7 @@ export default function CategoryPage({
     }
 
     return result;
-  }, [products, activeTab, selectedPriceRanges, selectedSizes, selectedColors, selectedDiscount, sortBy]);
+  }, [products, activeTab, selectedSubItems, selectedPriceRanges, selectedSizes, selectedColors, selectedBrands, selectedDiscount, sortBy]);
 
   // ── Skeleton placeholders ──────────────────────────────────
   const skeletons = Array.from({ length: 8 });
@@ -266,10 +309,11 @@ export default function CategoryPage({
   // ── Filter Sidebar Content (reused in desktop & mobile) ───
   const filterContent = (
     <>
-      {/* Category Section */}
-      <FilterSection title="Category" defaultOpen={true}>
+      {/* Category Section (Nested Accordion) */}
+      <FilterSection title="Categories" defaultOpen={true}>
         <label
           className={`cat-filter-checkbox-label${activeTab === 'all' ? ' is-checked' : ''}`}
+          style={{ marginBottom: '1rem' }}
         >
           <input
             type="radio"
@@ -284,28 +328,74 @@ export default function CategoryPage({
             <span className="cat-filter-count">({products.length})</span>
           </span>
         </label>
-        {subTabs.map((tab) => {
-          const count = products.filter(
-            (p) => p.tags && p.tags.some((t) => t === tab.value)
-          ).length;
+        
+        {GROUPED_CATEGORIES[category]?.map((group) => {
+          // Check if this group or any of its items is active
+          const isGroupActive = activeTab === group.heading || group.items.some(i => i.value === activeTab);
+          
+          return (
+            <div key={group.heading} className="cat-sidebar-group">
+              <label
+                className={`cat-filter-checkbox-label${activeTab === group.heading ? ' is-checked' : ''}`}
+                style={{ fontWeight: 600, color: 'var(--color-gold-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                onClick={(e) => { e.preventDefault(); setActiveTab(group.heading); }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-gold-primary)' }} />
+                  {group.heading}
+                </div>
+                <ChevronDown size={14} style={{ transform: isGroupActive ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+              </label>
+              
+              <AnimatePresence>
+                {isGroupActive && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem', marginBottom: '1rem' }}
+                  >
+                    {group.items.map(item => {
+                      const count = products.filter((p: any) => p.product_type === item.value || (p.tags && p.tags.includes(item.value))).length;
+                      const isSelected = selectedSubItems.includes(item.value);
+                      return (
+                        <button
+                          key={item.value}
+                          onClick={() => toggleSubItem(item.value)}
+                          className={`cat-sidebar-subitem${isSelected ? ' is-active' : ''}`}
+                        >
+                          <span className="cat-sidebar-subitem-label">{item.label}</span>
+                          {count > 0 && <span className="cat-sidebar-subitem-count">({count})</span>}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </FilterSection>
+
+      {/* Brand Section */}
+      <FilterSection title="Brand" defaultOpen={false}>
+        {availableBrands.map((brand) => {
+          const count = products.filter((p) => p.brand?.trim() === brand).length;
           return (
             <label
-              key={tab.value}
-              className={`cat-filter-checkbox-label${activeTab === tab.value ? ' is-checked' : ''}`}
+              key={brand}
+              className={`cat-filter-checkbox-label${selectedBrands.includes(brand) ? ' is-checked' : ''}`}
             >
               <input
-                type="radio"
-                name="subcategory"
-                checked={activeTab === tab.value}
-                onChange={() => setActiveTab(tab.value)}
-                className="cat-filter-radio"
+                type="checkbox"
+                checked={selectedBrands.includes(brand)}
+                onChange={() => toggleBrand(brand)}
+                className="cat-filter-checkbox"
               />
-              <span className="cat-filter-radio-custom" />
+              <span className="cat-filter-check-custom" />
               <span className="cat-filter-label-text">
-                {tab.label}
-                {count > 0 && (
-                  <span className="cat-filter-count">({count})</span>
-                )}
+                {brand}
+                <span className="cat-filter-count">({count})</span>
               </span>
             </label>
           );
@@ -466,17 +556,20 @@ export default function CategoryPage({
             {/* Divider */}
             <span className="cat-sub-nav-sep" aria-hidden="true" />
 
-            {subTabs.map((tab) => (
-              <button
-                key={tab.value}
-                ref={activeTab === tab.value ? activeTabRef : undefined}
-                onClick={() => setActiveTab(tab.value)}
-                className={`cat-sub-nav-tab${activeTab === tab.value ? ' is-active' : ''}`}
-                aria-current={activeTab === tab.value ? 'true' : undefined}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {subTabs.map((tab) => {
+              const isGroupActive = activeTab === tab.value || GROUPED_CATEGORIES[category]?.find(g => g.heading === tab.value)?.items.some(i => i.value === activeTab);
+              return (
+                <button
+                  key={tab.value}
+                  ref={isGroupActive ? activeTabRef : undefined}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`cat-sub-nav-tab${isGroupActive ? ' is-active' : ''}`}
+                  aria-current={isGroupActive ? 'true' : undefined}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </nav>
       </div>
@@ -484,9 +577,21 @@ export default function CategoryPage({
       {/* ── Main Content: Sidebar + Products ─────────────────── */}
       <div className="cat-content-layout container">
         {/* ── Desktop Filter Sidebar ─────────────────────────── */}
-        <aside className="cat-filter-sidebar" aria-label="Filters">
+        <aside 
+          className="cat-filter-sidebar" 
+          aria-label="Filters"
+          onWheel={(e) => e.stopPropagation()}
+          style={{
+            overflowY: 'auto',
+            maxHeight: 'calc(100vh - 180px)',
+            position: 'sticky',
+            top: 180,
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           <div className="cat-filter-sidebar-header">
-            <h2 className="cat-filter-sidebar-title">
+            <h2 className="filter-heading">
               <SlidersHorizontal size={16} />
               Filters
             </h2>
@@ -527,6 +632,14 @@ export default function CategoryPage({
                   </button>
                 </span>
               ))}
+              {selectedBrands.map((brand) => (
+                <span key={`brand-${brand}`} className="cat-filter-tag">
+                  {brand}
+                  <button onClick={() => toggleBrand(brand)} className="cat-filter-tag-remove">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
               {selectedColors.map((color) => (
                 <span key={`color-${color}`} className="cat-filter-tag">
                   {color}
@@ -546,7 +659,7 @@ export default function CategoryPage({
             </div>
           )}
 
-          <div className="cat-filter-sections">{filterContent}</div>
+          <div className="mb-4">{filterContent}</div>
         </aside>
 
         {/* ── Mobile Filter Toggle ───────────────────────────── */}
@@ -580,7 +693,7 @@ export default function CategoryPage({
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               >
                 <div className="cat-mobile-filter-header">
-                  <h2 className="cat-filter-sidebar-title">
+                  <h2 className="filter-heading">
                     <SlidersHorizontal size={16} />
                     Filters
                   </h2>
@@ -601,7 +714,7 @@ export default function CategoryPage({
                     </button>
                   </div>
                 )}
-                <div className="cat-filter-sections">{filterContent}</div>
+                <div className="mb-4">{filterContent}</div>
                 <div className="cat-mobile-filter-footer">
                   <button
                     onClick={() => setMobileFilterOpen(false)}
@@ -636,7 +749,7 @@ export default function CategoryPage({
               <label className="cat-sort-label" htmlFor="cat-sort">Sort by:</label>
               <select
                 id="cat-sort"
-                className="cat-sort-select"
+                className="sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -651,7 +764,7 @@ export default function CategoryPage({
 
           {isLoading ? (
             /* Loading skeletons */
-            <div className="cat-product-grid">
+            <div className="products-grid">
               {skeletons.map((_, i) => (
                 <div key={i} className="editorial-product-card editorial-skeleton">
                   <div className="editorial-product-image-wrap skeleton" />
@@ -667,18 +780,14 @@ export default function CategoryPage({
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${activeTab}-${sortBy}`}
-                className="cat-product-grid"
+                className="products-grid"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
                 {filteredProducts.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    featured={(index + 1) % 5 === 0}
-                  />
+                  <CategoryProductCard key={product.id} product={product} />
                 ))}
               </motion.div>
             </AnimatePresence>

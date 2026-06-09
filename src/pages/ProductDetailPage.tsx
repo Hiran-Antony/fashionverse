@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
-import ProductCard from '../components/product/ProductCard';
+import CategoryProductCard from '../components/product/CategoryProductCard';
 import SizeGuideModal from '../components/product/SizeGuideModal';
 
 const TRUST_BADGES = [
@@ -377,9 +377,9 @@ export default function ProductDetailPage() {
           <section className="pdp-complete-look">
             <p className="pdp-complete-eyebrow">Styled For You</p>
             <h2 className="pdp-complete-title">Complete the Look</h2>
-            <div className="product-grid product-grid--editorial">
-              {relatedProducts.map((p: any, i: number) => (
-                <ProductCard key={p.id} product={p} featured={i === 0} />
+            <div className="products-grid">
+              {relatedProducts.map((p: any) => (
+                <CategoryProductCard key={p.id} product={p} />
               ))}
             </div>
           </section>

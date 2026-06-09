@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { uploadImage, getOptimizedUrl } from '../lib/cloudinary';
 import { useAuthStore } from '../store/authStore';
-import { CATEGORIES, SIZES, ORDER_STATUSES, SUB_CATEGORIES } from '../utils/constants';
+import { CATEGORIES, SIZES, ORDER_STATUSES, SUB_CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
 import toast from 'react-hot-toast';
 
 // ── Design Tokens ─────────────────────────────────────────────
@@ -52,12 +52,12 @@ interface SizeStock { size: string; stock: number; }
 interface ColorEntry { color_name: string; hex_code: string; image_url: string; imageFile?: File; }
 interface ProductForm {
   name: string; description: string; price: string; original_price: string;
-  brand: string; category: string; sub_category: string; is_featured: boolean; is_trending: boolean;
+  brand: string; category: string; sub_category: string; group_category: string; is_featured: boolean; is_trending: boolean;
   tags: string; sizes: SizeStock[]; colors: ColorEntry[];
 }
 const BLANK_FORM: ProductForm = {
   name:'',description:'',price:'',original_price:'',brand:'',
-  category:'men',sub_category:'',is_featured:false,is_trending:false,tags:'',
+  category:'men',sub_category:'',group_category:'',is_featured:false,is_trending:false,tags:'',
   sizes:SIZES.map(s=>({size:s as string,stock:0})),colors:[],
 };
 
@@ -103,6 +103,45 @@ function GlassCard({ children, style, className, onClick, onMouseEnter, onMouseL
     >
       {children}
     </div>
+  );
+}
+
+// ── ModalParticles ─────────────────────────────────────────────
+// Same gold particles as GoldParticles.tsx but contained inside the modal
+function ModalParticles() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const particles: HTMLDivElement[] = [];
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      const isLeaf = Math.random() > 0.5;
+      p.style.cssText = `
+        position: absolute;
+        width: ${isLeaf ? Math.random() * 8 + 4 : Math.random() * 4 + 2}px;
+        height: ${isLeaf ? Math.random() * 12 + 6 : Math.random() * 4 + 2}px;
+        background: ${Math.random() > 0.5 ? '#C9973A' : '#E8B84B'};
+        border-radius: ${isLeaf ? '50% 0 50% 0' : '50%'};
+        opacity: ${Math.random() * 0.4 + 0.1};
+        left: ${Math.random() * 100}%;
+        top: ${Math.random() * 100}%;
+        animation: floatParticle${i % 5} ${Math.random() * 8 + 6}s ease-in-out infinite;
+        animation-delay: ${Math.random() * 5}s;
+        pointer-events: none;
+        transform: rotate(${Math.random() * 360}deg);
+      `;
+      container.appendChild(p);
+      particles.push(p);
+    }
+    return () => { particles.forEach(p => p.remove()); };
+  }, []);
+  return (
+    <div ref={containerRef} aria-hidden="true" style={{
+      position: 'absolute', inset: 0,
+      pointerEvents: 'none', zIndex: 0, overflow: 'hidden',
+    }} />
   );
 }
 
@@ -1069,7 +1108,7 @@ function ProductsTab() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
-      const { data } = await supabase.from('products').select('*, product_colors(*), product_sizes(*)').order('created_at', { ascending: false });
+      const { data } = await supabase.from('products').select('*, product_colors(*), product_sizes(*)').eq('is_active', true).order('created_at', { ascending: false });
       return data || [];
     },
   });
@@ -1084,12 +1123,13 @@ function ProductsTab() {
     setSaving(true);
     try {
       const tagsArray = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-      if (form.sub_category && !tagsArray.includes(form.sub_category)) tagsArray.push(form.sub_category);
       const payload = {
-        name: form.name, description: form.description, price: parseFloat(form.price),
+        name: form.name.trim(), description: form.description.trim(), price: parseFloat(form.price),
         original_price: form.original_price ? parseFloat(form.original_price) : null,
-        brand: form.brand, category: form.category, is_featured: form.is_featured,
+        brand: form.brand.trim(), category: form.category, is_featured: form.is_featured,
         is_trending: form.is_trending, tags: tagsArray, is_active: true,
+        product_group: form.group_category || null,
+        product_type: form.sub_category || null,
       };
       let productId = editingId;
       if (editingId) {
@@ -1123,9 +1163,30 @@ function ProductsTab() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
-    await supabase.from('products').delete().eq('id', id);
-    toast.success('Product deleted');
-    qc.invalidateQueries({ queryKey: ['admin-products'] });
+    try {
+      // First delete dependent records to avoid foreign key constraint errors
+      await supabase.from('product_sizes').delete().eq('product_id', id);
+      await supabase.from('product_colors').delete().eq('product_id', id);
+      
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) {
+        if (error.message.includes('foreign key constraint')) {
+          // Fallback to soft delete if attached to existing orders
+          await supabase.from('products').update({ is_active: false }).eq('id', id);
+          toast.success('Product archived (attached to past orders)');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Product deleted');
+      }
+      
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['products'] });
+    } catch (err: any) {
+      toast.error('Failed to delete: ' + err.message);
+      console.error(err);
+    }
   };
 
   const addColor = () => setForm(f => ({ ...f, colors: [...f.colors, { color_name: '', hex_code: '#C9A84C', image_url: '' }] }));
@@ -1197,7 +1258,8 @@ function ProductsTab() {
                           original_price: String(p.original_price || ''), brand: p.brand || '',
                           category: p.category, is_featured: p.is_featured, is_trending: p.is_trending,
                           tags: (p.tags || []).join(', '),
-                          sub_category: (p.tags || []).find((t: string) => SUB_CATEGORIES[p.category]?.some(sc => sc.value === t)) || '',
+                          group_category: p.product_group || '',
+                          sub_category: p.product_type || '',
                           sizes: SIZES.map(s => { const f = (p.product_sizes || []).find((ps: any) => ps.size === s); return { size: s as string, stock: f?.stock || 0 }; }),
                           colors: (p.product_colors || []).map((c: any) => ({ color_name: c.color_name, hex_code: c.hex_code || '#000', image_url: c.image_url })),
                         });
@@ -1226,6 +1288,16 @@ function ProductsTab() {
                       <span style={{ fontSize: 16, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>₹{p.price?.toLocaleString('en-IN')}</span>
                       {p.original_price && <span style={{ fontSize: 11, color: T.textMuted, textDecoration: 'line-through' }}>₹{p.original_price?.toLocaleString('en-IN')}</span>}
                     </div>
+                    {p.created_at && (
+                      <div style={{ 
+                        fontSize: 11, fontWeight: 600, color: T.textMuted, 
+                        marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${T.border}`,
+                        display: 'flex', alignItems: 'center', gap: 6 
+                      }}>
+                        <Clock size={12} />
+                        Added {new Date(p.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                    )}
                   </div>
                 </GlassCard>
               </motion.div>
@@ -1242,36 +1314,52 @@ function ProductsTab() {
               style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, overflow: 'hidden' }}/>
             <motion.div key="md" initial={{ opacity: 0, scale: 0.95, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => { if (e.target === e.currentTarget && !saving) setShowModal(false); }}
-              style={{ position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflow: 'hidden' }}>
-              <div 
-                onWheel={e => e.stopPropagation()}
-                onScroll={e => e.stopPropagation()}
-                style={{
-                width: '100%', maxWidth: 700, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto', overscrollBehavior: 'contain', pointerEvents: 'auto', WebkitOverflowScrolling: 'touch',
-                borderRadius: 24,
-                background: 'rgba(44,27,16,0.97)',
-                backdropFilter: 'blur(24px)',
-                border: `1px solid ${T.border}`,
-                boxShadow: SHADOW_LG,
-              }}>
+              style={{ position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              {/* Outer shell — clips particles to rounded corners, NOT scrollable */}
+              <div style={{
+                  position: 'relative',
+                  width: '100%', maxWidth: 700,
+                  borderRadius: 24,
+                  background: 'linear-gradient(135deg, #1a0f00 0%, #2d1a00 50%, #1a0f00 100%)',
+                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                  boxShadow: `${SHADOW_LG}, 0 0 60px rgba(201, 168, 76, 0.08)`,
+                  overflow: 'hidden',          /* clips particles */
+                  maxHeight: 'calc(100vh - 100px)',
+                }}>
+                {/* Floating particles layer — inside the outer shell so they're clipped */}
+                <ModalParticles />
+
+                {/* Inner scrollable layer */}
+                <div
+                  onWheel={e => e.stopPropagation()}
+                  style={{
+                    position: 'relative', zIndex: 1,
+                    overflowY: 'auto',
+                    maxHeight: 'calc(100vh - 100px)',
+                    overscrollBehavior: 'contain',
+                    WebkitOverflowScrolling: 'touch',
+                  }}>
+
                 {/* Modal Header */}
                 <div style={{
-                  position: 'sticky', top: 0, background: 'rgba(44,27,16,0.98)', backdropFilter: 'blur(16px)',
-                  padding: '22px 28px 18px', borderBottom: `1px solid ${T.border}`,
+                  position: 'sticky', top: 0,
+                  background: 'linear-gradient(135deg, rgba(26,15,0,0.97) 0%, rgba(45,26,0,0.97) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  padding: '22px 28px 18px', borderBottom: '1px solid rgba(212,175,55,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10,
                 }}>
                   <div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
-                      {editingId ? 'Edit Product' : 'Add New Product'}
+                    <div style={{ fontSize: 20, fontWeight: 800, color: T.lightGold, fontFamily: "'Playfair Display', serif", letterSpacing: '0.02em' }}>
+                      {editingId ? '✦ Edit Product' : '✦ Add New Product'}
                     </div>
-                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Fill in all details carefully before saving</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Fill in all details carefully before saving</div>
                   </div>
-                  <button onClick={() => !saving && setShowModal(false)} style={{ width: 36, height: 36, borderRadius: 10, background: T.glass, border: `1px solid ${T.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={() => !saving && setShowModal(false)} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(201,168,76,0.07)', border: `1px solid ${T.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <X size={16} color={T.textMuted}/>
                   </button>
                 </div>
 
-                <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 32 }}>
+                <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', zIndex: 1 }}>
                   {/* BASIC INFO */}
                   <section>
                     <SectionDivider label="Basic Info"/>
@@ -1289,9 +1377,20 @@ function ProductsTab() {
                       <div>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Category *</label>
                         <div style={{ position: 'relative' }}>
-                          <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value, sub_category: '' }))}
+                          <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value, group_category: '', sub_category: '' }))}
                             style={{ ...inp, appearance: 'none', paddingRight: 36 }} onFocus={focusInp} onBlur={blurInp}>
                             {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </select>
+                          <ChevronDown size={13} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.textMuted, pointerEvents: 'none' }}/>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Product Group</label>
+                        <div style={{ position: 'relative' }}>
+                          <select value={form.group_category} onChange={e => setForm(f => ({ ...f, group_category: e.target.value, sub_category: '' }))}
+                            style={{ ...inp, appearance: 'none', paddingRight: 36 }} onFocus={focusInp} onBlur={blurInp}>
+                            <option value="">Select Group</option>
+                            {(GROUPED_CATEGORIES[form.category] || []).map(g => <option key={g.heading} value={g.heading}>{g.heading}</option>)}
                           </select>
                           <ChevronDown size={13} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.textMuted, pointerEvents: 'none' }}/>
                         </div>
@@ -1300,9 +1399,12 @@ function ProductsTab() {
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Product Type</label>
                         <div style={{ position: 'relative' }}>
                           <select value={form.sub_category} onChange={e => setForm(f => ({ ...f, sub_category: e.target.value }))}
-                            style={{ ...inp, appearance: 'none', paddingRight: 36 }} onFocus={focusInp} onBlur={blurInp}>
-                            <option value="">Select Type</option>
-                            {(SUB_CATEGORIES[form.category] || []).map(sc => <option key={sc.value} value={sc.value}>{sc.label}</option>)}
+                            style={{ ...inp, appearance: 'none', paddingRight: 36 }} onFocus={focusInp} onBlur={blurInp}
+                            disabled={!form.group_category}>
+                            <option value="">{form.group_category ? 'Select Type' : 'Select Group first'}</option>
+                            {(GROUPED_CATEGORIES[form.category]?.find(g => g.heading === form.group_category)?.items || []).map(item =>
+                              <option key={item.value} value={item.value}>{item.label}</option>
+                            )}
                           </select>
                           <ChevronDown size={13} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.textMuted, pointerEvents: 'none' }}/>
                         </div>
@@ -1424,8 +1526,7 @@ function ProductsTab() {
 
                 {/* Modal Footer */}
                 <div style={{
-                  position: 'sticky', bottom: 0, background: 'rgba(44,27,16,0.98)', backdropFilter: 'blur(16px)',
-                  padding: '16px 28px', borderTop: `1px solid ${T.border}`,
+                  padding: '20px 28px 24px', borderTop: '1px solid rgba(212,175,55,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12,
                 }}>
                   <button onClick={() => !saving && setShowModal(false)} disabled={saving} style={{
@@ -1449,6 +1550,7 @@ function ProductsTab() {
                     ) : editingId ? 'Update Product' : 'Add Product'}
                   </button>
                 </div>
+              </div>
               </div>
             </motion.div>
           </>

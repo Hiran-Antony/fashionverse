@@ -2493,12 +2493,14 @@ a:hover {
 
 .pdp-gallery-col {
   position: relative;
+  z-index: 46;
 }
 
 @media (min-width: 1024px) {
   .pdp-gallery-col {
     position: sticky;
     top: calc(var(--nav-height) + 1.5rem);
+    z-index: 46;
   }
 }
 
@@ -5266,6 +5268,43 @@ textarea::placeholder {
   box-shadow: 0 0 6px rgba(201, 151, 58, 0.5);
 }
 
+/* Sidebar Accordion Subitems (Pills) */
+.cat-sidebar-subitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 151, 58, 0.1);
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: 100%;
+}
+
+.cat-sidebar-subitem:hover {
+  background: rgba(201, 151, 58, 0.05);
+  border-color: rgba(201, 151, 58, 0.2);
+}
+
+.cat-sidebar-subitem.is-active {
+  border-color: rgba(201, 151, 58, 0.3);
+  border-left: 3px solid var(--color-gold-primary);
+  background: rgba(201, 151, 58, 0.1);
+  color: var(--color-gold-primary);
+  font-weight: 600;
+}
+
+.cat-sidebar-subitem-count {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
 /* Custom checkbox */
 .cat-filter-check-custom {
   position: relative;
@@ -6358,3 +6397,4 @@ select option {
   }
 }
 
+@import './customer-cards.css';

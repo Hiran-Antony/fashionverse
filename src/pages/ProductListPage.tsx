@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
 import { CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
-import ProductCard from '../components/product/ProductCard';
+import CategoryProductCard from '../components/product/CategoryProductCard';
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -442,7 +442,7 @@ export default function ProductListPage() {
           )}
 
           {isLoading ? (
-            <div className="product-grid product-grid--editorial">
+            <div className="products-grid">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="editorial-product-card editorial-skeleton">
                   <div className="editorial-product-image-wrap skeleton" />
@@ -465,14 +465,10 @@ export default function ProductListPage() {
                   transition: { staggerChildren: 0.05 },
                 },
               }}
-              className="product-grid product-grid--editorial"
+              className="products-grid"
             >
               {filteredProducts.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  featured={(index + 1) % 5 === 0}
-                />
+                <CategoryProductCard key={product.id} product={product} />
               ))}
             </motion.div>
           ) : (
