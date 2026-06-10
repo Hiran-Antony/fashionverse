@@ -10,6 +10,8 @@ interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isDeliveryApproved: boolean;
+  isDeliveryPending: boolean;
 
   // Login prompt for guests
   showLoginPrompt: boolean;
@@ -36,6 +38,8 @@ export const useAuthStore = create<AuthState>()(
       session: null,
       isLoading: true,
       isAdmin: false,
+      isDeliveryApproved: false,
+      isDeliveryPending: false,
       showLoginPrompt: false,
       loginPromptReason: 'sign in to continue',
 
@@ -49,6 +53,8 @@ export const useAuthStore = create<AuthState>()(
         set({
           profile,
           isAdmin: profile?.role === 'admin',
+          isDeliveryApproved: profile?.role === 'delivery_approved' || profile?.role === 'admin',
+          isDeliveryPending: profile?.role === 'delivery_pending',
         }),
 
       setLoading: (isLoading) => set({ isLoading }),
@@ -66,6 +72,8 @@ export const useAuthStore = create<AuthState>()(
           set({
             profile: data as Profile,
             isAdmin: data?.role === 'admin',
+            isDeliveryApproved: data?.role === 'delivery_approved' || data?.role === 'admin',
+            isDeliveryPending: data?.role === 'delivery_pending',
             isLoading: false,
           });
         } catch (error) {
@@ -110,6 +118,8 @@ export const useAuthStore = create<AuthState>()(
           profile: null,
           session: null,
           isAdmin: false,
+          isDeliveryApproved: false,
+          isDeliveryPending: false,
         });
       },
 

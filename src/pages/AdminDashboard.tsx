@@ -47,7 +47,7 @@ const SHADOW_LG  = '0 20px 60px rgba(0,0,0,0.5)';
 const SHADOW_GOLD= '0 0 20px rgba(201,168,76,0.2)';
 
 // ── Types ─────────────────────────────────────────────────────
-type AdminTab = 'overview' | 'products' | 'orders' | 'customers';
+type AdminTab = 'overview' | 'products' | 'orders' | 'customers' | 'staff';
 interface SizeStock { size: string; stock: number; }
 interface ColorEntry { color_name: string; hex_code: string; image_url: string; imageFile?: File; }
 interface ProductForm {
@@ -67,6 +67,7 @@ const NAV_ITEMS = [
   { id: 'products'  as AdminTab, label: 'Products',   icon: Package },
   { id: 'orders'    as AdminTab, label: 'Orders',     icon: ShoppingBag },
   { id: 'customers' as AdminTab, label: 'Users',      icon: Users },
+  { id: 'staff'     as AdminTab, label: 'Delivery Staff', icon: Truck },
 ];
 
 const PAGE_TITLES: Record<AdminTab, string> = {
@@ -74,6 +75,7 @@ const PAGE_TITLES: Record<AdminTab, string> = {
   products:  'Product Catalog',
   orders:    'Order Management',
   customers: 'User Management',
+  staff:     'Delivery Staff',
 };
 
 // ── GlassCard ─────────────────────────────────────────────────
@@ -332,6 +334,17 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: pendingStaffCount = 0 } = useQuery({
+    queryKey: ['admin-pending-staff'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('delivery_applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      return count || 0;
+    },
+  });
+
   useEffect(() => {
     const sub = supabase.channel('pending-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -465,8 +478,11 @@ export default function AdminDashboard() {
                   }}
                 >
                   <Icon size={17} color={active ? T.gold : T.textMuted} style={{ flexShrink: 0 }}/>
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                  {!sidebarCollapsed && active && (
+                  {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                  {!sidebarCollapsed && item.id === 'staff' && pendingStaffCount > 0 && (
+                    <span style={{ background: T.gold, color: T.bgDark, borderRadius: 10, padding: '1px 7px', fontSize: 10, fontWeight: 800 }}>{pendingStaffCount}</span>
+                  )}
+                  {!sidebarCollapsed && active && item.id !== 'staff' && (
                     <ArrowUpRight size={12} style={{ marginLeft: 'auto', color: T.gold }}/>
                   )}
                 </button>
@@ -637,6 +653,7 @@ export default function AdminDashboard() {
               {activeTab === 'products'  && <ProductsTab  key="products" />}
               {activeTab === 'orders'    && <OrdersTab    key="orders" />}
               {activeTab === 'customers' && <CustomersTab key="customers" />}
+              {activeTab === 'staff'     && <StaffTab     key="staff" />}
             </AnimatePresence>
           </main>
         </div>
@@ -2042,3 +2059,230 @@ function CustomersTab() {
     </motion.div>
   );
 }
+
+// ══════════════════════════════════════════════════════════════
+// Staff Tab — Delivery Partner Management
+// ══════════════════════════════════════════════════════════════
+function StaffTab() {
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+
+  const { data: applications = [], isLoading: loadingApps } = useQuery({
+    queryKey: ['admin-staff-applications'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delivery_applications')
+        .select('*')
+        .order('applied_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: drivers = [], isLoading: loadingDrivers } = useQuery({
+    queryKey: ['admin-staff-drivers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('role', ['delivery_approved', 'delivery_suspended'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const pending  = applications.filter((a: any) => a.status === 'pending');
+  const reviewed = applications.filter((a: any) => a.status !== 'pending');
+
+  const handleApprove = async (app: any) => {
+    try {
+      await supabase.from('profiles').update({ role: 'delivery_approved' }).eq('id', app.user_id);
+      await supabase.from('delivery_applications').update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id,
+      }).eq('id', app.id);
+      toast.success(`${app.full_name} approved as delivery partner!`);
+      qc.invalidateQueries({ queryKey: ['admin-staff-applications'] });
+      qc.invalidateQueries({ queryKey: ['admin-staff-drivers'] });
+      qc.invalidateQueries({ queryKey: ['admin-pending-staff'] });
+    } catch { toast.error('Failed to approve. Try again.'); }
+  };
+
+  const handleReject = async (app: any) => {
+    if (!window.confirm(`Reject application from ${app.full_name}?`)) return;
+    try {
+      await supabase.from('delivery_applications').update({
+        status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id,
+      }).eq('id', app.id);
+      toast.success('Application rejected.');
+      qc.invalidateQueries({ queryKey: ['admin-staff-applications'] });
+      qc.invalidateQueries({ queryKey: ['admin-pending-staff'] });
+    } catch { toast.error('Failed to reject. Try again.'); }
+  };
+
+  const handleSuspend = async (driverId: string, name: string, isSuspended: boolean) => {
+    const action = isSuspended ? 'Restore' : 'Suspend';
+    if (!window.confirm(`${action} ${name}?`)) return;
+    try {
+      const newRole = isSuspended ? 'delivery_approved' : 'delivery_suspended';
+      await supabase.from('profiles').update({ role: newRole }).eq('id', driverId);
+      toast.success(`${name} ${isSuspended ? 'restored' : 'suspended'}.`);
+      qc.invalidateQueries({ queryKey: ['admin-staff-drivers'] });
+    } catch { toast.error('Failed. Try again.'); }
+  };
+
+  const appCardStyle: React.CSSProperties = {
+    background: 'rgba(22,14,6,0.95)',
+    border: `1px solid ${T.border}`,
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 12,
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+
+      {/* ── Analytics strip ──────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+        {[
+          { label: 'Pending Applications', value: pending.length, color: T.warning },
+          { label: 'Active Drivers', value: drivers.filter((d: any) => d.role === 'delivery_approved').length, color: T.success },
+          { label: 'Suspended', value: drivers.filter((d: any) => d.role === 'delivery_suspended').length, color: T.danger },
+          { label: 'Total Applications', value: applications.length, color: T.gold },
+        ].map(s => (
+          <GlassCard key={s.label} style={{ padding: '20px 22px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontSize: 28, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</p>
+          </GlassCard>
+        ))}
+      </div>
+
+      {/* ── Pending Applications ─────────────── */}
+      <GlassCard style={{ padding: '24px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <Truck size={20} color={T.gold} />
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.textPrim }}>Pending Applications</h2>
+          {pending.length > 0 && (
+            <span style={{ background: T.gold, color: T.bgDark, borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>{pending.length}</span>
+          )}
+        </div>
+        {loadingApps ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[...Array(2)].map((_, i) => <div key={i} style={{ height: 120, borderRadius: 14, background: T.glass, animation: 'pulse 1.5s ease-in-out infinite' }} />)}
+          </div>
+        ) : pending.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: T.textMuted, fontSize: 14 }}>
+            No pending applications right now.
+          </div>
+        ) : (
+          pending.map((app: any) => (
+            <div key={app.id} style={appCardStyle}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontSize: 17, fontWeight: 700, color: T.textPrim, marginBottom: 4 }}>{app.full_name}</p>
+                  <p style={{ fontSize: 12, color: T.textMuted }}>{app.phone} · {app.city}</p>
+                </div>
+                <p style={{ fontSize: 11, color: T.textMuted }}>
+                  Applied {new Date(app.applied_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+                {[
+                  { label: 'Vehicle', value: `${app.vehicle_type} — ${app.vehicle_number}` },
+                  { label: 'License', value: app.license_number },
+                  { label: 'Experience', value: app.experience || '—' },
+                ].map(f => (
+                  <div key={f.label} style={{ background: T.glass, borderRadius: 10, padding: '10px 12px' }}>
+                    <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: T.textMuted, marginBottom: 4 }}>{f.label}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textPrim }}>{f.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={() => handleApprove(app)}
+                  style={{ padding: '8px 22px', borderRadius: 8, fontWeight: 700, fontSize: 12, border: `1px solid rgba(34,197,94,0.35)`, background: 'rgba(34,197,94,0.1)', color: '#4ade80', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.1)')}
+                >
+                  ✓ Approve
+                </button>
+                <button
+                  onClick={() => handleReject(app)}
+                  style={{ padding: '8px 22px', borderRadius: 8, fontWeight: 700, fontSize: 12, border: `1px solid rgba(239,68,68,0.35)`, background: 'rgba(239,68,68,0.08)', color: '#f87171', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.18)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+                >
+                  ✕ Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </GlassCard>
+
+      {/* ── Active Drivers ───────────────────── */}
+      <GlassCard style={{ padding: '24px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <CheckCircle size={20} color={T.success} />
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.textPrim }}>Active Drivers</h2>
+        </div>
+        {loadingDrivers ? (
+          <div style={{ height: 80, borderRadius: 14, background: T.glass }} />
+        ) : drivers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: T.textMuted, fontSize: 14 }}>No drivers yet. Approve an application to get started.</div>
+        ) : (
+          drivers.map((d: any) => {
+            const isSuspended = d.role === 'delivery_suspended';
+            return (
+              <div key={d.id} style={{ ...appCardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: T.textPrim }}>{d.name || 'Driver'}</p>
+                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 20, background: isSuspended ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: isSuspended ? '#f87171' : '#4ade80', border: `1px solid ${isSuspended ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}` }}>
+                      {isSuspended ? 'Suspended' : 'Active'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 12, color: T.textMuted }}>{d.email} · {d.phone || '—'}</p>
+                </div>
+                <button
+                  onClick={() => handleSuspend(d.id, d.name || 'Driver', isSuspended)}
+                  style={{ padding: '8px 18px', borderRadius: 8, fontWeight: 700, fontSize: 12, border: `1px solid ${isSuspended ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)'}`, background: isSuspended ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', color: isSuspended ? '#4ade80' : '#f87171', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                >
+                  {isSuspended ? '↩ Restore Access' : '⊘ Suspend'}
+                </button>
+              </div>
+            );
+          })
+        )}
+      </GlassCard>
+
+      {/* ── Past Applications ────────────────── */}
+      {reviewed.length > 0 && (
+        <GlassCard style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <Clock size={20} color={T.textMuted} />
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: T.textPrim }}>Past Applications</h2>
+          </div>
+          {reviewed.map((app: any) => (
+            <div key={app.id} style={{ ...appCardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: T.textPrim, marginBottom: 4 }}>{app.full_name}</p>
+                <p style={{ fontSize: 12, color: T.textMuted }}>{app.phone} · {app.city}</p>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, background: app.status === 'approved' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: app.status === 'approved' ? '#4ade80' : '#f87171', border: `1px solid ${app.status === 'approved' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                {app.status}
+              </span>
+            </div>
+          ))}
+        </GlassCard>
+      )}
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+    </motion.div>
+  );
+}
+

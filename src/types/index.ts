@@ -17,13 +17,20 @@ export interface SavedAddress {
   is_default?: boolean;
 }
 
+export type UserRole =
+  | 'customer'
+  | 'admin'
+  | 'delivery_pending'
+  | 'delivery_approved'
+  | 'delivery_suspended';
+
 export interface Profile {
   id: string;
   name: string | null;
   email: string | null;
   avatar_url: string | null;
   phone: string | null;
-  role: 'customer' | 'admin';
+  role: UserRole;
   loyalty_points: number;
   addresses?: SavedAddress[];
   created_at: string;
@@ -109,7 +116,10 @@ export interface WishlistItem {
 
 export type OrderStatus =
   | 'pending'
+  | 'confirmed'
   | 'packed'
+  | 'ready_to_ship'
+  | 'out_for_delivery'
   | 'shipped'
   | 'delivered'
   | 'cancelled';
@@ -125,6 +135,13 @@ export interface Order {
   discount_amount: number;
   created_at: string;
   order_items?: OrderItem[];
+  // Delivery fields
+  delivery_pin?: string | null;
+  driver_id?: string | null;
+  pin_verified?: boolean;
+  pin_attempts?: number;
+  claimed_at?: string | null;
+  delivered_at?: string | null;
 }
 
 export interface OrderItem {
@@ -228,4 +245,38 @@ export interface ProductFilters {
   rating?: number;
   search?: string;
   sortBy?: 'newest' | 'price_low' | 'price_high' | 'rating' | 'popular';
+}
+
+// ─── Delivery System ─────────────────────────────────────────
+
+export type DeliveryApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+export type VehicleType =
+  | 'Two Wheeler'
+  | 'Three Wheeler'
+  | 'Four Wheeler'
+  | 'Cargo Van';
+
+export type DeliveryExperience =
+  | 'No experience (fresher)'
+  | 'Less than 1 year'
+  | '1-2 years'
+  | '3+ years';
+
+export interface DeliveryApplication {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  vehicle_type: VehicleType;
+  vehicle_number: string;
+  license_number: string;
+  city: string;
+  experience: DeliveryExperience | null;
+  status: DeliveryApplicationStatus;
+  applied_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  // joined profile data
+  profile?: Pick<Profile, 'name' | 'email' | 'role'>;
 }

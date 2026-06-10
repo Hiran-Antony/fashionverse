@@ -8,6 +8,7 @@ import {
   Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
   Circle, Shield, Calendar, ArrowRight, Plus, Trash2,
   Save, Phone, Mail, ChevronRight, Star, XCircle,
+  Eye, EyeOff, AlertTriangle,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,15 +19,65 @@ import toast from 'react-hot-toast';
 
 type Tab = 'profile' | 'orders' | 'wishlist';
 
-const STATUS_STEPS = ['pending', 'packed', 'shipped', 'delivered'];
+const STATUS_STEPS = ['pending', 'confirmed', 'packed', 'ready_to_ship', 'out_for_delivery', 'delivered'];
 
 const STATUS_META: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-  pending:   { icon: <Clock size={14} />,        label: 'Order Placed', color: '#E8B84B', bg: 'rgba(201,151,58,0.15)' },
-  packed:    { icon: <PackageIcon size={14} />,  label: 'Packed',       color: '#D4A935', bg: 'rgba(201,151,58,0.15)' },
-  shipped:   { icon: <Truck size={14} />,        label: 'Shipped',      color: '#C9973A', bg: 'rgba(201,151,58,0.15)' },
-  delivered: { icon: <Home size={14} />,         label: 'Delivered',    color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
-  cancelled: { icon: <XCircle size={14} />,      label: 'Cancelled',    color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
+  pending:          { icon: <Clock size={14} />,        label: 'Order Placed',     color: '#E8B84B', bg: 'rgba(201,151,58,0.15)' },
+  confirmed:        { icon: <CheckCircle2 size={14}/>,  label: 'Confirmed',        color: '#D4A935', bg: 'rgba(201,151,58,0.15)' },
+  packed:           { icon: <PackageIcon size={14} />,  label: 'Being Packed',     color: '#D4A935', bg: 'rgba(201,151,58,0.15)' },
+  ready_to_ship:    { icon: <Package size={14} />,      label: 'Ready to Ship',    color: '#C9973A', bg: 'rgba(201,151,58,0.15)' },
+  out_for_delivery: { icon: <Truck size={14} />,        label: 'Out for Delivery', color: '#C9973A', bg: 'rgba(201,151,58,0.15)' },
+  shipped:          { icon: <Truck size={14} />,        label: 'Shipped',          color: '#C9973A', bg: 'rgba(201,151,58,0.15)' },
+  delivered:        { icon: <Home size={14} />,         label: 'Delivered',        color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
+  cancelled:        { icon: <XCircle size={14} />,      label: 'Cancelled',        color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
 };
+
+/* ─── Delivery PIN Card ───────────────────────────────────── */
+function DeliveryPinCard({ pin }: { pin: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const digits = revealed ? pin.split('') : ['•', '•', '•', '•'];
+  return (
+    <div style={{
+      background: 'rgba(201,151,58,0.06)',
+      border: '1px solid rgba(201,151,58,0.2)',
+      borderRadius: '12px',
+      padding: '16px 24px',
+      margin: '0 0 0 0',
+    }}>
+      <p style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(201,151,58,0.6)', fontWeight: 700, marginBottom: '12px' }}>Delivery PIN</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {digits.map((d, i) => (
+            <div key={i} style={{
+              width: '44px', height: '50px',
+              background: 'rgba(10,6,2,0.6)',
+              border: '1px solid rgba(201,151,58,0.3)',
+              borderRadius: '8px',
+              fontSize: '22px', fontWeight: 700,
+              color: '#E8B84B',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: "'Space Grotesk', monospace",
+              letterSpacing: revealed ? '0' : '0.2em',
+            }}>{d}</div>
+          ))}
+        </div>
+        <button
+          onClick={() => setRevealed(r => !r)}
+          style={{ background: 'none', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '8px', color: '#C9973A', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, fontFamily: "'Syne', sans-serif", transition: 'all 0.2s' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,151,58,0.08)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+        >
+          {revealed ? <EyeOff size={13} /> : <Eye size={13} />}
+          {revealed ? 'Hide' : 'Reveal PIN'}
+        </button>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '10px' }}>
+        <AlertTriangle size={11} style={{ color: 'rgba(201,151,58,0.5)', flexShrink: 0 }} />
+        <p style={{ fontSize: '11px', color: 'rgba(245,237,212,0.35)' }}>Share this PIN only with your FashionVerse delivery partner</p>
+      </div>
+    </div>
+  );
+}
 
 const TAB_META: Record<Tab, { title: string; subtitle: string }> = {
   profile:  { title: 'My Profile',   subtitle: 'Manage your personal information and delivery addresses' },
@@ -850,6 +901,13 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Delivery PIN Card — shown for active non-delivered orders */}
+      {!isCancelled && order.status !== 'delivered' && order.delivery_pin && (
+        <div style={{ padding: '0 24px 16px' }}>
+          <DeliveryPinCard pin={order.delivery_pin} />
         </div>
       )}
 

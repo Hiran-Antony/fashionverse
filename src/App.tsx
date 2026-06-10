@@ -30,6 +30,8 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const MenPage = lazy(() => import('./pages/MenPage'));
 const WomenPage = lazy(() => import('./pages/WomenPage'));
 const KidsPage = lazy(() => import('./pages/KidsPage'));
+const DeliveryApplyPage = lazy(() => import('./pages/DeliveryApplyPage'));
+const DeliveryDashboard = lazy(() => import('./pages/DeliveryDashboard'));
 
 // ─── Loading Spinner ─────────────────────────────────────────
 function PageLoader() {
@@ -114,6 +116,10 @@ function App() {
                 {/* ── Standalone pages (no Navbar/Footer) ─── */}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+
+                {/* ── Delivery System pages (standalone) ─── */}
+                <Route path="/delivery/apply" element={<DeliveryApplyPage />} />
+                <Route path="/delivery-dashboard" element={<DeliveryDashboard />} />
 
                 {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
                 <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
