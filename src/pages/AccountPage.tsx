@@ -8,12 +8,14 @@ import {
   Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
   Circle, Shield, Calendar, ArrowRight, Plus, Trash2,
   Save, Phone, Mail, ChevronRight, Star, XCircle,
-  Eye, EyeOff, AlertTriangle,
+  Eye, EyeOff, AlertTriangle, Download, MessageCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/product/ProductCard';
+import InvoiceTemplate from '../components/InvoiceTemplate';
+import { useInvoice } from '../hooks/useInvoice';
 import type { Product, SavedAddress } from '../types';
 import toast from 'react-hot-toast';
 
@@ -737,12 +739,15 @@ function ProfileTab() {
 /* ─── Orders Tab ───────────────────────────────────────────── */
 function OrdersTab({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
+  const [cancelModal, setCancelModal] = useState<{ id: string; amount: number } | null>(null);
+  const { invoiceOrder, setInvoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
+  const { user, profile } = useAuthStore();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('orders').select('*, order_items(*)').eq('user_id', userId).neq('status', 'cancelled')
+        .from('orders').select('*, order_items(*, products(*, product_colors(*)))').eq('user_id', userId).neq('status', 'cancelled')
         .order('created_at', { ascending: false }).limit(30);
       if (error) throw error;
       return data || [];
@@ -751,17 +756,36 @@ function OrdersTab({ userId }: { userId: string }) {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const { error } = await supabase.from('orders').update({ status: 'cancelled' })
-        .eq('id', orderId).eq('user_id', userId).in('status', ['pending', 'packed']);
+    mutationFn: async ({ orderId, reason, comment }: { orderId: string; reason: string; comment: string }) => {
+      const { error } = await supabase.from('orders').update({
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancellation_category: comment || null,
+        cancelled_at: new Date().toISOString(),
+      }).eq('id', orderId).eq('user_id', userId).in('status', ['pending', 'packed']);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['my-orders', userId] }); toast.success('Order cancelled.'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['my-orders', userId] }); toast.success('Order cancelled successfully'); },
     onError: () => toast.error('Could not cancel. Please try again.'),
   });
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+      {/* Cancellation Modal */}
+      <AnimatePresence>
+        {cancelModal && (
+          <CancellationModal
+            orderId={cancelModal.id}
+            amount={cancelModal.amount}
+            onClose={() => setCancelModal(null)}
+            onConfirm={(reason, comment) => {
+              cancelMutation.mutate({ orderId: cancelModal.id, reason, comment });
+              setCancelModal(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {!isLoading && orders.length > 0 && (
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', marginTop: '-8px' }}>
           {orders.length} order{orders.length !== 1 ? 's' : ''} ·{' '}
@@ -792,15 +816,127 @@ function OrdersTab({ userId }: { userId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {orders.map((order: any, idx: number) => (
             <OrderCard key={order.id} order={order} index={idx}
-              onCancel={() => { if (window.confirm('Cancel this order?')) cancelMutation.mutate(order.id); }} />
+              onCancel={() => setCancelModal({ id: order.id, amount: order.total_amount })}
+              onDownloadInvoice={() => downloadInvoice({ ...order, profiles: { name: profile?.name, email: user?.email } })}
+              onWhatsApp={() => sendWhatsAppBill({ ...order, profiles: { name: profile?.name, email: user?.email } })} />
           ))}
         </div>
       )}
+
+      {/* Hidden Invoice Template — only visible when printing */}
+      <InvoiceTemplate order={invoiceOrder} />
     </motion.div>
   );
 }
 
-function OrderCard({ order, index, onCancel }: { order: any; index: number; onCancel: () => void }) {
+/* ─── Cancellation Modal ────────────────────────────────────── */
+const CANCEL_REASONS = [
+  'Changed my mind',
+  'Found a better price elsewhere',
+  'Ordered by mistake',
+  'Delivery time is too long',
+  'Item no longer needed',
+  'Incorrect item ordered',
+  'Payment issue',
+  'Other',
+];
+
+function CancellationModal({ orderId, amount, onClose, onConfirm }: {
+  orderId: string;
+  amount: number;
+  onClose: () => void;
+  onConfirm: (reason: string, comment: string) => void;
+}) {
+  const [selected, setSelected] = useState('');
+  const [comment, setComment] = useState('');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+        style={{ background: 'rgba(18,10,6,0.98)', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '20px', padding: '32px', maxWidth: '480px', width: '100%' }}
+      >
+        {/* Icon */}
+        <div style={{ width: 56, height: 56, background: 'rgba(220,60,60,0.1)', border: '1px solid rgba(220,60,60,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <AlertTriangle size={24} color="#f87171" />
+        </div>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', color: '#F5EDD4', textAlign: 'center', margin: '0 0 8px' }}>Cancel Order?</h3>
+        <p style={{ fontSize: '13px', color: 'rgba(245,237,212,0.45)', textAlign: 'center', marginBottom: '24px' }}>
+          Order #{orderId.slice(0, 8).toUpperCase()} · ₹{amount?.toLocaleString('en-IN')}
+        </p>
+
+        {/* Reason label */}
+        <p style={{ fontSize: '10px', letterSpacing: '0.15em', color: 'rgba(201,151,58,0.6)', textTransform: 'uppercase', marginBottom: '12px' }}>Why are you cancelling?</p>
+
+        {/* Reason pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+          {CANCEL_REASONS.map((reason) => (
+            <button key={reason} onClick={() => setSelected(reason)} style={{
+              padding: '9px 16px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer',
+              fontFamily: 'inherit', transition: 'all 0.2s ease',
+              border: selected === reason ? '1px solid #C9973A' : '1px solid rgba(201,151,58,0.18)',
+              background: selected === reason ? 'rgba(201,151,58,0.12)' : 'transparent',
+              color: selected === reason ? '#E8B84B' : 'rgba(245,237,212,0.55)',
+              fontWeight: selected === reason ? 500 : 400,
+            }}>
+              {reason}
+            </button>
+          ))}
+        </div>
+
+        {/* Comment textarea */}
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value.slice(0, 200))}
+          placeholder="Tell us more (optional)..."
+          rows={3}
+          style={{
+            width: '100%', boxSizing: 'border-box', marginTop: '12px',
+            background: 'rgba(26,15,8,0.7)', border: '1px solid rgba(201,151,58,0.18)',
+            borderRadius: '10px', color: '#F5EDD4', fontSize: '13px',
+            padding: '12px 14px', resize: 'none', fontFamily: 'inherit',
+            outline: 'none',
+          }}
+        />
+        <p style={{ fontSize: '11px', color: 'rgba(245,237,212,0.3)', textAlign: 'right', marginTop: '4px' }}>{comment.length}/200</p>
+
+        {/* Buttons */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '10px',
+            color: 'rgba(245,237,212,0.7)', padding: '13px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            Keep Order
+          </button>
+          <button
+            disabled={!selected}
+            onClick={() => selected && onConfirm(selected, comment)}
+            style={{
+              background: 'rgba(220,60,60,0.15)', border: '1px solid rgba(220,60,60,0.3)', borderRadius: '10px',
+              color: '#f87171', padding: '13px', fontSize: '13px', fontWeight: 600, cursor: selected ? 'pointer' : 'not-allowed',
+              opacity: selected ? 1 : 0.4, fontFamily: 'inherit', transition: 'all 0.2s ease',
+            }}
+          >
+            Confirm Cancellation
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
+  order: any;
+  index: number;
+  onCancel: () => void;
+  onDownloadInvoice?: () => void;
+  onWhatsApp?: () => void;
+}) {
   const meta = STATUS_META[order.status] || STATUS_META.pending;
   const stepIdx = STATUS_STEPS.indexOf(order.status);
   const isCancelled = order.status === 'cancelled';
@@ -885,21 +1021,70 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
           <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '14px' }}>
             Order Items ({order.order_items.length})
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {order.order_items.map((item: any) => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', borderRadius: '12px', background: 'var(--bg-secondary)' }}>
-                <div style={{ width: '52px', height: '60px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                  {item.image_url ? <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PackageIcon size={20} style={{ color: '#D4A935' }} />}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {order.order_items.map((item: any) => {
+              const product = item.products;
+              const colorImg = product?.product_colors?.find((c: any) => c.color_name === item.color_name)?.image_url;
+              const imageUrl = colorImg || product?.product_colors?.[0]?.image_url || product?.image_url;
+              
+              return (
+              <div key={item.id} className="order-item-card">
+                
+                {/* Product Image */}
+                <div className="order-item-image-wrap">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={item.products?.name || item.product_name || 'Product'}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="image-fallback">
+                      <ShoppingBag size={24} />
+                    </div>
+                  )}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product_name || 'Product'}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {item.size && `Size ${item.size}`}{item.size && item.color_name && ' · '}{item.color_name} · Qty {item.quantity}
+
+                {/* Product Details */}
+                <div className="order-item-details">
+                  <span className="order-item-brand">
+                    {item.products?.brand || 'FashionVerse'}
+                  </span>
+                  <p className="order-item-name">
+                    {item.products?.name || item.product_name || 'Product'}
                   </p>
+                  <div className="order-item-meta">
+                    {item.size && (
+                      <span>Size {item.size}</span>
+                    )}
+                    {item.color_name && (
+                      <>
+                        <span>·</span>
+                        <span>{item.color_name}</span>
+                      </>
+                    )}
+                    <span>·</span>
+                    <span>Qty {item.quantity}</span>
+                    {item.products?.category && (
+                      <>
+                        <span>·</span>
+                        <span>{item.products.category}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: 900, color: '#E8B84B', flexShrink: 0 }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+
+                {/* Price */}
+                <div className="order-item-price">
+                  ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                  <div className="order-item-price-unit">
+                    ₹{item.price.toLocaleString('en-IN')} each
+                  </div>
+                </div>
+
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -911,26 +1096,35 @@ function OrderCard({ order, index, onCancel }: { order: any; index: number; onCa
         </div>
       )}
 
-      {/* Footer */}
-      <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        {delivery && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MapPin size={14} style={{ color: '#C9973A', flexShrink: 0 }} />
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              {typeof delivery === 'object' ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') : delivery}
-            </p>
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
-          </div>
-          <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#C9973A,#C9973A)' }}>
-            <p style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
+        <div style={{ padding: '12px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--bg-tertiary)' }}>
+          {delivery && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={14} style={{ color: '#C9973A', flexShrink: 0 }} />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                {typeof delivery === 'object' ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') : delivery}
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
+            </div>
+            {onDownloadInvoice && (
+              <button className="btn-invoice-small" onClick={onDownloadInvoice}>
+                <Download size={11} /> Invoice
+              </button>
+            )}
+            {onWhatsApp && (
+              <button className="btn-whatsapp-small" onClick={onWhatsApp}>
+                <MessageCircle size={11} /> WhatsApp
+              </button>
+            )}
+            <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#C9973A,#C9973A)' }}>
+              <p style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
+            </div>
           </div>
         </div>
-      </div>
     </motion.div>
   );
 }

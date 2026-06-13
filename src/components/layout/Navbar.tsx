@@ -155,7 +155,7 @@ export default function Navbar() {
             />
             <NavLink
               to="/style-builder"
-              label="Style Builder"
+              label="FashionVerse AI"
               isActive={location.pathname === '/style-builder'}
               isLight={!isScrolled && isHomePage}
             />
@@ -394,7 +394,7 @@ export default function Navbar() {
 
                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.75rem 0' }} />
                 <MobileNavLink to="/try-on" label="Virtual Try-On" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/style-builder" label="Style Builder" onClick={() => setIsMobileMenuOpen(false)} />
+                <MobileNavLink to="/style-builder" label="FashionVerse AI" onClick={() => setIsMobileMenuOpen(false)} />
                 <MobileNavLink to="/wishlist" label="Wishlist" onClick={() => setIsMobileMenuOpen(false)} />
 
                 <div

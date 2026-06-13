@@ -343,13 +343,25 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setIsLoading(true);
     try {
-      // Available: ready_to_ship and no driver claimed
-      const { data: avail } = await supabase
+      // Available: packed by admin and not yet claimed by a driver
+      const { data: avail, error: availError } = await supabase
         .from('orders')
         .select('*, order_items(*)')
-        .eq('status', 'ready_to_ship')
+        .eq('status', 'packed')
         .is('driver_id', null)
         .order('created_at', { ascending: true });
+
+      if (availError) {
+        // driver_id column may not exist yet — fall back without the filter
+        const { data: fallback } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('status', 'packed')
+          .order('created_at', { ascending: true });
+        setAvailableOrders(fallback || []);
+      } else {
+        setAvailableOrders(avail || []);
+      }
 
       // My active orders
       const { data: mine } = await supabase
@@ -368,9 +380,10 @@ export default function DeliveryDashboard() {
         .order('delivered_at', { ascending: false })
         .limit(20);
 
-      setAvailableOrders(avail || []);
       setMyOrders(mine || []);
       setCompletedOrders(done || []);
+    } catch {
+      // silently handle
     } finally {
       setIsLoading(false);
     }
@@ -381,19 +394,27 @@ export default function DeliveryDashboard() {
   const handlePickupConfirm = async () => {
     if (!pickupModal || !user) return;
     try {
+      // Try updating with driver tracking fields (requires migration to have run)
       const { error } = await supabase.from('orders').update({
         driver_id: user.id,
         status: 'out_for_delivery',
         claimed_at: new Date().toISOString(),
-      }).eq('id', pickupModal.id).is('driver_id', null);
+      }).eq('id', pickupModal.id).eq('status', 'packed');
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: columns may not exist yet — just update status
+        const { error: e2 } = await supabase.from('orders')
+          .update({ status: 'out_for_delivery' })
+          .eq('id', pickupModal.id);
+        if (e2) throw e2;
+      }
       toast.success('Order claimed! Head to the customer.');
       setPickupModal(null);
       fetchOrders();
       setActiveTab('my-orders');
-    } catch {
-      toast.error('Failed to claim order. Try again.');
+    } catch (err: any) {
+      console.error("Pickup Error:", err);
+      toast.error(`Error: ${err.message || 'Failed to claim order'}`);
     }
   };
 

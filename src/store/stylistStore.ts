@@ -1,11 +1,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface Message {
+interface StylistItem {
+  slot: string;
+  product_name: string;
+  brand: string;
+  price: number;
+  image_url: string;
+  reason: string;
+}
+
+interface StylistResponse {
+  outfit_name: string;
+  analysis: string;
+  dress_code_level: string;
+  items: StylistItem[];
+  total_price: number;
+  style_tip: string;
+  mediator_note: string;
+  confidence_score: number;
+}
+
+export interface Message {
   id: string;
   role: 'user' | 'model';
   text: string;
-  outfit?: Record<string, unknown>;
+  outfit?: StylistResponse | Record<string, unknown>;
 }
 
 interface StylistState {

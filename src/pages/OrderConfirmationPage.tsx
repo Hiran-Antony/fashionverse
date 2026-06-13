@@ -1,7 +1,11 @@
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion, useAnimation } from 'framer-motion';
-import { CheckCircle2, Package, Truck, Home, ShoppingBag, ArrowRight, Mail } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { CheckCircle2, Package, Truck, Home, ShoppingBag, ArrowRight, Mail, Download, MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { supabase } from '../lib/supabase';
+import { useInvoice } from '../hooks/useInvoice';
+import InvoiceTemplate from '../components/InvoiceTemplate';
 
 // ─── Gold-only confetti ───────────────────────────────────────────
 function GoldConfetti() {
@@ -80,6 +84,26 @@ export default function OrderConfirmationPage() {
   const shortId = orderId.length > 12
     ? orderId.slice(0, 8).toUpperCase()
     : orderId.toUpperCase();
+
+  const { user, profile } = useAuthStore();
+  const [orderData, setOrderData] = useState<any>(null);
+  const { invoiceOrder, setInvoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
+
+  // Fetch the real order from DB if we have a real ID
+  useEffect(() => {
+    if (!orderId || orderId.startsWith('demo')) return;
+    supabase
+      .from('orders')
+      .select('*, order_items(*, products(*))')
+      .eq('id', orderId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setOrderData(data);
+          setInvoiceOrder({ ...data, profiles: { name: profile?.name, email: user?.email } });
+        }
+      });
+  }, [orderId, user, profile]);
 
   // Estimated delivery: 4 business days
   const deliveryDate = new Date();
@@ -482,6 +506,24 @@ export default function OrderConfirmationPage() {
             </Link>
           </motion.div>
 
+          {/* ── Invoice & WhatsApp buttons ───────────────── */}
+          {invoiceOrder && (
+            <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 4 }}>
+              <button
+                className="invoice-download-btn"
+                onClick={() => downloadInvoice(invoiceOrder)}
+              >
+                <Download size={15} /> Download Invoice PDF
+              </button>
+              <button
+                className="whatsapp-share-btn"
+                onClick={() => sendWhatsAppBill(invoiceOrder)}
+              >
+                <MessageCircle size={15} /> Send Bill to WhatsApp
+              </button>
+            </motion.div>
+          )}
+
         </motion.div>
       </motion.div>
 
@@ -493,5 +535,8 @@ export default function OrderConfirmationPage() {
         }
       `}</style>
     </div>
+
+    {/* Hidden Invoice Template — only visible when printing */}
+    <InvoiceTemplate order={invoiceOrder} />
   );
 }

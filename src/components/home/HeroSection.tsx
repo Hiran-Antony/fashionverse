@@ -13,7 +13,7 @@ export function FeaturesSection() {
     },
     {
       icon: <Shirt size={26} />,
-      title: 'Style Builder',
+      title: 'FashionVerse AI',
       desc: 'Curate complete outfits from our catalog and visualize every combination.',
     },
     {

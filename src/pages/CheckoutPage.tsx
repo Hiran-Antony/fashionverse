@@ -236,6 +236,9 @@ export default function CheckoutPage() {
         price: item.product_price,
       }));
 
+      // Generate 4-digit delivery PIN
+      const deliveryPin = String(Math.floor(1000 + Math.random() * 9000));
+
       const { data: order, error } = await supabase
         .from('orders')
         .insert({
@@ -246,6 +249,9 @@ export default function CheckoutPage() {
           payment_method: paymentMethod,
           coupon_code: null,
           discount_amount: 0,
+          delivery_pin: deliveryPin,
+          pin_attempts: 0,
+          pin_verified: false,
         })
         .select()
         .single();

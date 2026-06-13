@@ -206,6 +206,7 @@ export const ORDER_STATUSES = [
   { value: 'pending', label: 'Order Placed', color: '#F59E0B' },
   { value: 'packed', label: 'Packed', color: '#C9973A' },
   { value: 'shipped', label: 'Shipped', color: '#E8B84B' },
+  { value: 'out_for_delivery', label: 'Out for Delivery', color: '#8B5CF6' },
   { value: 'delivered', label: 'Delivered', color: '#10B981' },
   { value: 'cancelled', label: 'Cancelled', color: '#EF4444' },
 ] as const;

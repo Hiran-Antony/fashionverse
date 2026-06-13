@@ -164,7 +164,7 @@ export default function DeliveryApplyPage() {
         return;
       }
       
-      // Check if they have a pending application in the DB
+      // Check application status directly from DB (most reliable)
       const { data: appData } = await supabase
         .from('delivery_applications')
         .select('applied_at, status')
@@ -173,7 +173,20 @@ export default function DeliveryApplyPage() {
         .limit(1)
         .single();
 
-      if (appData && appData.status === 'pending') {
+      if (appData?.status === 'approved') {
+        // Admin approved — force profile refresh to update authStore and trigger natural redirect
+        await useAuthStore.getState().fetchProfile(user.id);
+        // If after fetching, the profile role is still not updated (due to past DB inconsistency),
+        // we must not get stuck. We will just set checkingStatus to false and let the UI show an error or idle state.
+        const currentRole = useAuthStore.getState().profile?.role;
+        if (currentRole === 'delivery_approved' || currentRole === 'admin') {
+          navigate('/delivery-dashboard', { replace: true });
+        } else {
+          setApplicationStatus('pending'); // Fallback so they don't get stuck in a loading screen
+        }
+        setCheckingStatus(false);
+        return;
+      } else if (appData?.status === 'pending') {
         setApplicationDate(appData.applied_at);
         setApplicationStatus('pending');
       } else {
@@ -185,6 +198,25 @@ export default function DeliveryApplyPage() {
     };
     check();
   }, [user, profile, isDeliveryApproved, navigate]);
+
+  // ── Poll every 8 seconds while pending, auto-redirect on approval ──
+  useEffect(() => {
+    if (applicationStatus !== 'pending' || !user) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('delivery_applications')
+        .select('status')
+        .eq('user_id', user.id)
+        .order('applied_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (data?.status === 'approved') {
+        clearInterval(interval);
+        useAuthStore.getState().fetchProfile(user.id);
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [applicationStatus, user, navigate]);
 
   // ── Submit application ─────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {

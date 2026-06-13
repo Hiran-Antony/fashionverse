@@ -9,6 +9,7 @@ import {
   Star, IndianRupee, ShoppingCart, Bell, TrendingUp,
   TrendingDown, Crown, CheckCircle, Clock, Truck,
   ArrowUpRight, BarChart3, Filter, ChevronLeft, ChevronRight, AlertTriangle,
+  Download, MessageCircle,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -19,6 +20,8 @@ import { supabase } from '../lib/supabase';
 import { uploadImage, getOptimizedUrl } from '../lib/cloudinary';
 import { useAuthStore } from '../store/authStore';
 import { CATEGORIES, SIZES, ORDER_STATUSES, SUB_CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
+import InvoiceTemplate from '../components/InvoiceTemplate';
+import { useInvoice } from '../hooks/useInvoice';
 import toast from 'react-hot-toast';
 
 // ── Design Tokens ─────────────────────────────────────────────
@@ -729,10 +732,10 @@ function OverviewTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from('orders')
-        .select('id,total_amount,created_at,profiles:user_id(name)')
+        .select('id,total_amount,created_at,cancelled_at,cancellation_reason,cancellation_category,profiles:user_id(name)')
         .eq('status', 'cancelled')
-        .order('created_at', { ascending: false })
-        .limit(4);
+        .order('cancelled_at', { ascending: false })
+        .limit(10);
       return data || [];
     },
   });
@@ -770,15 +773,15 @@ function OverviewTab() {
     return months;
   })();
 
-  // Calculate explicit clean ticks based on actual data
+  // Calculate nice ticks in multiples of 500, 1K, 5K etc.
   const calcTicks = (maxVal: number): number[] => {
-    if (maxVal === 0) return [0];
-    // Find a nice round step so we get ~4-5 ticks
-    const rawStep = maxVal / 4;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const step = Math.ceil(rawStep / magnitude) * magnitude;
-    const count = Math.ceil(maxVal / step);
-    return Array.from({ length: count + 1 }, (_, i) => i * step);
+    if (maxVal === 0) return [0, 500, 1000, 1500, 2000, 2500];
+    // Pick the smallest step from [500, 1000, 2500, 5000, 10000]
+    // that gives us between 4-6 ticks
+    const candidates = [500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+    const step = candidates.find(s => Math.ceil(maxVal / s) <= 5) || 100000;
+    const topTick = Math.ceil(maxVal / step) * step;
+    return Array.from({ length: Math.round(topTick / step) + 1 }, (_, i) => i * step);
   };
 
   const weeklyMax = Math.max(...weeklySales.map(d => d.revenue), 0);
@@ -789,7 +792,7 @@ function OverviewTab() {
 
   const fmtTick = (v: number) => {
     if (v === 0) return '₹0';
-    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}k`;
+    if (v >= 1000) return `₹${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
     return `₹${v}`;
   };
 
@@ -858,8 +861,16 @@ function OverviewTab() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
               <XAxis dataKey="day" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
-              <YAxis ticks={weeklyTicks} domain={[0, weeklyTicks[weeklyTicks.length - 1]]} tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
-                tickFormatter={fmtTick}/>
+              <YAxis
+                ticks={weeklyTicks}
+                domain={[0, weeklyTicks[weeklyTicks.length - 1]]}
+                tickFormatter={fmtTick}
+                interval={0}
+                width={55}
+                tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip content={<ChartTooltip/>}/>
               <Area type="monotone" dataKey="revenue" stroke={T.gold} strokeWidth={2.5}
                 fill="url(#goldGrad)" dot={{ fill: T.gold, strokeWidth: 0, r: 4 }} activeDot={{ r: 6, fill: T.lightGold }}/>
@@ -931,8 +942,16 @@ function OverviewTab() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
             <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
-            <YAxis ticks={monthlyTicks} domain={[0, monthlyTicks[monthlyTicks.length - 1]]} tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }} axisLine={false} tickLine={false}
-              tickFormatter={fmtTick}/>
+            <YAxis
+              ticks={monthlyTicks}
+              domain={[0, monthlyTicks[monthlyTicks.length - 1]]}
+              tickFormatter={fmtTick}
+              interval={0}
+              width={55}
+              tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip content={<ChartTooltip/>} cursor={{ fill: 'transparent' }}/>
             <Bar 
               dataKey="revenue" 
@@ -1075,25 +1094,91 @@ function OverviewTab() {
                 <p style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Customer cancellation alerts</p>
               </div>
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-              {cancelledOrders.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px 0', color: T.textMuted, fontSize: 13 }}>No recent cancellations.</div>
-              ) : (
-                cancelledOrders.map((co: any, i: number) => (
-                  <div key={co.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottom: i < cancelledOrders.length - 1 ? `1px solid ${T.border}30` : 'none' }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: T.textPrim }}>Order #{co.id.slice(0,6).toUpperCase()}</p>
-                      <p style={{ fontSize: 12, color: T.textMuted }}>{co.profiles?.name || 'Customer'} cancelled</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: T.danger }}>-₹{co.total_amount?.toLocaleString()}</p>
-                      <p style={{ fontSize: 10, color: T.textMuted }}>{new Date(co.created_at).toLocaleDateString()}</p>
-                    </div>
+
+            {cancelledOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: T.textMuted, fontSize: 13 }}>No recent cancellations.</div>
+            ) : (() => {
+              // Summary stats
+              const today = new Date().toDateString();
+              const todayCount = cancelledOrders.filter((co: any) => co.cancelled_at && new Date(co.cancelled_at).toDateString() === today).length;
+              const totalValue = cancelledOrders.reduce((s: number, co: any) => s + (co.total_amount || 0), 0);
+              const reasonCounts: Record<string, number> = {};
+              cancelledOrders.forEach((co: any) => {
+                if (co.cancellation_reason) reasonCounts[co.cancellation_reason] = (reasonCounts[co.cancellation_reason] || 0) + 1;
+              });
+              const topReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+              const topReasonShort = topReason.length > 12 ? topReason.slice(0, 12) + '…' : topReason;
+
+              return (
+                <>
+                  {/* Summary Stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+                    {[
+                      { num: todayCount, label: 'TODAY' },
+                      { num: topReasonShort, label: 'TOP REASON' },
+                      { num: `₹${totalValue.toLocaleString('en-IN')}`, label: 'TOTAL VALUE' },
+                    ].map(({ num, label }) => (
+                      <div key={label} style={{ background: 'rgba(220,60,60,0.06)', border: '1px solid rgba(220,60,60,0.1)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: '#f87171', lineHeight: 1.2 }}>{num}</div>
+                        <div style={{ fontSize: 9, color: 'rgba(245,237,212,0.35)', letterSpacing: '0.1em', marginTop: 3 }}>{label}</div>
+                      </div>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
+
+                  {/* Cancellation Cards */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                    {cancelledOrders.map((co: any) => {
+                      const dateStr = co.cancelled_at || co.created_at;
+                      const d = new Date(dateStr);
+                      const fmtDate = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      return (
+                        <div key={co.id} style={{ background: 'rgba(220,60,60,0.05)', border: '1px solid rgba(220,60,60,0.12)', borderRadius: 12, padding: 14 }}>
+                          {/* Row 1 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 10, color: 'rgba(220,60,60,0.7)', letterSpacing: '0.1em', fontFamily: 'monospace' }}>#{co.id.slice(0, 8).toUpperCase()}</span>
+                            <span style={{ fontSize: 10, color: 'rgba(245,237,212,0.35)' }}>{fmtDate}</span>
+                          </div>
+                          {/* Row 2 - Customer */}
+                          <p style={{ fontSize: 13, fontWeight: 500, color: '#F5EDD4', margin: '2px 0 6px' }}>
+                            {co.profiles?.name || 'Customer'}
+                          </p>
+                          {/* Row 3 - Reason pill */}
+                          {co.cancellation_reason && (
+                            <span style={{ display: 'inline-block', background: 'rgba(220,60,60,0.1)', border: '1px solid rgba(220,60,60,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, color: '#f87171', marginBottom: 6 }}>
+                              {co.cancellation_reason}
+                            </span>
+                          )}
+                          {/* Row 4 - Comment */}
+                          {co.cancellation_category && (
+                            <p style={{ fontSize: 11, color: 'rgba(245,237,212,0.4)', fontStyle: 'italic', borderLeft: '2px solid rgba(220,60,60,0.2)', paddingLeft: 8, margin: '0 0 6px' }}>
+                              "{co.cancellation_category}"
+                            </p>
+                          )}
+                          {/* Row 5 - Amount */}
+                          <p style={{ fontSize: 12, color: 'rgba(245,237,212,0.5)', margin: 0 }}>₹{co.total_amount?.toLocaleString('en-IN')}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Reasons Breakdown */}
+                  {Object.keys(reasonCounts).length > 0 && (
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(220,60,60,0.1)' }}>
+                      <p style={{ fontSize: 10, color: T.gold, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Cancellation Reasons</p>
+                      {Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
+                        <div key={reason} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: 11, color: 'rgba(245,237,212,0.5)', width: 140, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reason}</span>
+                          <div style={{ flex: 1, height: 4, background: 'rgba(220,60,60,0.1)', borderRadius: 2 }}>
+                            <div style={{ width: `${(count / cancelledOrders.length) * 100}%`, height: '100%', background: 'rgba(220,60,60,0.5)', borderRadius: 2, transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 11, color: 'rgba(245,237,212,0.35)', width: 20, textAlign: 'right' }}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </GlassCard>
         </div>
       </div>
@@ -1584,17 +1669,19 @@ function OrdersTab() {
   const qc = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const { invoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
+  const { profile } = useAuthStore();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['admin-orders'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, profiles(name,email), order_items(*, products(name))')
+        .select('*, profiles!orders_user_id_fkey(name,email), order_items(*, products(*))')
         .order('created_at', { ascending: false });
       if (error) {
-        const { data: fb } = await supabase.from('orders').select('*, order_items(*, products(name))').order('created_at', { ascending: false });
+        const { data: fb } = await supabase.from('orders').select('*, order_items(*, products(*))').order('created_at', { ascending: false });
         return fb || [];
       }
       return data || [];
@@ -1841,6 +1928,30 @@ function OrdersTab() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Invoice & WhatsApp Buttons */}
+                        <div style={{ display: 'flex', gap: 8, padding: '0 20px 20px' }}>
+                          <button
+                            className="btn-invoice-small"
+                            style={{ flex: 1, justifyContent: 'center', padding: '9px 12px', fontSize: 12, borderRadius: 10 }}
+                            onClick={() => downloadInvoice({
+                              ...order,
+                              profiles: { name: order.address?.name || 'Customer', email: order.profiles?.email || '' }
+                            })}
+                          >
+                            <Download size={13} /> Print Invoice
+                          </button>
+                          <button
+                            className="btn-whatsapp-small"
+                            style={{ flex: 1, justifyContent: 'center', padding: '9px 12px', fontSize: 12, borderRadius: 10 }}
+                            onClick={() => sendWhatsAppBill({
+                              ...order,
+                              profiles: { name: order.address?.name || 'Customer', email: order.profiles?.email || '' }
+                            })}
+                          >
+                            <MessageCircle size={13} /> Send to WhatsApp
+                          </button>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -1850,6 +1961,9 @@ function OrdersTab() {
           })}
         </div>
       )}
+
+      {/* Hidden Invoice Template — admin printing */}
+      <InvoiceTemplate order={invoiceOrder} />
     </motion.div>
   );
 }
@@ -1865,10 +1979,15 @@ function CustomersTab() {
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['admin-customers'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*, orders(id, total_amount, address)')
+        .select('*, orders!orders_user_id_fkey(id, total_amount, address, status)')
         .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching customers:", error);
+        return [];
+      }
       return data || [];
     },
   });
@@ -1990,7 +2109,8 @@ function CustomersTab() {
               </thead>
               <tbody>
                 {filtered.map((c: any, idx: number) => {
-                  const totalSpent = (c.orders || []).reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+                  const validOrders = (c.orders || []).filter((o: any) => o.status !== 'cancelled');
+                  const totalSpent = validOrders.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
                   const displayName = getDisplayName(c);
                   const isAdmin = c.role === 'admin';
                   // Gradient based on index
@@ -2024,7 +2144,7 @@ function CustomersTab() {
                         {totalSpent > 0 ? `₹${totalSpent.toLocaleString('en-IN')}` : '—'}
                       </td>
                       <td style={{ padding: '14px 20px' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: T.textPrim }}>{c.orders?.length || 0}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: T.textPrim }}>{validOrders.length}</span>
                         <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 4 }}>orders</span>
                       </td>
                       <td style={{ padding: '14px 20px' }}>
@@ -2097,42 +2217,42 @@ function StaffTab() {
 
   const handleApprove = async (app: any) => {
     try {
-      await supabase.from('profiles').update({ role: 'delivery_approved' }).eq('id', app.user_id);
-      await supabase.from('delivery_applications').update({
-        status: 'approved',
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user?.id,
-      }).eq('id', app.id);
+      const { error } = await supabase.rpc('approve_driver', {
+        target_user_id: app.user_id,
+        application_id: app.id,
+      });
+      if (error) throw error;
       toast.success(`${app.full_name} approved as delivery partner!`);
       qc.invalidateQueries({ queryKey: ['admin-staff-applications'] });
       qc.invalidateQueries({ queryKey: ['admin-staff-drivers'] });
       qc.invalidateQueries({ queryKey: ['admin-pending-staff'] });
-    } catch { toast.error('Failed to approve. Try again.'); }
+    } catch (err: any) { toast.error(err?.message || 'Failed to approve. Try again.'); }
   };
 
   const handleReject = async (app: any) => {
     if (!window.confirm(`Reject application from ${app.full_name}?`)) return;
     try {
-      await supabase.from('delivery_applications').update({
-        status: 'rejected',
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user?.id,
-      }).eq('id', app.id);
+      const { error } = await supabase.rpc('reject_driver', {
+        target_user_id: app.user_id,
+        application_id: app.id,
+      });
+      if (error) throw error;
       toast.success('Application rejected.');
       qc.invalidateQueries({ queryKey: ['admin-staff-applications'] });
       qc.invalidateQueries({ queryKey: ['admin-pending-staff'] });
-    } catch { toast.error('Failed to reject. Try again.'); }
+    } catch (err: any) { toast.error(err?.message || 'Failed to reject. Try again.'); }
   };
 
   const handleSuspend = async (driverId: string, name: string, isSuspended: boolean) => {
     const action = isSuspended ? 'Restore' : 'Suspend';
     if (!window.confirm(`${action} ${name}?`)) return;
     try {
-      const newRole = isSuspended ? 'delivery_approved' : 'delivery_suspended';
-      await supabase.from('profiles').update({ role: newRole }).eq('id', driverId);
+      const fnName = isSuspended ? 'restore_driver' : 'suspend_driver';
+      const { error } = await supabase.rpc(fnName, { target_user_id: driverId });
+      if (error) throw error;
       toast.success(`${name} ${isSuspended ? 'restored' : 'suspended'}.`);
       qc.invalidateQueries({ queryKey: ['admin-staff-drivers'] });
-    } catch { toast.error('Failed. Try again.'); }
+    } catch (err: any) { toast.error(err?.message || 'Failed. Try again.'); }
   };
 
   const appCardStyle: React.CSSProperties = {
@@ -2274,9 +2394,23 @@ function StaffTab() {
                 <p style={{ fontSize: 14, fontWeight: 700, color: T.textPrim, marginBottom: 4 }}>{app.full_name}</p>
                 <p style={{ fontSize: 12, color: T.textMuted }}>{app.phone} · {app.city}</p>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, background: app.status === 'approved' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: app.status === 'approved' ? '#4ade80' : '#f87171', border: `1px solid ${app.status === 'approved' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
-                {app.status}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '3px 10px', borderRadius: 20, background: app.status === 'approved' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: app.status === 'approved' ? '#4ade80' : '#f87171', border: `1px solid ${app.status === 'approved' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                  {app.status}
+                </span>
+                {app.status === 'approved' && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Fix account role for ${app.full_name}? (Use this if they are stuck on the loading screen)`)) {
+                        handleApprove(app);
+                      }
+                    }}
+                    style={{ fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 6, background: 'rgba(201,168,76,0.15)', color: T.gold, border: `1px solid ${T.gold}40`, cursor: 'pointer' }}
+                  >
+                    Sync Account
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </GlassCard>

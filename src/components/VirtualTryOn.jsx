@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { fullTryOnFlow } from "../lib/segmind";
 import { useTryOnStore } from "../store/tryOnStore";
+import { supabase } from "../lib/supabase";
 
 export default function VirtualTryOn() {
                   
@@ -16,11 +17,24 @@ export default function VirtualTryOn() {
   } = useTryOnStore();
 
   const [dragOverModel, setDragOverModel] = useState(false);
-  const [dragOverUpper, setDragOverUpper] = useState(false);
-  const [dragOverBottom, setDragOverBottom] = useState(false);
-      const modelInputRef = useRef(null);
-  const upperwearInputRef = useRef(null);
-  const bottomwearInputRef = useRef(null);
+  const modelInputRef = useRef(null);
+
+  // ── Product Picker State ──────────────────────────────────────
+  const [upperProducts, setUpperProducts] = useState([]);
+  const [lowerProducts, setLowerProducts] = useState([]);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const [selectedUpperProduct, setSelectedUpperProduct] = useState(null);
+  const [selectedLowerProduct, setSelectedLowerProduct] = useState(null);
+
+  const [upperTab, setUpperTab] = useState("All");
+  const [lowerTab, setLowerTab] = useState("All");
+
+  const UPPER_TYPES = ["T-Shirts", "Casual Shirts", "Formal Shirts", "Sweatshirts", "Jackets", "Blazers"];
+  const LOWER_TYPES = ["Jeans", "Trousers", "Cargo", "Shorts", "Track Pants"];
+  const UPPER_FILTER_TABS = ["All", "Shirts", "T-Shirts", "Jackets", "Wishlist"];
+  const LOWER_FILTER_TABS = ["All", "Jeans", "Trousers", "Cargo", "Wishlist"];
 
   const loadingSteps = [
     "Analyzing your body silhouette...",
@@ -38,26 +52,95 @@ export default function VirtualTryOn() {
     }
   }, [loading]);
 
+  // ── Fetch products from Supabase ─────────────────────────────
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoadingProducts(true);
+      const [upperRes, lowerRes] = await Promise.all([
+        supabase
+          .from("products")
+          .select("id, name, brand, price, product_type, product_colors(image_url, color_name)")
+          .in("product_type", ["T-Shirts", "Casual Shirts", "Formal Shirts", "Sweatshirts", "Jackets", "Blazers"])
+          .eq("is_active", true)
+          .limit(30),
+        supabase
+          .from("products")
+          .select("id, name, brand, price, product_type, product_colors(image_url, color_name)")
+          .in("product_type", ["Jeans", "Trousers", "Cargo", "Shorts", "Track Pants"])
+          .eq("is_active", true)
+          .limit(30),
+      ]);
+      const mapProduct = (p) => ({
+        id: p.id, name: p.name, brand: p.brand || "FashionVerse",
+        price: p.price, product_type: p.product_type,
+        image: p.product_colors?.[0]?.image_url || "",
+      });
+      setUpperProducts((upperRes.data || []).map(mapProduct));
+      setLowerProducts((lowerRes.data || []).map(mapProduct));
+      setLoadingProducts(false);
+    };
+    fetchProducts();
+  }, []);
+
+  // ── Fetch wishlist ────────────────────────────────────────────
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("wishlists")
+        .select("product_id, products(id, name, brand, price, product_type, product_colors(image_url))")
+        .eq("user_id", user.id);
+      if (data) {
+        setWishlistItems(data.map((w) => ({
+          id: w.products.id, name: w.products.name, brand: w.products.brand || "FashionVerse",
+          price: w.products.price, product_type: w.products.product_type,
+          image: w.products.product_colors?.[0]?.image_url || "",
+        })));
+      }
+    };
+    fetchWishlist();
+  }, []);
+
+  // ── Select a product from picker ─────────────────────────────
+  const selectUpperProduct = (product) => {
+    setSelectedUpperProduct(product);
+    if (product?.image) {
+      fetch(product.image)
+        .then(r => r.blob())
+        .then(blob => {
+          const file = new File([blob], "upperwear.jpg", { type: blob.type || "image/jpeg" });
+          setUpperwearFile(file, product.image);
+        })
+        .catch(() => {});
+    }
+  };
+
+  const selectLowerProduct = (product) => {
+    setSelectedLowerProduct(product);
+    if (product?.image) {
+      fetch(product.image)
+        .then(r => r.blob())
+        .then(blob => {
+          const file = new File([blob], "bottomwear.jpg", { type: blob.type || "image/jpeg" });
+          setBottomwearFile(file, product.image);
+        })
+        .catch(() => {});
+    }
+  };
+
   const handleFile = useCallback((file, type) => {
     if (!file.type.startsWith("image/")) {
       setError("Please upload a JPG or PNG image.");
       return;
     }
     const preview = URL.createObjectURL(file);
-    if (type === "model") {
-      setModelFile(file, preview);
-    } else if (type === "upperwear") {
-      setUpperwearFile(file, preview);
-    } else if (type === "bottomwear") {
-      setBottomwearFile(file, preview);
-    }
-  }, [setModelFile, setUpperwearFile, setBottomwearFile, setError]);
+    if (type === "model") setModelFile(file, preview);
+  }, [setModelFile, setError]);
 
   const handleDrop = useCallback((e, type) => {
     e.preventDefault();
     if (type === "model") setDragOverModel(false);
-    if (type === "upperwear") setDragOverUpper(false);
-    if (type === "bottomwear") setDragOverBottom(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file, type);
   }, [handleFile]);
@@ -379,86 +462,187 @@ export default function VirtualTryOn() {
                 </svg>
                 <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>GARMENTS</span>
               </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
-              
-              {/* UPPERWEAR */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <label style={{ fontSize: "14px", fontWeight: "500", color: "#f5f0e8" }}>Upperwear</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+              {/* ── UPPERWEAR PICKER ── */}
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "600", color: "#f5f0e8", display: "block", marginBottom: "10px" }}>
+                  👕 Upperwear
+                </label>
+
+                {/* Filter Tabs */}
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+                  {UPPER_FILTER_TABS.map((tab) => (
+                    <button key={tab} onClick={() => setUpperTab(tab)} style={{
+                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer",
+                      border: upperTab === tab ? "1px solid rgba(201,151,58,0.35)" : "1px solid rgba(201,151,58,0.15)",
+                      background: upperTab === tab ? "rgba(201,151,58,0.12)" : "transparent",
+                      color: upperTab === tab ? "#E8B84B" : "rgba(245,237,212,0.5)",
+                      transition: "all 0.15s ease", fontFamily: "inherit",
+                    }}>
+                      {tab === "Wishlist" ? "♡ Wishlist" : tab}
+                    </button>
+                  ))}
                 </div>
-                <input ref={upperwearInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files[0]; if (f) handleFile(f, "upperwear"); }} />
-                
-                <div
-                  onClick={() => upperwearInputRef.current?.click()}
-                  onDrop={(e) => handleDrop(e, "upperwear")}
-                  onDragOver={(e) => handleDragOver(e, "upperwear")}
-                  onDragLeave={(e) => handleDragLeave(e, "upperwear")}
-                  style={{
-                    border: dragOverUpper ? "2px dashed rgba(201,168,76,0.8)" : (upperwearPreview ? "1px solid rgba(201,168,76,0.2)" : "2px dashed rgba(201,168,76,0.3)"),
-                    borderRadius: "16px",
-                    aspectRatio: "3/4",
-                    width: "100%",
-                    background: dragOverUpper ? "rgba(201,168,76,0.08)" : (upperwearPreview ? "#120a06" : "rgba(201,168,76,0.02)"),
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden"
-                  }}
-                  onMouseEnter={(e) => { if (!upperwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; } }}
-                  onMouseLeave={(e) => { if (!upperwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.background = "rgba(201,168,76,0.03)"; } }}
-                >
-                  {upperwearPreview ? (
-                    <>
-                      <img src={upperwearPreview} alt="Upperwear" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", borderRadius: "15px" }} />
-                      <button onClick={(e) => { e.stopPropagation(); upperwearInputRef.current?.click(); }} style={{ position: "absolute", bottom: "12px", left: "50%", transform: "translateX(-50%)", padding: "6px 12px", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(201,168,76,0.5)", borderRadius: "8px", color: "#f5f0e8", fontSize: "11px", cursor: "pointer", transition: "all 0.2s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.3)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>Change</button>
-                    </>
+
+                {/* Product Grid */}
+                {loadingProducts ? (
+                  <div style={{ textAlign: "center", padding: "24px", color: "rgba(245,237,212,0.3)", fontSize: "12px" }}>Loading products…</div>
+                ) : (() => {
+                  const isWishlist = upperTab === "Wishlist";
+                  const items = isWishlist
+                    ? wishlistItems.filter(p => ["T-Shirts","Casual Shirts","Formal Shirts","Sweatshirts","Jackets","Blazers"].includes(p.product_type))
+                    : upperTab === "All" ? upperProducts
+                    : upperTab === "Shirts" ? upperProducts.filter(p => p.product_type?.includes("Shirt"))
+                    : upperProducts.filter(p => p.product_type === upperTab || p.product_type?.includes(upperTab));
+
+                  return items.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "24px 16px", color: "rgba(245,237,212,0.3)", fontSize: "12px" }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(201,151,58,0.4)" strokeWidth="1.5" style={{ display: "block", margin: "0 auto 8px" }}>
+                        <path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" />
+                      </svg>
+                      <div>No products available yet</div>
+                      <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
+                    </div>
                   ) : (
-                    <>
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ marginBottom: "0.5rem" }}><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" /></svg>
-                      <p style={{ color: "#8a7a5a", fontSize: "12px", margin: 0 }}>Upperwear</p>
-                    </>
-                  )}
-                </div>
-                <input type="text" value={upperwearDesc} onChange={(e) => setUpperwearDesc(e.target.value)} placeholder='e.g. "blue shirt"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                      {items.map((product) => {
+                        const isSelected = selectedUpperProduct?.id === product.id;
+                        return (
+                          <div key={product.id} onClick={() => selectUpperProduct(isSelected ? null : product)} style={{
+                            background: "rgba(26,15,8,0.8)", border: isSelected ? "2px solid #C9973A" : "1px solid rgba(201,151,58,0.15)",
+                            borderRadius: "10px", overflow: "hidden", cursor: "pointer",
+                            transition: "all 0.2s ease", position: "relative",
+                            boxShadow: isSelected ? "0 0 12px rgba(201,151,58,0.3)" : "none",
+                            transform: isSelected ? "scale(1.03)" : "scale(1)",
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = "rgba(201,151,58,0.4)"; e.currentTarget.style.transform = "scale(1.03)"; } }}
+                          onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = "rgba(201,151,58,0.15)"; e.currentTarget.style.transform = "scale(1)"; } }}
+                          >
+                            {product.image ? (
+                              <img src={product.image} alt={product.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
+                            ) : (
+                              <div style={{ width: "100%", aspectRatio: "3/4", background: "#120a06", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(201,151,58,0.3)" strokeWidth="1.5"><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /></svg>
+                              </div>
+                            )}
+                            <div style={{ fontSize: "9px", color: "rgba(245,237,212,0.6)", padding: "4px 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {product.name}
+                            </div>
+                            {isSelected && (
+                              <div style={{ position: "absolute", top: "4px", right: "4px", width: "18px", height: "18px", background: "#C9973A", color: "#120a06", borderRadius: "50%", fontSize: "10px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Selected Preview */}
+                {selectedUpperProduct && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", background: "rgba(201,151,58,0.06)", border: "1px solid rgba(201,151,58,0.2)", borderRadius: "10px", marginTop: "8px" }}>
+                    <img src={selectedUpperProduct.image} alt={selectedUpperProduct.name} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedUpperProduct.name}</div>
+                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedUpperProduct.brand}</div>
+                    </div>
+                    <button onClick={() => { setSelectedUpperProduct(null); setUpperwearFile(null, null); }} style={{ background: "none", border: "none", color: "rgba(245,237,212,0.4)", cursor: "pointer", fontSize: "12px", padding: "4px", flexShrink: 0 }}>✕ Remove</button>
+                  </div>
+                )}
+
+                {/* Description Input */}
+                <input type="text" value={upperwearDesc} onChange={(e) => setUpperwearDesc(e.target.value)} placeholder='e.g. "blue shirt"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease", marginTop: "10px" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
               </div>
 
-              {/* BOTTOMWEAR */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <label style={{ fontSize: "14px", fontWeight: "500", color: "#f5f0e8" }}>Bottomwear</label>
+              {/* ── BOTTOMWEAR PICKER ── */}
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "600", color: "#f5f0e8", display: "block", marginBottom: "10px" }}>
+                  👖 Bottomwear
+                </label>
+
+                {/* Filter Tabs */}
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+                  {LOWER_FILTER_TABS.map((tab) => (
+                    <button key={tab} onClick={() => setLowerTab(tab)} style={{
+                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer",
+                      border: lowerTab === tab ? "1px solid rgba(201,151,58,0.35)" : "1px solid rgba(201,151,58,0.15)",
+                      background: lowerTab === tab ? "rgba(201,151,58,0.12)" : "transparent",
+                      color: lowerTab === tab ? "#E8B84B" : "rgba(245,237,212,0.5)",
+                      transition: "all 0.15s ease", fontFamily: "inherit",
+                    }}>
+                      {tab === "Wishlist" ? "♡ Wishlist" : tab}
+                    </button>
+                  ))}
                 </div>
-                <input ref={bottomwearInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files[0]; if (f) handleFile(f, "bottomwear"); }} />
-                
-                <div
-                  onClick={() => bottomwearInputRef.current?.click()}
-                  onDrop={(e) => handleDrop(e, "bottomwear")}
-                  onDragOver={(e) => handleDragOver(e, "bottomwear")}
-                  onDragLeave={(e) => handleDragLeave(e, "bottomwear")}
-                  style={{
-                    border: dragOverBottom ? "2px dashed rgba(201,168,76,0.8)" : (bottomwearPreview ? "1px solid rgba(201,168,76,0.2)" : "2px dashed rgba(201,168,76,0.3)"),
-                    borderRadius: "16px",
-                    aspectRatio: "3/4",
-                    width: "100%",
-                    background: dragOverBottom ? "rgba(201,168,76,0.08)" : (bottomwearPreview ? "#120a06" : "rgba(201,168,76,0.02)"),
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden"
-                  }}
-                  onMouseEnter={(e) => { if (!bottomwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; } }}
-                  onMouseLeave={(e) => { if (!bottomwearPreview) { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.background = "rgba(201,168,76,0.03)"; } }}
-                >
-                  {bottomwearPreview ? (
-                    <>
-                      <img src={bottomwearPreview} alt="Bottomwear" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", borderRadius: "15px" }} />
-                      <button onClick={(e) => { e.stopPropagation(); bottomwearInputRef.current?.click(); }} style={{ position: "absolute", bottom: "12px", left: "50%", transform: "translateX(-50%)", padding: "6px 12px", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(201,168,76,0.5)", borderRadius: "8px", color: "#f5f0e8", fontSize: "11px", cursor: "pointer", transition: "all 0.2s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.3)"} onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>Change</button>
-                    </>
+
+                {/* Product Grid */}
+                {loadingProducts ? (
+                  <div style={{ textAlign: "center", padding: "24px", color: "rgba(245,237,212,0.3)", fontSize: "12px" }}>Loading products…</div>
+                ) : (() => {
+                  const isWishlist = lowerTab === "Wishlist";
+                  const items = isWishlist
+                    ? wishlistItems.filter(p => ["Jeans","Trousers","Cargo","Shorts","Track Pants"].includes(p.product_type))
+                    : lowerTab === "All" ? lowerProducts
+                    : lowerProducts.filter(p => p.product_type === lowerTab || p.product_type?.includes(lowerTab));
+
+                  return items.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "24px 16px", color: "rgba(245,237,212,0.3)", fontSize: "12px" }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(201,151,58,0.4)" strokeWidth="1.5" style={{ display: "block", margin: "0 auto 8px" }}>
+                        <path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" />
+                      </svg>
+                      <div>No products available yet</div>
+                      <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
+                    </div>
                   ) : (
-                    <>
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ marginBottom: "0.5rem" }}><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /><path d="M12 10v11" /><path d="M8 14h8" /></svg>
-                      <p style={{ color: "#8a7a5a", fontSize: "12px", margin: 0 }}>Bottomwear</p>
-                    </>
-                  )}
-                </div>
-                <input type="text" value={bottomwearDesc} onChange={(e) => setBottomwearDesc(e.target.value)} placeholder='e.g. "black jeans"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                      {items.map((product) => {
+                        const isSelected = selectedLowerProduct?.id === product.id;
+                        return (
+                          <div key={product.id} onClick={() => selectLowerProduct(isSelected ? null : product)} style={{
+                            background: "rgba(26,15,8,0.8)", border: isSelected ? "2px solid #C9973A" : "1px solid rgba(201,151,58,0.15)",
+                            borderRadius: "10px", overflow: "hidden", cursor: "pointer",
+                            transition: "all 0.2s ease", position: "relative",
+                            boxShadow: isSelected ? "0 0 12px rgba(201,151,58,0.3)" : "none",
+                            transform: isSelected ? "scale(1.03)" : "scale(1)",
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = "rgba(201,151,58,0.4)"; e.currentTarget.style.transform = "scale(1.03)"; } }}
+                          onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.borderColor = "rgba(201,151,58,0.15)"; e.currentTarget.style.transform = "scale(1)"; } }}
+                          >
+                            {product.image ? (
+                              <img src={product.image} alt={product.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
+                            ) : (
+                              <div style={{ width: "100%", aspectRatio: "3/4", background: "#120a06", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(201,151,58,0.3)" strokeWidth="1.5"><path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" /></svg>
+                              </div>
+                            )}
+                            <div style={{ fontSize: "9px", color: "rgba(245,237,212,0.6)", padding: "4px 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {product.name}
+                            </div>
+                            {isSelected && (
+                              <div style={{ position: "absolute", top: "4px", right: "4px", width: "18px", height: "18px", background: "#C9973A", color: "#120a06", borderRadius: "50%", fontSize: "10px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Selected Preview */}
+                {selectedLowerProduct && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", background: "rgba(201,151,58,0.06)", border: "1px solid rgba(201,151,58,0.2)", borderRadius: "10px", marginTop: "8px" }}>
+                    <img src={selectedLowerProduct.image} alt={selectedLowerProduct.name} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedLowerProduct.name}</div>
+                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedLowerProduct.brand}</div>
+                    </div>
+                    <button onClick={() => { setSelectedLowerProduct(null); setBottomwearFile(null, null); }} style={{ background: "none", border: "none", color: "rgba(245,237,212,0.4)", cursor: "pointer", fontSize: "12px", padding: "4px", flexShrink: 0 }}>✕ Remove</button>
+                  </div>
+                )}
+
+                {/* Description Input */}
+                <input type="text" value={bottomwearDesc} onChange={(e) => setBottomwearDesc(e.target.value)} placeholder='e.g. "black jeans"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease", marginTop: "10px" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
               </div>
 
             </div>
