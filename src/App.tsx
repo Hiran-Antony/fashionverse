@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -58,6 +58,14 @@ function PageLoader() {
   );
 }
 
+// ─── Route-aware gold particles (hidden on delivery dashboard) ──
+function GoldParticlesGuard() {
+  const { pathname } = useLocation();
+  const hidden = pathname === '/delivery-dashboard' || pathname.startsWith('/delivery-dashboard');
+  if (hidden) return null;
+  return <GoldParticles />;
+}
+
 // ─── App Root ────────────────────────────────────────────────
 function App() {
   const { theme } = useThemeStore();
@@ -107,8 +115,8 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoldParticles />
       <BrowserRouter>
+        <GoldParticlesGuard />
         <SmoothScroll>
           <PageTransition>
             <Suspense fallback={<PageLoader />}>

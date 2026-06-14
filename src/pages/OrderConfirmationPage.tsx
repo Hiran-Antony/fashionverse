@@ -123,6 +123,7 @@ export default function OrderConfirmationPage() {
   };
 
   return (
+    <>
     <div
       style={{
         background: '#2c1b10',
@@ -538,5 +539,6 @@ export default function OrderConfirmationPage() {
 
     {/* Hidden Invoice Template — only visible when printing */}
     <InvoiceTemplate order={invoiceOrder} />
+  </>
   );
 }

@@ -34,7 +34,7 @@ export default function CollectionsSection() {
           {CATEGORIES.map((cat, index) => (
             <Product3DCard
               key={cat.value}
-              to={`/products?category=${cat.value}`}
+              to={['men', 'women', 'kids'].includes(cat.value) ? `/${cat.value}` : `/products?category=${cat.value}`}
               label={cat.label}
               icon={CATEGORY_ICONS[cat.value]}
               index={index}

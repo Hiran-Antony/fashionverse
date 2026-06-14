@@ -678,8 +678,8 @@ function ProfileTab() {
                 key={addr.id}
                 style={{
                   borderRadius: '16px', padding: '18px',
-                  background: addr.is_default ? 'linear-gradient(135deg,rgba(201,151,58,0.12),#f3e8ff)' : 'var(--bg-secondary)',
-                  border: `2px solid ${addr.is_default ? '#D4A935' : '#e5e7eb'}`,
+                  background: addr.is_default ? 'linear-gradient(135deg, rgba(201,151,58,0.15), rgba(201,151,58,0.03))' : 'var(--bg-secondary)',
+                  border: `1px solid ${addr.is_default ? 'rgba(201,151,58,0.5)' : 'var(--glass-border)'}`,
                   position: 'relative', transition: 'all 0.2s',
                 }}
               >

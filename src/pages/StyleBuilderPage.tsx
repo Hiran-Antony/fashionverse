@@ -900,7 +900,7 @@ feature: "style_chat":
       {/* History Drawer */}
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} onNewChat={handleNewChat} />
 
-      <div className="fv-page" style={{ height: 'calc(100vh - 80px)', background: BG_BASE, color: TEXT_PRI, fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div className="fv-page" style={{ height: '100vh', background: BG_BASE, color: TEXT_PRI, fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
         <AnimatedBackground />
 
         <div style={{ maxWidth: 860, margin: '0 auto', width: '100%', padding: '0 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative', zIndex: 1 }}>
@@ -948,7 +948,8 @@ feature: "style_chat":
           {/* ── CHAT LOG ── */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
             ref={chatLogRef} className="fv-chat-log"
-            style={{ flex: 1, overflowY: 'auto', padding: '28px 0 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            onWheel={(e) => e.stopPropagation()}
+            style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', padding: '28px 0 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <AnimatePresence initial={false}>
               {messages.map((msg) => (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -1022,7 +1023,7 @@ feature: "style_chat":
           </motion.div>
 
           {/* ── BOTTOM INPUT AREA ── */}
-          <div style={{ flexShrink: 0, paddingTop: 10, paddingBottom: 14 }}>
+          <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: BG_BASE, flexShrink: 0, paddingTop: 10, paddingBottom: 14 }}>
 
             {/* Photo preview */}
             <AnimatePresence>

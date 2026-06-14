@@ -16,7 +16,7 @@ interface Product3DCardProps {
   index?: number;
 }
 
-import ElectricBorder from './ElectricBorder';
+import BorderGlow from '../animations/BorderGlow';
 
 export default function Product3DCard({ to, label, icon, index = 0 }: Product3DCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null);
@@ -54,14 +54,22 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ delay: index * 0.08, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="h-full"
     >
-      <ElectricBorder color="#FFFFFF" speed={0.5} chaos={0.10} borderRadius={24} className="h-full">
+      <BorderGlow
+        edgeSensitivity={10}
+        glowIntensity={2}
+        borderRadius={28}
+        backgroundColor="#1e1209"
+        glowColor="280 80 60"
+        className="h-full"
+      >
         <motion.div
-          className="collection-3d-card-perspective h-full"
+          className="collection-3d-card-perspective h-full w-full"
           style={
             reducedMotion
-              ? undefined
-              : { rotateX, rotateY, transformStyle: 'preserve-3d' }
+              ? { borderRadius: 'inherit' }
+              : { rotateX, rotateY, transformStyle: 'preserve-3d', borderRadius: 'inherit' }
           }
           whileHover={reducedMotion ? undefined : { y: -8, scale: 1.02 }}
           transition={{ type: 'spring', stiffness: 320, damping: 22 }}
@@ -69,7 +77,8 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
           <Link
             ref={cardRef}
             to={to}
-            className="collection-3d-card no-underline block h-full bg-[#1e1209]"
+            className="collection-3d-card no-underline block h-full w-full bg-[#1e1209]"
+            style={{ borderRadius: 'inherit' }}
             onMouseMove={handleMove}
             onMouseLeave={handleLeave}
           >
@@ -98,8 +107,9 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
               </div>
             </div>
           </Link>
+
         </motion.div>
-      </ElectricBorder>
+      </BorderGlow>
     </motion.div>
   );
 }

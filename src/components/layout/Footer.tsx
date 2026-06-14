@@ -106,7 +106,7 @@ function EditorialFooter() {
             <ul className="editorial-footer-links">
               {CATEGORIES.map((cat) => (
                 <li key={cat.value}>
-                  <Link to={`/products?category=${cat.value}`}>{cat.label}</Link>
+                  <Link to={['men', 'women', 'kids'].includes(cat.value) ? `/${cat.value}` : `/products?category=${cat.value}`}>{cat.label}</Link>
                 </li>
               ))}
             </ul>

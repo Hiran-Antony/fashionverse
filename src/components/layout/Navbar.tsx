@@ -12,6 +12,13 @@ import {
   LogOut,
   Package,
   MapPin,
+  Home,
+  Shirt,
+  Sparkles,
+  Baby,
+  Camera,
+  Bot,
+  ChevronRight,
 } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useCartStore } from '../../store/cartStore';
@@ -68,6 +75,24 @@ export default function Navbar() {
     setIsSearchOpen(false);
     setIsUserMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.classList.remove('menu-open');
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.classList.remove('menu-open');
+    };
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
@@ -305,7 +330,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`cinematic-hamburger lg:hidden${isMobileMenuOpen ? ' is-open' : ''}`}
+              className={`hamburger-btn cinematic-hamburger lg:hidden${isMobileMenuOpen ? ' open' : ''}`}
               data-light={!isScrolled && isHomePage ? 'true' : 'false'}
               aria-label="Toggle menu"
               aria-expanded={isMobileMenuOpen}
@@ -364,66 +389,145 @@ export default function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="cinematic-mobile-backdrop lg:hidden"
+            <div
+              className="mobile-menu-overlay lg:hidden"
+              onWheel={(e) => e.stopPropagation()}
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            <motion.div
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="cinematic-mobile-menu lg:hidden"
-            >
-              <div className="p-8 flex flex-col gap-1">
-                <MobileNavLink to="/" label="Home" onClick={() => setIsMobileMenuOpen(false)} />
-
-                <div style={{ paddingTop: '1.5rem', paddingBottom: '0.5rem' }}>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
-                    Categories
-                  </p>
-                  <div className="flex flex-col gap-1">
-                    <MobileNavLink to="/men" label="Men" onClick={() => setIsMobileMenuOpen(false)} secondary />
-                    <MobileNavLink to="/women" label="Women" onClick={() => setIsMobileMenuOpen(false)} secondary />
-                    <MobileNavLink to="/kids" label="Kids" onClick={() => setIsMobileMenuOpen(false)} secondary />
-                  </div>
+            <div className="mobile-menu-panel lg:hidden" onWheel={(e) => e.stopPropagation()}>
+              <div className="menu-panel-header">
+                <div className="menu-panel-logo">
+                  <span className="menu-panel-logo-text">FASHIONVERSE</span>
                 </div>
+                <button className="menu-close-btn" onClick={() => setIsMobileMenuOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
 
-                <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.75rem 0' }} />
-                <MobileNavLink to="/try-on" label="Virtual Try-On" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/style-builder" label="FashionVerse AI" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/wishlist" label="Wishlist" onClick={() => setIsMobileMenuOpen(false)} />
+              <div className="flex flex-col flex-1 pb-6">
+                <div className="menu-section-label">MAIN NAVIGATION</div>
+                
+                <Link to="/" className={`menu-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Home size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Home</span>
+                    <span className="menu-item-desc">Back to homepage</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+                
+                <Link to="/men" className={`menu-nav-item ${location.pathname === '/men' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Shirt size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Men</span>
+                    <span className="menu-item-desc">Men's collection</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
 
-                <div
-                  style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
-                  </span>
+                <Link to="/women" className={`menu-nav-item ${location.pathname === '/women' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Sparkles size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Women</span>
+                    <span className="menu-item-desc">Women's collection</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <Link to="/kids" className={`menu-nav-item ${location.pathname === '/kids' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Baby size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Kids</span>
+                    <span className="menu-item-desc">Kids collection</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <div className="menu-divider" />
+                <div className="menu-section-label">FEATURES</div>
+
+                <Link to="/try-on" className={`menu-nav-item ${location.pathname === '/try-on' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Camera size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Try On</span>
+                    <span className="menu-item-desc">Virtual fitting room</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <Link to="/style-builder" className={`menu-nav-item ${location.pathname === '/style-builder' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Bot size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">FashionVerse AI</span>
+                    <span className="menu-item-desc">AI style assistant</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <Link to="/wishlist" className={`menu-nav-item ${location.pathname === '/wishlist' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><Heart size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Wishlist</span>
+                    <span className="menu-item-desc">Saved items</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <div className="menu-divider" />
+                <div className="menu-section-label">ACCOUNT</div>
+
+                <Link to={user ? "/account" : "/auth"} className={`menu-nav-item ${location.pathname === '/account' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div className="menu-item-icon"><User size={20} /></div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">{user ? "My Account" : "Sign In"}</span>
+                    <span className="menu-item-desc">{user ? "Profile & orders" : "Login or create account"}</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </Link>
+
+                <button className="menu-nav-item w-full text-left" onClick={() => { setIsMobileMenuOpen(false); openCart(); }} style={{ background: 'transparent', border: 'none' }}>
+                  <div className="menu-item-icon relative">
+                    <ShoppingBag size={20} />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center bg-[var(--gold-500)] text-black">
+                        {cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="menu-item-text">
+                    <span className="menu-item-label">Cart</span>
+                    <span className="menu-item-desc">{cartCount} items</span>
+                  </div>
+                  <ChevronRight className="menu-item-arrow" size={16} />
+                </button>
+
+                <div className="menu-divider" />
+                <div className="menu-theme-row">
+                  <div className="menu-theme-label">
+                    <div className="icon">
+                      {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
+                    </div>
+                    <span>{theme === 'light' ? 'Light Mode' : 'Dark Mode'}</span>
+                  </div>
                   <button
                     onClick={toggleTheme}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl"
-                    style={{ color: 'var(--text-secondary)', background: 'var(--bg-secondary)', border: 'none', cursor: 'pointer' }}
+                    className="w-12 h-6 rounded-full relative transition-colors"
+                    style={{ background: 'rgba(201,151,58,0.2)', border: '1px solid rgba(201,151,58,0.3)', cursor: 'pointer' }}
                   >
-                    {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+                    <motion.div
+                      className="absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full"
+                      style={{ background: '#C9973A' }}
+                      animate={{ x: theme === 'dark' ? 24 : 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
                   </button>
                 </div>
-
-                {!user && (
-                  <Link
-                    to="/auth"
-                    className="btn btn-primary w-full no-underline mt-4"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                )}
               </div>
-            </motion.div>
+
+              <div className="menu-panel-footer">
+                <p className="menu-footer-text">FASHIONVERSE © 2026</p>
+              </div>
+            </div>
           </>
         )}
       </AnimatePresence>

@@ -12,31 +12,48 @@ export default function WishlistPage() {
 
   if (isEmpty) {
     return (
-      <div className="container py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-sm mx-auto"
-        >
-          <div
-            className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6"
-            style={{ background: '#fee2e2', color: '#ef4444' }}
-          >
-            <Heart size={40} />
+      <div className="wishlist-empty">
+        <div className="float-dot" style={{ top: '20%', left: '15%', animationDelay: '0s' }}></div>
+        <div className="float-dot" style={{ top: '25%', right: '20%', animationDelay: '1s' }}></div>
+        <div className="float-dot" style={{ bottom: '30%', left: '20%', animationDelay: '2s' }}></div>
+        <div className="float-dot" style={{ bottom: '25%', right: '15%', animationDelay: '1.5s' }}></div>
+
+        <div className="wishlist-empty-icon">
+          <Heart />
+        </div>
+
+        <span className="wishlist-empty-tag">✦ YOUR COLLECTION</span>
+        
+        <h1 className="wishlist-empty-title">
+          Your Wishlist<br />
+          Awaits You
+        </h1>
+        
+        <p className="wishlist-empty-subtitle">
+          Save your favourite pieces here<br />
+          and return to them anytime.<br />
+          Your perfect style is waiting.
+        </p>
+
+        <div className="wishlist-hints">
+          <div className="wishlist-hint-item">
+            <div className="wishlist-hint-icon">❤️</div> Save favourites
           </div>
-          <h1
-            className="text-3xl font-bold mb-3"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
-          >
-            Your Wishlist is Empty
-          </h1>
-          <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
-            Save your favourite items here and come back to them anytime!
-          </p>
-          <Link to="/products" className="btn btn-primary">
-            <Sparkles size={16} /> Discover Products
-          </Link>
-        </motion.div>
+          <div className="wishlist-hint-item">
+            <div className="wishlist-hint-icon">🔔</div> Price drop alerts
+          </div>
+          <div className="wishlist-hint-item">
+            <div className="wishlist-hint-icon">🛍️</div> Quick add to cart
+          </div>
+        </div>
+
+        <Link to="/" className="wishlist-discover-btn">
+          Discover Products ✦
+        </Link>
+        
+        <Link to="/men" className="wishlist-browse-link">
+          Browse new arrivals →
+        </Link>
       </div>
     );
   }
