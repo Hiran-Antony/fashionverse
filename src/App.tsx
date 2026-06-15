@@ -61,7 +61,8 @@ function PageLoader() {
 // ─── Route-aware gold particles (hidden on delivery dashboard) ──
 function GoldParticlesGuard() {
   const { pathname } = useLocation();
-  const hidden = pathname === '/delivery-dashboard' || pathname.startsWith('/delivery-dashboard');
+  const hidden = pathname === '/delivery-dashboard' || pathname.startsWith('/delivery-dashboard')
+    || pathname === '/driver' || pathname.startsWith('/driver');
   if (hidden) return null;
   return <GoldParticles />;
 }
@@ -128,6 +129,7 @@ function App() {
                 {/* ── Delivery System pages (standalone) ─── */}
                 <Route path="/delivery/apply" element={<DeliveryApplyPage />} />
                 <Route path="/delivery-dashboard" element={<DeliveryDashboard />} />
+                <Route path="/driver" element={<DeliveryDashboard />} />
 
                 {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
                 <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
