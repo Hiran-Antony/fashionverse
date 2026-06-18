@@ -8,6 +8,8 @@ import { useTryOnStore } from '../store/tryOnStore';
 import { useStylistStore } from '../store/stylistStore';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import StandaloneFashionTools from '../components/StandaloneFashionTools';
+import { geminiFetch } from '../lib/gemini';
 
 // ─── BRAND TOKENS ─────────────────────────────────────────────────
 const GOLD    = '#D4A032';
@@ -104,17 +106,7 @@ function timeAgo(ts: number) {
 }
 
 // ─── FETCH WITH RETRY ─────────────────────────────────────────────
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const res = await fetch(url, options);
-    if ((res.status === 429 || res.status === 503) && attempt < maxRetries) {
-      await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1500 + Math.random() * 500));
-      continue;
-    }
-    return res;
-  }
-  throw new Error('API is busy. Please try again in a few seconds.');
-}
+const fetchWithRetry = geminiFetch;
 
 // ─── ANIMATED BACKGROUND ──────────────────────────────────────────
 function AnimatedBackground() {
@@ -350,7 +342,12 @@ function ProductPickRow({ name, price, why, occasion, catalog, onAddItem, onTryO
   catalog: CatalogItem[]; onAddItem: (name: string) => void;
   onTryOn?: (imageUrl: string, productName: string) => void; isLast?: boolean;
 }) {
-  const match = catalog.find(p => p.name === name);
+  const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const n = cleanStr(name);
+  const match = catalog.find(p => {
+    const pn = cleanStr(p.name);
+    return pn === n || pn.includes(n) || n.includes(pn);
+  });
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: !isLast ? `1px solid ${BORDER}` : 'none' }}>
       {/* Product image */}
@@ -593,8 +590,9 @@ export default function StyleBuilderPage() {
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [sessionId, setSessionId] = useState(() => makeSessionId());
+  const [sessionId, setSessionId] = useState<string>(makeSessionId());
   const [sessionTitle, setSessionTitle] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'chat' | 'tools'>('chat');
 
   // Photo state
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -927,6 +925,16 @@ feature: "style_chat":
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: catalogLoaded ? '#4ade80' : TEXT_SEC, flexShrink: 0 }} />
                 {catalogLoaded ? `${catalog.length} Products` : 'Loading…'}
               </div>
+              {/* Mode Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', background: `rgba(212,160,50,0.08)`, borderRadius: 20, padding: 2, marginRight: 8, border: `1px solid ${BORDER}` }}>
+                <button onClick={() => setViewMode('chat')} style={{ padding: '6px 14px', borderRadius: 18, border: 'none', background: viewMode === 'chat' ? GOLD : 'transparent', color: viewMode === 'chat' ? BG_BASE : TEXT_SEC, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  Chat
+                </button>
+                <button onClick={() => setViewMode('tools')} style={{ padding: '6px 14px', borderRadius: 18, border: 'none', background: viewMode === 'tools' ? GOLD : 'transparent', color: viewMode === 'tools' ? BG_BASE : TEXT_SEC, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  Tools
+                </button>
+              </div>
+
               {/* History button */}
               <motion.button whileHover={{ borderColor: GOLD, color: GOLD }} whileTap={{ scale: 0.96 }}
                 onClick={() => setHistoryOpen(true)}
@@ -934,7 +942,7 @@ feature: "style_chat":
                 <History size={12} /> History
               </motion.button>
               {/* New Chat */}
-              {messages.length > 1 && (
+              {messages.length > 1 && viewMode === 'chat' && (
                 <motion.button initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ borderColor: GOLD, color: GOLD }} whileTap={{ scale: 0.96 }}
                   onClick={handleNewChat}
@@ -945,9 +953,14 @@ feature: "style_chat":
             </div>
           </motion.div>
 
-          {/* ── CHAT LOG ── */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
-            ref={chatLogRef} className="fv-chat-log"
+          {/* ── CHAT LOG OR TOOLS ── */}
+          {viewMode === 'tools' ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 0' }}>
+              <StandaloneFashionTools />
+            </div>
+          ) : (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+              ref={chatLogRef} className="fv-chat-log"
             onWheel={(e) => e.stopPropagation()}
             style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', padding: '28px 0 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <AnimatePresence initial={false}>
@@ -1021,9 +1034,11 @@ feature: "style_chat":
               )}
             </AnimatePresence>
           </motion.div>
+          )}
 
           {/* ── BOTTOM INPUT AREA ── */}
-          <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: BG_BASE, flexShrink: 0, paddingTop: 10, paddingBottom: 14 }}>
+          {viewMode === 'chat' && (
+            <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: BG_BASE, flexShrink: 0, paddingTop: 10, paddingBottom: 14 }}>
 
             {/* Photo preview */}
             <AnimatePresence>
@@ -1139,8 +1154,9 @@ feature: "style_chat":
             <p style={{ textAlign: 'center', fontFamily: 'Inter', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#3a2a18', margin: '10px 0 0' }}>
               FashionVerse AI · Recommendations sourced from your live catalog
             </p>
-          </div>
-
+            </div>
+          )}
+          
         </div>
       </div>
     </>

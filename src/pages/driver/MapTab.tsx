@@ -12,7 +12,9 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconUrl: markerIcon, shadowUrl: markerShadow });
 import { Crosshair, Maximize, Minimize } from 'lucide-react';
 import { useDriverStore } from '../../store/driverStore';
+import { useAuthStore } from '../../store/authStore';
 import { getOrderCoords } from '../../hooks/useDriver';
+import { supabase } from '../../lib/supabase';
 
 // Custom driver icon (pulsing effect)
 const driverIcon = L.divIcon({
@@ -43,8 +45,10 @@ const availableIcon = L.divIcon({
 
 export default function MapTab() {
   const { driverLocation, activeDeliveries, availableOrders, setDriverLocation, activeTab } = useDriverStore();
+  const { user } = useAuthStore();
   const mapRef = useRef<any>(null);
   const driverMarkerRef = useRef<any>(null);
+  const watchIdRef = useRef<any>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Initialise Leaflet map once
@@ -63,15 +67,49 @@ export default function MapTab() {
       maxZoom: 19,
     }).addTo(map);
 
-    // Add driver marker via geolocation
+    // Add driver marker via geolocation with watchPosition
     if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        const marker = L.marker([lat, lng], { icon: driverIcon }).addTo(map);
-        driverMarkerRef.current = marker;
-        map.setView([lat, lng], 15);
-        setDriverLocation([lat, lng]);
-      });
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          console.log('📍 Location update:', lat, lng);
+
+          if (driverMarkerRef.current) {
+            driverMarkerRef.current.setLatLng([lat, lng]);
+          } else {
+            const marker = L.marker([lat, lng], { icon: driverIcon }).addTo(map);
+            driverMarkerRef.current = marker;
+            map.setView([lat, lng], 15);
+          }
+          
+          setDriverLocation([lat, lng]);
+
+          // Save live location to Supabase
+          if (user?.id) {
+            try {
+              await supabase
+                .from('drivers')
+                .update({
+                  current_lat: lat,
+                  current_lng: lng
+                })
+                .eq('id', user.id);
+            } catch (err) {
+              // Ignore if drivers table doesn't exist yet
+            }
+          }
+        },
+        (error) => {
+          console.warn('GPS error:', error.message);
+          // Fallback to Coimbatore center if GPS fails and no marker yet
+          if (mapRef.current && !driverMarkerRef.current) {
+            mapRef.current.setView([11.0168, 76.9558], 13);
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
     }
 
     // Add delivery markers (active deliveries)
@@ -143,6 +181,9 @@ export default function MapTab() {
     mapRef.current = map;
 
     return () => {
+      if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
       map.remove();
       mapRef.current = null;
       driverMarkerRef.current = null;

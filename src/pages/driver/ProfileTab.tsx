@@ -2,11 +2,14 @@
 // FASHIONVERSE DELIVERY HUB — Profile Tab
 // ═══════════════════════════════════════════════════════════════
 
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Star, TrendingUp, LogOut, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useDriverStore } from '../../store/driverStore';
+import { supabase } from '../../lib/supabase';
+
+const DriverRegistration = lazy(() => import('./DriverRegistration'));
 
 interface ProfileTabProps {
   todayCount: number;
@@ -16,6 +19,14 @@ interface ProfileTabProps {
   driverTier: string;
   weeklyData: { day: string; amt: number; count: number; isToday: boolean }[];
 }
+
+// Local company color map for affiliation display
+const COMPANY_COLORS: Record<string, string> = {
+  shadowfax: '#6C3BEB', borzo: '#FF6B00', porter: '#F7B731',
+  amazon: '#FF9900', delhivery: '#E31837', ecom_express: '#0056A2',
+  xpressbees: '#FF6600', shiprocket: '#F7C325', bluedart: '#003366',
+  flipkart: '#2874F0',
+};
 
 export default function ProfileTab({
   todayCount,
@@ -30,6 +41,32 @@ export default function ProfileTab({
   const { companies } = useDriverStore();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
+  const [showAddCompany, setShowAddCompany] = useState(false);
+
+  // Affiliation list with employee_id
+  const [affiliations, setAffiliations] = useState<{
+    id: string;
+    company_id: string | null;
+    company_slug: string | null;
+    employee_id: string | null;
+    status: string;
+    courier_companies?: { name: string } | null;
+  }[]>([]);
+
+  const fetchAffiliations = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('driver_companies')
+        .select('id, company_id, company_slug, employee_id, status, courier_companies(name)')
+        .eq('driver_id', user.id);
+      if (data) setAffiliations(data as any);
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    fetchAffiliations();
+  }, [user]);
 
   const initial = profile?.name?.charAt(0)?.toUpperCase() || 'D';
   const maxWeeklyAmt = Math.max(...weeklyData.map((d) => d.amt), 1);
@@ -66,53 +103,103 @@ export default function ProfileTab({
           </span>
         </div>
 
-        {/* Company Affiliations */}
-        {companies.length > 0 && (
-          <div style={{ marginTop: '16px' }}>
-            <p
-              style={{
-                fontSize: '11px',
-                color: 'var(--dh-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                marginBottom: '8px',
-              }}
-            >
-              PARTNER COMPANIES
-            </p>
-            <div className="dh-company-stack">
-              {companies.slice(0, 6).map((company) => {
-                const showLogo = company.logo_url && !failedLogos.has(company.id);
+        {/* Company Affiliations — with Employee IDs */}
+        <div style={{ marginTop: '16px' }}>
+          <p
+            style={{
+              fontSize: '11px',
+              color: 'var(--dh-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: '8px',
+            }}
+          >
+            PARTNER COMPANIES
+          </p>
+
+          {affiliations.length > 0 ? (
+            <div>
+              {affiliations.map((aff) => {
+                const name =
+                  (aff.courier_companies as any)?.name ||
+                  aff.company_slug?.replace('_', ' ') ||
+                  'Company';
+                const slug = aff.company_slug || '';
+                const color = COMPANY_COLORS[slug] || '#888';
+                const initial = name.charAt(0).toUpperCase();
                 return (
-                  <div
-                    key={company.id}
-                    className="dh-company-stack-item"
-                    style={{ background: company.brand_color }}
-                    title={company.name}
-                  >
-                    {showLogo ? (
-                      <img
-                        src={company.logo_url!}
-                        alt={company.name}
-                        onError={() => setFailedLogos((prev) => new Set(prev).add(company.id))}
-                      />
-                    ) : (
-                      company.name.charAt(0)
+                  <div key={aff.id} className="dr-affiliation-row">
+                    {/* Logo circle */}
+                    <div
+                      style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: `${color}26`,
+                        border: `1.5px solid ${color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color, fontSize: 14, fontWeight: 700, flexShrink: 0,
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                    >
+                      {initial}
+                    </div>
+                    {/* Name */}
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: 0 }}>
+                      {name}
+                    </p>
+                    {/* Employee ID badge */}
+                    {aff.employee_id && (
+                      <span className="dr-emp-id-badge">{aff.employee_id}</span>
                     )}
                   </div>
                 );
               })}
-              {companies.length > 6 && (
-                <div
-                  className="dh-company-stack-item"
-                  style={{ background: '#333' }}
-                >
-                  +{companies.length - 6}
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          ) : (
+            /* Fallback: existing company stack if affiliations table empty */
+            companies.length > 0 && (
+              <div className="dh-company-stack">
+                {companies.slice(0, 6).map((company) => {
+                  const showLogo = company.logo_url && !failedLogos.has(company.id);
+                  return (
+                    <div
+                      key={company.id}
+                      className="dh-company-stack-item"
+                      style={{ background: company.brand_color }}
+                      title={company.name}
+                    >
+                      {showLogo ? (
+                        <img
+                          src={company.logo_url!}
+                          alt={company.name}
+                          onError={() => setFailedLogos((prev) => new Set(prev).add(company.id))}
+                        />
+                      ) : (
+                        company.name.charAt(0)
+                      )}
+                    </div>
+                  );
+                })}
+                {companies.length > 6 && (
+                  <div className="dh-company-stack-item" style={{ background: '#333' }}>
+                    +{companies.length - 6}
+                  </div>
+                )}
+              </div>
+            )
+          )}
+
+          {/* Add Company button */}
+          <button
+            className="dr-add-company-btn"
+            onClick={() => setShowAddCompany(true)}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round"/>
+            </svg>
+            Add Company
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -160,7 +247,10 @@ export default function ProfileTab({
                   className="dh-bar"
                   style={{
                     height: `${barHeight}px`,
-                    background: d.isToday ? '#00E676' : 'var(--dh-green)',
+                    background: d.isToday 
+                      ? 'linear-gradient(180deg, #00E676 0%, #00B248 100%)' 
+                      : 'linear-gradient(180deg, var(--dh-green) 0%, rgba(0,200,83,0.3) 100%)',
+                    boxShadow: d.isToday ? '0 0 16px rgba(0,230,118,0.4)' : 'none',
                     animationDelay: `${i * 100}ms`,
                   }}
                 />
@@ -246,6 +336,21 @@ export default function ProfileTab({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Company — DriverRegistration modal */}
+      {showAddCompany && user && (
+        <Suspense fallback={null}>
+          <DriverRegistration
+            driverId={user.id}
+            preSelected={new Set(affiliations.map((a) => a.company_slug).filter(Boolean) as string[])}
+            onComplete={() => {
+              setShowAddCompany(false);
+              fetchAffiliations();
+            }}
+            onBack={() => setShowAddCompany(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

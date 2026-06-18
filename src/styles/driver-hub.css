@@ -1,9 +1,9 @@
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   FASHIONVERSE DELIVERY HUB â€” CSS Theme & Animations
-   Stack: Pure CSS (no Tailwind) Â· Mobile-first 430px max
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ────────────────────────────────────────────────────────────────── 
+   FASHIONVERSE DELIVERY HUB — CSS Theme & Animations
+   Stack: Pure CSS (no Tailwind) · Mobile-first 430px max
+   ────────────────────────────────────────────────────────────────── */
 
-/* â”€â”€ Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Design Tokens ────────────────────────────────────────────── */
 :root {
   --dh-bg:            #0a0a0a;
   --dh-card:          #111111;
@@ -23,7 +23,7 @@
   --dh-r-btn:         10px;
 }
 
-/* â”€â”€ Keyframe Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Keyframe Animations ────────────────────────────────────────── */
 
 @keyframes dh-pulse-green {
   0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.5); }
@@ -113,7 +113,7 @@
   to   { opacity: 1; transform: scaleX(1); }
 }
 
-/* â”€â”€ Driver Hub Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Driver Hub Container ────────────────────────────────────────── */
 .dh-root {
   position: fixed;
   inset: 0;
@@ -136,7 +136,7 @@
   background: var(--dh-bg);
 }
 
-/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Header ──────────────────────────────────────────────────────── */
 .dh-header {
   display: flex;
   align-items: center;
@@ -219,7 +219,7 @@
   cursor: pointer;
 }
 
-/* â”€â”€ Status Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Status Bar ────────────────────────────────────────────────── */
 .dh-status-bar {
   margin: 10px 16px;
   padding: 14px 16px;
@@ -290,7 +290,7 @@
 .dh-toggle-thumb.online { left: 28px; }
 .dh-toggle-thumb.offline { left: 4px; }
 
-/* â”€â”€ Stats Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Stats Row ─────────────────────────────────────────────────── */
 .dh-stats-row {
   display: flex;
   gap: 10px;
@@ -340,7 +340,7 @@
   text-transform: uppercase;
 }
 
-/* â”€â”€ Tab Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Tab Content ───────────────────────────────────────────────── */
 .dh-tab-content {
   flex: 1;
   overflow-y: auto;
@@ -361,7 +361,7 @@
   display: block;
 }
 
-/* â”€â”€ Company Filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Company Filter ────────────────────────────────────────────── */
 .dh-company-filter {
   display: flex;
   gap: 8px;
@@ -419,7 +419,7 @@
   flex-shrink: 0;
 }
 
-/* â”€â”€ Section Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Section Header ────────────────────────────────────────────── */
 .dh-section-header {
   display: flex;
   align-items: center;
@@ -457,7 +457,7 @@
   animation: dh-blink 2s infinite;
 }
 
-/* â”€â”€ Order Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Order Card ────────────────────────────────────────────────── */
 .dh-order-card {
   background: var(--dh-card);
   border-radius: var(--dh-r);
@@ -551,7 +551,7 @@
   transform: scale(0.95);
 }
 
-/* â”€â”€ Active Delivery Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Active Delivery Card ────────────────────────────────────────── */
 .dh-active-card {
   background: var(--dh-card);
   border: 1px solid var(--dh-green-border);
@@ -702,7 +702,7 @@
   transform: scale(0.97);
 }
 
-/* â”€â”€ Progress Tracker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Progress Tracker ────────────────────────────────────────────── */
 .dh-progress-tracker {
   display: flex;
   align-items: center;
@@ -774,31 +774,116 @@
   color: var(--dh-green);
 }
 
-/* â”€â”€ Bottom Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bottom Navigation / Sidebar ───────────────────────────────────── */
 .driver-nav {
-  height: 64px;
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background: rgba(10,10,10,0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--dh-border);
+  height: 64px;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   z-index: 100;
   display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px;
+}
+
+.dh-nav-logo {
+  display: none; /* Hidden on mobile */
+}
+
+.dh-nav-links {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  height: 100%;
 }
 
 @media (min-width: 1024px) {
   .driver-nav {
-    position: relative; /* flow normally inside the flex container */
-    width: 250px;
+    position: relative;
+    width: 260px;
     height: 100dvh;
     flex-direction: column;
-    border-top: none;
-    border-right: 1px solid var(--dh-border);
     justify-content: flex-start;
-    padding-top: 24px;
+    align-items: stretch;
+    border-top: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    background: linear-gradient(180deg, rgba(10,10,10,0.95) 0%, rgba(5,5,5,0.98) 100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    padding: 32px 16px;
+    gap: 0;
+  }
+
+  .dh-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px; /* Match nav-item padding */
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
+  .dh-logo-cube {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, rgba(0, 255, 135, 0.1), rgba(96, 239, 255, 0.1));
+    border: 1px solid rgba(0, 255, 135, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 200, 83, 0.25), inset 0 0 10px rgba(0,255,135,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dh-logo-cube::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 40%);
+    border-radius: 12px;
+  }
+
+  .dh-logo-text-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dh-logo-text {
+    font-size: 19px;
+    font-weight: 900;
+    background: linear-gradient(to right, #ffffff, #e0e0e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+    font-family: 'Inter', sans-serif;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .dh-logo-sub {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--dh-green);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.9;
+    line-height: 1;
+  }
+
+  .dh-nav-links {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    height: auto;
+    gap: 8px;
   }
 }
 
@@ -808,66 +893,138 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  background: none;
+  gap: 4px;
+  background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--dh-muted);
+  color: rgba(255, 255, 255, 0.4);
   position: relative;
-  transition: color 200ms ease;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   padding: 0;
+  border-radius: 12px;
+}
+
+@media (min-width: 1024px) {
+  .dh-nav-item {
+    flex: none;
+    height: 52px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 16px;
+    gap: 14px;
+    border-radius: 14px;
+  }
+  
+  .dh-nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .dh-nav-item.active {
   color: var(--dh-green);
 }
 
+@media (min-width: 1024px) {
+  .dh-nav-item.active {
+    background: linear-gradient(90deg, rgba(0, 200, 83, 0.12) 0%, transparent 100%);
+    border-left: 3px solid var(--dh-green);
+    border-radius: 0 14px 14px 0;
+    color: #fff;
+  }
+}
+
 .dh-nav-label {
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 1024px) {
+  .dh-nav-label {
+    font-size: 14px;
+  }
 }
 
 .dh-nav-item.active .dh-nav-label {
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 200, 83, 0.4);
 }
 
-.dh-nav-indicator {
+.dh-nav-glow {
   position: absolute;
   bottom: 0;
-  height: 2.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 3px;
   width: 24px;
   background: var(--dh-green);
-  border-radius: 2px 2px 0 0;
-  transition: left 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 -2px 8px rgba(0, 200, 83, 0.6);
+}
+
+@media (min-width: 1024px) {
+  .dh-nav-glow {
+    display: none; /* Uses left border instead on desktop */
+  }
 }
 
 .dh-nav-badge {
   position: absolute;
-  top: 6px;
-  right: calc(50% - 18px);
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
+  top: 8px;
+  right: calc(50% - 20px);
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
   background: var(--dh-red);
   color: #fff;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.4);
+  border: 2px solid var(--dh-bg);
+}
+
+@media (min-width: 1024px) {
+  .dh-nav-badge {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 16px;
+    border: none;
+  }
 }
 
 .dh-nav-icon {
-  transition: transform 300ms ease;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 300ms ease;
 }
 
-.dh-nav-item:active .dh-nav-icon {
-  transform: translateY(-4px);
+@media (min-width: 1024px) {
+  .dh-nav-icon {
+    width: 38px; /* Match logo cube width */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
-/* â”€â”€ OTP Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.dh-nav-item.active .dh-nav-icon {
+  filter: drop-shadow(0 0 8px rgba(0,200,83,0.5));
+  transform: translateY(-2px);
+}
+
+@media (min-width: 1024px) {
+  .dh-nav-item.active .dh-nav-icon {
+    transform: none;
+    color: var(--dh-green);
+  }
+}
+
+/* ── OTP Modal ────────────────────────────────────────────────── */
 .dh-otp-overlay {
   position: fixed;
   inset: 0;
@@ -928,7 +1085,7 @@
   color: var(--dh-green);
 }
 
-/* â”€â”€ Confetti â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Confetti ────────────────────────────────────────────────── */
 .dh-confetti-particle {
   position: fixed;
   width: 8px;
@@ -939,7 +1096,7 @@
   animation: dh-confetti-fall 1.2s ease-out forwards;
 }
 
-/* â”€â”€ Empty States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Empty States ────────────────────────────────────────────── */
 .dh-empty-state {
   display: flex;
   flex-direction: column;
@@ -959,7 +1116,7 @@
   animation: dh-draw-check 1s ease forwards;
 }
 
-/* â”€â”€ Done Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Done Tab ────────────────────────────────────────────────── */
 .dh-summary-card {
   background: linear-gradient(135deg, rgba(0,200,83,0.12), rgba(0,200,83,0.04));
   border: 1px solid var(--dh-green-border);
@@ -1017,30 +1174,44 @@
   flex-shrink: 0;
 }
 
-/* â”€â”€ Profile Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Profile Tab ───────────────────────────────────────────────── */
 .dh-profile-hero {
-  background: var(--dh-card);
-  border-radius: var(--dh-r);
-  padding: 20px;
+  background: linear-gradient(180deg, #1c1c1c 0%, var(--dh-card) 100%);
+  border-radius: 20px;
+  padding: 24px 20px;
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   border: 1px solid var(--dh-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.dh-profile-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 120px;
+  background: radial-gradient(circle at 50% -20%, rgba(0, 200, 83, 0.15) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .dh-profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
-  border: 3px solid var(--dh-green);
+  border: 3px solid #111;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 12px;
-  font-size: 32px;
+  margin: 0 auto 16px;
+  font-size: 36px;
   font-weight: 800;
   color: #000;
-  background: linear-gradient(135deg, var(--dh-green), #00E676);
+  background: linear-gradient(135deg, #00E676, var(--dh-green));
   position: relative;
+  box-shadow: 0 0 24px rgba(0,200,83,0.3);
+  z-index: 1;
 }
 
 .dh-profile-badges {
@@ -1054,13 +1225,14 @@
 .dh-badge {
   font-size: 11px;
   text-transform: uppercase;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  letter-spacing: 0.04em;
+  gap: 6px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .dh-badge.approved {
@@ -1100,16 +1272,23 @@
 .dh-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .dh-stats-cell {
-  background: var(--dh-card);
-  border-radius: var(--dh-r);
+  background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border-radius: 16px;
   border: 1px solid var(--dh-border);
-  padding: 14px;
+  padding: 16px;
   text-align: center;
+  transition: all 0.2s ease;
+}
+
+.dh-stats-cell:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.15);
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
 }
 
 .dh-stats-cell-value {
@@ -1119,37 +1298,45 @@
 }
 
 .dh-stats-cell-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--dh-muted);
   text-transform: uppercase;
-  margin-top: 4px;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  font-weight: 600;
 }
 
 .dh-info-card {
-  background: var(--dh-card);
-  border-radius: var(--dh-r);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border-radius: 16px;
   border: 1px solid var(--dh-border);
-  padding: 14px;
-  margin-bottom: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .dh-info-row {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 8px 0;
   font-size: 13px;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+}
+.dh-info-row:last-child {
+  border-bottom: none;
 }
 
 .dh-info-label {
   color: var(--dh-muted);
+  font-weight: 500;
 }
 
 .dh-info-value {
   color: var(--dh-text);
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* â”€â”€ Weekly Performance Bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Weekly Performance Bars ─────────────────────────────────── */
 .dh-weekly-bars {
   display: flex;
   gap: 6px;
@@ -1185,14 +1372,14 @@
   color: var(--dh-muted);
 }
 
-/* â”€â”€ Logout Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Logout Button ───────────────────────────────────────────── */
 .dh-logout-btn {
   width: 100%;
   height: 48px;
-  border-radius: var(--dh-r);
-  border: 1.5px solid var(--dh-red);
+  border-radius: 14px;
+  border: 1px solid rgba(255,68,68,0.3);
   color: var(--dh-red);
-  background: transparent;
+  background: linear-gradient(145deg, rgba(255,68,68,0.08), rgba(255,68,68,0.02));
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
@@ -1200,17 +1387,19 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 200ms ease;
-  margin-top: 20px;
-  margin-bottom: 32px;
+  transition: all 0.2s ease;
+  margin-top: 24px;
+  margin-bottom: 40px;
   font-family: 'Inter', sans-serif;
 }
 
 .dh-logout-btn:hover {
-  background: rgba(255,68,68,0.08);
+  background: rgba(255,68,68,0.12);
+  border-color: rgba(255,68,68,0.5);
+  transform: translateY(-1px);
 }
 
-/* â”€â”€ Confirm Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Confirm Dialog ──────────────────────────────────────────── */
 .dh-confirm-overlay {
   position: fixed;
   inset: 0;
@@ -1239,7 +1428,7 @@
   margin-top: 20px;
 }
 
-/* â”€â”€ Map Overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Map Overrides ───────────────────────────────────────────── */
 .dh-map-container .leaflet-container {
   background: #0a0a0a !important;
   font-family: 'Inter', sans-serif;
@@ -1284,7 +1473,7 @@
   transform: scale(0.9);
 }
 
-/* â”€â”€ Company Affiliations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Company Affiliations ────────────────────────────────────── */
 .dh-company-stack {
   display: flex;
   justify-content: center;
@@ -1323,7 +1512,7 @@
   object-fit: cover;
 }
 
-/* â”€â”€ Contact Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Contact Buttons ─────────────────────────────────────────── */
 .dh-contact-btn {
   display: inline-flex;
   align-items: center;
@@ -1354,7 +1543,7 @@
   border: none;
 }
 
-/* â”€â”€ Loading Spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Loading Spinner ─────────────────────────────────────────── */
 .dh-spinner {
   width: 40px;
   height: 40px;
@@ -1364,7 +1553,7 @@
   animation: dh-spin 0.8s linear infinite;
 }
 
-/* â”€â”€ Leaflet Popup Override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Leaflet Popup Override ──────────────────────────────────── */
 .dh-map-container .leaflet-popup-content-wrapper {
   background: var(--dh-card) !important;
   color: var(--dh-text) !important;
@@ -1376,7 +1565,7 @@
   background: var(--dh-card) !important;
 }
 
-/* â”€â”€ Utility Classes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Utility Classes ─────────────────────────────────────────── */
 .dh-text-green  { color: var(--dh-green); }
 .dh-text-orange { color: var(--dh-orange); }
 .dh-text-blue   { color: var(--dh-blue); }
@@ -1800,3 +1989,258 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   scrollbar-color: #00C853 #0a0a0a !important;
   scrollbar-width: auto !important;
 }
+
+/* ── Driver Registration Flow ─────────────────────────────────── */
+
+@keyframes dr-pop-in {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes dr-draw-check {
+  from { stroke-dashoffset: 42; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes dr-card-tap {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+/* Full-screen layout */
+.dr-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+/* Header bar */
+.dr-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.dr-back-btn {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+  padding: 0;
+}
+
+.dr-back-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* Scrollable body */
+.dr-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 20px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.dr-body::-webkit-scrollbar { display: none; }
+
+/* 2-column company grid */
+.dr-company-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Company card */
+.dr-company-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border-width: 1px;
+  border-style: solid;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  position: relative;
+  text-align: left;
+  overflow: hidden;
+  min-width: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.dr-company-card:active {
+  animation: dr-card-tap 0.15s ease;
+}
+
+/* Selected check badge (top-right) */
+.dr-check-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--dh-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: dr-pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Employee ID input card */
+.dr-id-card {
+  background: #111111;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+/* Employee ID input field */
+.dr-id-input {
+  width: 100%;
+  height: 44px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+
+.dr-id-input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+.dr-id-input:focus {
+  border-color: var(--dh-green);
+  box-shadow: 0 0 0 3px rgba(0,200,83,0.1);
+}
+
+/* Fixed footer */
+.dr-footer {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 20px 28px;
+  background: linear-gradient(to top, #0a0a0a 60%, transparent);
+  flex-shrink: 0;
+}
+
+/* Selected count pill */
+.dr-count-pill {
+  background: rgba(0,200,83,0.1);
+  border: 1px solid var(--dh-green);
+  color: var(--dh-green);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 16px;
+  border-radius: 50px;
+  margin-bottom: 12px;
+  font-family: 'Inter', sans-serif;
+  animation: dh-fade-in 0.2s ease;
+}
+
+/* Primary action button */
+.dr-primary-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  letter-spacing: 0.01em;
+}
+
+.dr-primary-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Mini spinner inside button */
+.dr-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(0,0,0,0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: dh-spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Profile Tab — Affiliations List ─────────────────────────── */
+.dr-affiliation-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.dr-affiliation-row:last-child {
+  border-bottom: none;
+}
+
+.dr-emp-id-badge {
+  margin-left: auto;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dr-add-company-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 14px;
+  border: 1px solid var(--dh-green);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--dh-green);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s ease;
+}
+
+.dr-add-company-btn:hover {
+  background: rgba(0,200,83,0.06);
+}
+
+.dr-add-company-btn:active {
+  transform: scale(0.98);
+}
+

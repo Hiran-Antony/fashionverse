@@ -4,11 +4,12 @@
 // Replaces the old monolithic DeliveryDashboard.tsx
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useDriverStore, type DriverDelivery } from '../store/driverStore';
 import { useDriver } from '../hooks/useDriver';
+import { supabase } from '../lib/supabase';
 
 // CSS
 import '../styles/driver-hub.css';
@@ -26,6 +27,9 @@ import ActiveTab from './driver/ActiveTab';
 import MapTab from './driver/MapTab';
 import DoneTab from './driver/DoneTab';
 import ProfileTab from './driver/ProfileTab';
+
+// ── Driver Registration (lazy — only for new drivers) ─────────
+const DriverRegistration = lazy(() => import('./driver/DriverRegistration'));
 
 // Offline overlay
 function OfflineOverlay({ onGoOnline }: { onGoOnline: () => void }) {
@@ -106,7 +110,7 @@ function OfflineOverlay({ onGoOnline }: { onGoOnline: () => void }) {
 export default function DeliveryDashboard() {
   const navigate = useNavigate();
   const { user, profile, isDeliveryApproved } = useAuthStore();
-  const { activeTab, isOnline, setOnline, activeDeliveries, isSidebarOpen } = useDriverStore();
+  const { activeTab, isOnline, setOnline, activeDeliveries, isSidebarOpen, setActiveTab } = useDriverStore();
 
   const {
     acceptOrder,
@@ -123,6 +127,10 @@ export default function DeliveryDashboard() {
   const [otpOrder, setOtpOrder] = useState<DriverDelivery | null>(null);
   const [mapMounted, setMapMounted] = useState(false);
 
+  // ── Registration flow state (new drivers only) ───────────
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationChecked, setRegistrationChecked] = useState(false);
+
   // ── Auth guard ──────────────────────────────────────────
   useEffect(() => {
     if (!user) {
@@ -133,6 +141,35 @@ export default function DeliveryDashboard() {
       navigate('/delivery/apply', { replace: true });
     }
   }, [user, profile, isDeliveryApproved, navigate]);
+
+  // ── Check affiliations for new driver registration ──────
+  useEffect(() => {
+    if (!user || !isDeliveryApproved || registrationChecked) return;
+
+    const checkAffiliations = async () => {
+      try {
+        const { data: affiliations } = await supabase
+          .from('driver_companies')
+          .select('id')
+          .eq('driver_id', user.id);
+
+        setRegistrationChecked(true);
+        if (!affiliations || affiliations.length === 0) {
+          setShowRegistration(true);
+        }
+      } catch (_err) {
+        // On error (e.g. table doesn't exist yet), skip registration
+        setRegistrationChecked(true);
+      }
+    };
+
+    checkAffiliations();
+  }, [user, isDeliveryApproved, registrationChecked]);
+
+  const handleRegistrationComplete = () => {
+    setShowRegistration(false);
+    setActiveTab('orders');
+  };
 
   // ── Override body background ────────────────────────────
   useEffect(() => {
@@ -167,81 +204,98 @@ export default function DeliveryDashboard() {
   };
 
   return (
-    <div className={`dh-root ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} data-lenis-prevent="true">
-      <div className="dh-container">
-        <div className="dh-content-wrapper">
-          {/* Header */}
-          <DriverHeader />
+    <>
+      <div className={`dh-root ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} data-lenis-prevent="true">
+        <div className="dh-container">
+          <div className="dh-content-wrapper">
+            {/* Header */}
+            <DriverHeader />
 
-          {/* Status Bar */}
-          <StatusBar />
+            {/* Status Bar */}
+            <StatusBar />
 
-          {/* Stats Row (only when online) */}
-          {isOnline && (
-            <StatsRow
-              earnings={Math.round(todayEarnings)}
-              done={todayCount}
-              inProgress={activeDeliveries.length}
+            {/* Stats Row (only when online) */}
+            {isOnline && (
+              <StatsRow
+                earnings={Math.round(todayEarnings)}
+                done={todayCount}
+                inProgress={activeDeliveries.length}
+              />
+            )}
+
+            {/* Offline overlay */}
+            {!isOnline && <OfflineOverlay onGoOnline={() => setOnline(true)} />}
+
+            {/* Tab Content */}
+            {isOnline && (
+              <div className="dh-tab-content">
+                {/* Orders Tab */}
+                <div className={`dh-tab-panel ${activeTab === 'orders' ? 'active' : ''}`}>
+                  <OrdersTab onAcceptOrder={acceptOrder} />
+                </div>
+
+                {/* Active Tab */}
+                <div className={`dh-tab-panel ${activeTab === 'active' ? 'active' : ''}`}>
+                  <ActiveTab onMarkDelivered={handleMarkDelivered} />
+                </div>
+
+                {/* Map Tab — uses CSS show/hide to preserve Leaflet instance */}
+                <div
+                  className={`dh-tab-panel ${activeTab === 'map' ? 'active' : ''}`}
+                  style={{ display: mapMounted ? (activeTab === 'map' ? 'block' : 'none') : 'none' }}
+                >
+                  {mapMounted && <MapTab key={activeDeliveries.length} />}
+                </div>
+
+                {/* Done Tab */}
+                <div className={`dh-tab-panel ${activeTab === 'done' ? 'active' : ''}`}>
+                  <DoneTab />
+                </div>
+
+                {/* Profile Tab */}
+                <div className={`dh-tab-panel ${activeTab === 'profile' ? 'active' : ''}`}>
+                  <ProfileTab
+                    todayCount={todayCount}
+                    todayEarnings={todayEarnings}
+                    totalDeliveries={totalDeliveries}
+                    totalEarnings={totalEarnings}
+                    driverTier={driverTier}
+                    weeklyData={weeklyData}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Nav */}
+          <DriverNav />
+
+          {/* OTP Modal */}
+          {otpOrder && (
+            <OTPModal
+              order={otpOrder}
+              onClose={() => setOtpOrder(null)}
+              onVerify={verifyDeliveryPin}
+              onSuccess={handleOtpSuccess}
             />
           )}
-
-          {/* Offline overlay */}
-          {!isOnline && <OfflineOverlay onGoOnline={() => setOnline(true)} />}
-
-          {/* Tab Content */}
-          {isOnline && (
-            <div className="dh-tab-content">
-              {/* Orders Tab */}
-              <div className={`dh-tab-panel ${activeTab === 'orders' ? 'active' : ''}`}>
-                <OrdersTab onAcceptOrder={acceptOrder} />
-              </div>
-
-              {/* Active Tab */}
-              <div className={`dh-tab-panel ${activeTab === 'active' ? 'active' : ''}`}>
-                <ActiveTab onMarkDelivered={handleMarkDelivered} />
-              </div>
-
-              {/* Map Tab — uses CSS show/hide to preserve Leaflet instance */}
-              <div
-                className={`dh-tab-panel ${activeTab === 'map' ? 'active' : ''}`}
-                style={{ display: mapMounted ? (activeTab === 'map' ? 'block' : 'none') : 'none' }}
-              >
-                {mapMounted && <MapTab key={activeDeliveries.length} />}
-              </div>
-
-              {/* Done Tab */}
-              <div className={`dh-tab-panel ${activeTab === 'done' ? 'active' : ''}`}>
-                <DoneTab />
-              </div>
-
-              {/* Profile Tab */}
-              <div className={`dh-tab-panel ${activeTab === 'profile' ? 'active' : ''}`}>
-                <ProfileTab
-                  todayCount={todayCount}
-                  todayEarnings={todayEarnings}
-                  totalDeliveries={totalDeliveries}
-                  totalEarnings={totalEarnings}
-                  driverTier={driverTier}
-                  weeklyData={weeklyData}
-                />
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Bottom Nav */}
-        <DriverNav />
-
-        {/* OTP Modal */}
-        {otpOrder && (
-          <OTPModal
-            order={otpOrder}
-            onClose={() => setOtpOrder(null)}
-            onVerify={verifyDeliveryPin}
-            onSuccess={handleOtpSuccess}
-          />
-        )}
       </div>
-    </div>
+
+      {/* ── Driver Registration — rendered OUTSIDE dh-root so position:fixed
+           is truly viewport-level, not clipped by dh-root's overflow:hidden ── */}
+      {showRegistration && user && (
+        <Suspense fallback={null}>
+          <DriverRegistration
+            driverId={user.id}
+            onComplete={handleRegistrationComplete}
+            onBack={() => {
+              setShowRegistration(false);
+              navigate('/delivery/apply', { replace: true });
+            }}
+          />
+        </Suspense>
+      )}
+    </>
   );
 }

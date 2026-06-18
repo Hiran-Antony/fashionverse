@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { fullTryOnFlow } from "../lib/segmind";
 import { useTryOnStore } from "../store/tryOnStore";
 import { supabase } from "../lib/supabase";
+import FashionAITools from "./FashionAITools";
 
 export default function VirtualTryOn() {
                   
@@ -961,9 +962,11 @@ export default function VirtualTryOn() {
                     gap: "0",
                     borderRadius: "16px",
                     overflow: "hidden",
-                    border: "2px solid rgba(201,168,76,0.4)",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                    border: "1px solid rgba(56,189,248,0.4)",
+                    boxShadow: "0 8px 40px rgba(56,189,248,0.15)",
                     marginBottom: "1.5rem",
+                    maxWidth: "360px",
+                    margin: "0 auto 1.5rem",
                     animation: "fadeSlideIn 0.6s ease"
                   }}>
                     <div style={{ flex: 1, position: "relative" }}>
@@ -1036,15 +1039,15 @@ export default function VirtualTryOn() {
                     alt="Try-on result"
                     style={{
                       width: "100%",
-                      maxWidth: "280px",
+                      maxWidth: "180px",
                       margin: "0 auto 1.5rem",
                       aspectRatio: "3/4",
                       objectFit: "cover",
                       objectPosition: "center",
                       backgroundColor: "#120a06",
                       borderRadius: "16px",
-                      border: "2px solid rgba(201,168,76,0.4)",
-                      boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                      border: "1px solid rgba(56,189,248,0.4)",
+                      boxShadow: "0 8px 40px rgba(56,189,248,0.15)",
                       animation: "fadeSlideIn 0.6s ease"
                     }}
                   />
@@ -1166,6 +1169,16 @@ export default function VirtualTryOn() {
               </div>
             </div>
           </div>
+
+          {/* ── FASHION AI TOOLS SECTION ── */}
+          {result && (
+            <div style={{ maxWidth: "1200px", margin: "2rem auto 0", width: "100%" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+                <FashionAITools modelFile={modelFile} resultUrl={result} />
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>

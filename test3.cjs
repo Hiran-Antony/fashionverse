@@ -1,0 +1,1 @@
+const fetch = require('cross-fetch'); const key = require('dotenv').config().parsed.VITE_GEMINI_API_KEY; async function list() { const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key); const data = await res.json(); console.log('Models:', JSON.stringify(data.models.map(m => m.name))); } list();

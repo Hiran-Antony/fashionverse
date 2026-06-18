@@ -102,23 +102,6 @@ export function useDriver() {
         courier_companies: MOCK_COMPANIES[Math.abs(o.id.charCodeAt(0)) % MOCK_COMPANIES.length],
       }));
 
-      // Add dummy order to test delivery hub UI
-      availList.unshift({
-        id: '00000000-0000-0000-0000-000000000000',
-        status: 'pending',
-        pickup_address: 'Phoenix Mall, Coimbatore',
-        drop_address: 'RS Puram, Coimbatore',
-        pickup_lat: 11.0264,
-        pickup_lng: 76.9942,
-        drop_lat: 11.0084,
-        drop_lng: 76.9498,
-        delivery_fee: 60,
-        driver_earnings: 51,
-        customer_name: 'Test Customer',
-        courier_companies: MOCK_COMPANIES[0],
-        expires_at: '2026-12-31T23:59:59Z',
-        created_at: new Date().toISOString(),
-      } as any);
 
       const { data: mine } = await supabase
         .from('orders')
@@ -132,14 +115,6 @@ export function useDriver() {
         courier_companies: MOCK_COMPANIES[Math.abs(o.id.charCodeAt(0)) % MOCK_COMPANIES.length],
       }));
 
-      // Check if mock order was accepted
-      if (store.activeDeliveries.find(o => o.id === '00000000-0000-0000-0000-000000000000')) {
-        const mockOrder = store.activeDeliveries.find(o => o.id === '00000000-0000-0000-0000-000000000000');
-        if (mockOrder) {
-            activeList.unshift(mockOrder);
-            availList = availList.filter(o => o.id !== mockOrder.id);
-        }
-      }
 
       const { data: done } = await supabase
         .from('orders')
@@ -179,17 +154,6 @@ export function useDriver() {
     async (orderId: string) => {
       if (!user) return false;
 
-      // Mock order bypass
-      if (orderId === '00000000-0000-0000-0000-000000000000') {
-        toast.success('Test Order accepted!', { icon: '🚀' });
-        const mockOrder = store.availableOrders.find(o => o.id === orderId);
-        if (mockOrder) {
-          store.setActiveDeliveries([mockOrder, ...store.activeDeliveries]);
-        }
-        store.removeAvailableOrder(orderId);
-        store.setActiveTab('active');
-        return true;
-      }
 
       try {
         const { error } = await supabase
@@ -314,11 +278,40 @@ export function useDriver() {
     fetchOrders();
   }, [user]);
 
-  // Polling every 30s when online
+  // Realtime subscription replacing polling
   useEffect(() => {
     if (!store.isOnline || !user) return;
-    const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('delivery-hub-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT and UPDATE
+          schema: 'public',
+          table: 'orders',
+        },
+        (payload) => {
+          console.log('🔄 Order changed via Realtime:', payload);
+          // Play ping sound for new or updated orders
+          if (payload.eventType === 'INSERT' || (payload.eventType === 'UPDATE' && payload.new.status === 'packed')) {
+            try {
+              new Audio('/ping.mp3').play();
+            } catch (e) {
+              // Ignore browser block
+            }
+          }
+          // Fetch orders to sync state securely
+          fetchOrders();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Supabase Realtime:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [store.isOnline, user]);
 
   // GPS tracking
