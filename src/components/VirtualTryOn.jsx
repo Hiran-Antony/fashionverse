@@ -541,12 +541,12 @@ export default function VirtualTryOn() {
                 })()}
 
                 {/* Selected Preview */}
-                {selectedUpperProduct && (
+                {(selectedUpperProduct || upperwearPreview) && (
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", background: "rgba(201,151,58,0.06)", border: "1px solid rgba(201,151,58,0.2)", borderRadius: "10px", marginTop: "8px" }}>
-                    <img src={selectedUpperProduct.image} alt={selectedUpperProduct.name} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
+                    <img src={selectedUpperProduct?.image || upperwearPreview} alt={selectedUpperProduct?.name || "Selected Upperwear"} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedUpperProduct.name}</div>
-                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedUpperProduct.brand}</div>
+                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedUpperProduct?.name || "Selected Upperwear"}</div>
+                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedUpperProduct?.brand || "Custom"}</div>
                     </div>
                     <button onClick={() => { setSelectedUpperProduct(null); setUpperwearFile(null, null); }} style={{ background: "none", border: "none", color: "rgba(245,237,212,0.4)", cursor: "pointer", fontSize: "12px", padding: "4px", flexShrink: 0 }}>✕ Remove</button>
                   </div>
@@ -631,12 +631,12 @@ export default function VirtualTryOn() {
                 })()}
 
                 {/* Selected Preview */}
-                {selectedLowerProduct && (
+                {(selectedLowerProduct || bottomwearPreview) && (
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", background: "rgba(201,151,58,0.06)", border: "1px solid rgba(201,151,58,0.2)", borderRadius: "10px", marginTop: "8px" }}>
-                    <img src={selectedLowerProduct.image} alt={selectedLowerProduct.name} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
+                    <img src={selectedLowerProduct?.image || bottomwearPreview} alt={selectedLowerProduct?.name || "Selected Bottomwear"} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedLowerProduct.name}</div>
-                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedLowerProduct.brand}</div>
+                      <div style={{ fontSize: "12px", color: "#F5EDD4", fontWeight: "500", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedLowerProduct?.name || "Selected Bottomwear"}</div>
+                      <div style={{ fontSize: "10px", color: "#C9973A" }}>{selectedLowerProduct?.brand || "Custom"}</div>
                     </div>
                     <button onClick={() => { setSelectedLowerProduct(null); setBottomwearFile(null, null); }} style={{ background: "none", border: "none", color: "rgba(245,237,212,0.4)", cursor: "pointer", fontSize: "12px", padding: "4px", flexShrink: 0 }}>✕ Remove</button>
                   </div>

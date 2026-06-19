@@ -24,7 +24,7 @@ const modelState = {};
 MODELS.forEach(m => { modelState[m] = { lastCall: 0, coolUntil: 0 }; });
 
 const MIN_GAP = 4000; // ms between calls to the SAME model
-const MAX_RETRIES = 10;
+const MAX_RETRIES = 4;
 
 // Parse "retry in 51.14s" from Gemini error text
 function parseRetrySeconds(text) {

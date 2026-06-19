@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Bot, Send, ShoppingBag, User, Camera, RefreshCcw, Wand2, Star, Zap, CheckCircle2, History, X, Clock, Trash2, ImagePlus, Palette, Tag } from 'lucide-react';
+import { Sparkles, Bot, Send, ShoppingBag, User, Camera, RefreshCcw, Wand2, Star, Zap, CheckCircle2, History, X, Clock, Trash2, ImagePlus, Palette, Tag, ScanLine, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
@@ -69,7 +69,14 @@ interface AIOutfit {
   items: StylistItem[]; total_price: number; style_tip: string;
   mediator_note: string; confidence_score: number;
 }
-type AIFeatureResponse = AIColorAdvisor | AIDressCode | AIStyleChat | AIOutfit;
+interface AIFabricScanner {
+  feature: 'fabric_scanner';
+  fabric_type: string;
+  care_instructions: string;
+  season_suitability: string;
+  catalog_matches: { name: string; price: string; why: string }[];
+}
+type AIFeatureResponse = AIColorAdvisor | AIDressCode | AIStyleChat | AIOutfit | AIFabricScanner;
 
 interface Message {
   id: string;
@@ -476,10 +483,35 @@ function StyleChatCard({ data, catalog, onAddItem, onTryOn }: { data: AIStyleCha
 }
 
 // ─── AI RESPONSE RENDERER ─────────────────────────────────────────
+function FabricScannerCard({ data, catalog, onAddItem, onTryOn }: { data: AIFabricScanner; catalog: CatalogItem[]; onAddItem: (name: string) => void; onTryOn: (imageUrl: string, name: string) => void }) {
+  return (
+    <FeatureCard accent="#38bdf8">
+      <div style={{ padding: '18px 22px 14px', borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <ScanLine size={14} color="#38bdf8" />
+          <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#38bdf8' }}>Fabric Scanner</span>
+          <Pill label={data.fabric_type} />
+        </div>
+        <p style={{ fontFamily: 'Inter', fontSize: 13, color: TEXT_SEC, lineHeight: 1.65, margin: 0 }}><strong>Care Instructions:</strong> {data.care_instructions}</p>
+        <p style={{ fontFamily: 'Inter', fontSize: 13, color: TEXT_SEC, lineHeight: 1.65, margin: '6px 0 0' }}><strong>Season:</strong> {data.season_suitability}</p>
+      </div>
+      {data.catalog_matches.length > 0 && (
+        <div style={{ padding: '14px 22px' }}>
+          <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> Catalog Picks</p>
+          {data.catalog_matches.map((item, i) => (
+            <ProductPickRow key={i} name={item.name} price={item.price} why={item.why} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} isLast={i === 0 && data.catalog_matches.length === 1} />
+          ))}
+        </div>
+      )}
+    </FeatureCard>
+  );
+}
+
 function AIResponseRenderer({ aiResponse, catalog, onAddItem, onTryOn }: { aiResponse: AIFeatureResponse; catalog: CatalogItem[]; onAddItem: (name: string) => void; onTryOn: (imageUrl: string, name: string) => void }) {
   switch (aiResponse.feature) {
     case 'color_advisor': return <ColorAdvisorCard data={aiResponse} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} />;
     case 'dress_code_explainer': return <DressCodeCard data={aiResponse} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} />;
+    case 'fabric_scanner': return <FabricScannerCard data={aiResponse} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} />;
     case 'style_chat': return aiResponse.catalog_recommendations.length > 0 ? <StyleChatCard data={aiResponse} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} /> : null;
     default: return null;
   }
@@ -600,6 +632,8 @@ export default function StyleBuilderPage() {
   const [photoThumb, setPhotoThumb] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+
+
   const { user, profile } = useAuthStore();
   const chatLogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -653,6 +687,8 @@ export default function StyleBuilderPage() {
 
   const clearPhoto = () => { setPhotoBase64(null); setPhotoThumb(null); };
 
+
+
   // Add single item to cart
   const addSingleItemToCart = (name: string) => {
     const p = catalog.find(c => c.name === name);
@@ -698,7 +734,9 @@ export default function StyleBuilderPage() {
       const recentHistory = newMessages.slice(-8).map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.text}`).join('\n');
 
       const systemInstruction = `You are FashionVerse AI — an elite personal style consultant for an Indian fashion e-commerce platform.
-Speak like a confident, warm, witty Indian fashion stylist. Use ₹ for all pricing. Be direct, specific, never generic or robotic.
+Speak in a highly professional, polite, and respectful manner, treating the user as a valued customer. Be warm and helpful but maintain a professional distance (do NOT use overly familiar terms like "my dear", "babe", etc.).
+You CAN see images. If a photo is attached, analyze it directly. Never say you cannot see or scan images.
+Use ₹ for all pricing. Be direct, specific, and never robotic.
 Know Indian occasions deeply: weddings, mehendi, sangeet, puja, office, festive, casual, first dates, family functions.
 Reference chat history naturally without announcing it.
 
@@ -710,6 +748,7 @@ ${catalogString}
 
 ═══ AUTO-DETECTION RULES — pick ONE feature ═══
 - IF message contains [PHOTO_ATTACHED: true] AND user asks about colors/skin tone → feature: "color_advisor"
+- IF message contains [PHOTO_ATTACHED: true] AND user asks about fabric/texture/material → feature: "fabric_scanner"
 - IF message contains [PHOTO_ATTACHED: true] AND no specific color query → feature: "color_advisor" (analyze photo for skin tone)
 - IF user asks what a dress code means OR what to wear to a named event/party → feature: "dress_code_explainer"
 - IF user needs a full outfit curated (clear event + needs complete look) → feature: "outfit"
@@ -723,6 +762,9 @@ ${catalogString}
 - All prices in ₹ format. Never re-recommend products already shown this session
 
 ═══ FEATURE SCHEMAS ═══
+
+feature: "fabric_scanner":
+{"feature":"fabric_scanner","chat_response":"conversational reply max 2 sentences","fabric_type":"<fabric>","care_instructions":"1 sentence","season_suitability":"Summer|Winter...","catalog_matches":[{"name":"<exact product name>","price":"₹<price>","why":"1 line"}]}
 
 feature: "color_advisor":
 {"feature":"color_advisor","chat_response":"conversational reply max 2 sentences","skin_tone":"Fair|Wheatish|Dusky|Deep","best_colors":["color1","color2","color3","color4"],"avoid_colors":["color1","color2"],"borderline_colors":["color1"],"reason":"1 sentence why","catalog_matches":[{"name":"<exact product name>","color":"<color>","price":"₹<price>","why":"1 line"}]}
@@ -791,7 +833,7 @@ feature: "style_chat":
               confidence_score: aiData.confidence_score || 90
             };
           }
-        } else if (feature === 'color_advisor' || feature === 'dress_code_explainer' || feature === 'style_chat') {
+        } else if (feature === 'color_advisor' || feature === 'dress_code_explainer' || feature === 'style_chat' || feature === 'fabric_scanner') {
           aiResponse = aiData as AIFeatureResponse;
         }
       } catch (parseErr) {
@@ -955,14 +997,14 @@ feature: "style_chat":
 
           {/* ── CHAT LOG OR TOOLS ── */}
           {viewMode === 'tools' ? (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 0' }}>
+            <div className="fv-elegant-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 8px 20px 0' }}>
               <StandaloneFashionTools />
             </div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
-              ref={chatLogRef} className="fv-chat-log"
+              ref={chatLogRef} className="fv-chat-log fv-elegant-scroll"
             onWheel={(e) => e.stopPropagation()}
-            style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', padding: '28px 0 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', padding: '28px 8px 12px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <AnimatePresence initial={false}>
               {messages.map((msg) => (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -1060,10 +1102,10 @@ feature: "style_chat":
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                 {[
                   { icon: Palette, label: 'Color Advisor', prompt: 'I want to know which colors suit me best. Analyze my skin tone.', color: '#c084fc' },
+                  { icon: ScanLine, label: 'Fabric Scanner', prompt: 'I want to know what fabric this is. Please scan the attached photo.', color: '#38bdf8' },
                   { icon: Tag, label: 'Decode Dress Code', prompt: 'I have a formal wedding this weekend with a black-tie dress code. What should I wear?', color: GOLD },
                   { icon: Star, label: 'Festive Outfit', prompt: 'I need a festive outfit for Diwali celebrations. Style me!', color: GOLD },
                   { icon: Wand2, label: 'Office Look', prompt: 'Give me a smart business casual outfit for office. Something modern and sharp.', color: GOLD },
-                  { icon: Zap, label: 'Date Night', prompt: 'I need a stylish outfit for a dinner date tonight. Something that turns heads!', color: GOLD },
                   { icon: Camera, label: 'Upload Photo', prompt: '', color: GOLD, isPhoto: true },
                 ].map((chip, i) => (
                   <motion.button key={i}
@@ -1111,6 +1153,8 @@ feature: "style_chat":
                   style={{ width: 36, height: 36, flexShrink: 0, borderRadius: '50%', border: `1px solid ${photoThumb ? GOLD : BORDER}`, background: photoThumb ? `rgba(212,160,50,0.12)` : 'transparent', color: photoThumb ? GOLD : TEXT_SEC, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms ease', marginBottom: 4 }}>
                   <ImagePlus size={15} />
                 </motion.button>
+
+
 
                 <textarea ref={inputRef} value={inputValue}
                   onChange={e => setInputValue(e.target.value)}
