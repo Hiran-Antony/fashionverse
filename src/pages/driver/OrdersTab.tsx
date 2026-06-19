@@ -11,7 +11,7 @@ interface OrdersTabProps {
 }
 
 export default function OrdersTab({ onAcceptOrder }: OrdersTabProps) {
-  const { availableOrders, selectedCompanyId, newOrderCount, isLoading } = useDriverStore();
+  const { availableOrders, selectedCompanyId, isLoading } = useDriverStore();
 
   // Filter by selected company
   const filteredOrders = selectedCompanyId
@@ -51,12 +51,12 @@ export default function OrdersTab({ onAcceptOrder }: OrdersTabProps) {
         <div className="empty-state">
           <div className="truck-track">
             <svg className="truck-anim" width="60" height="40" viewBox="0 0 60 40">
-              <rect x="2" y="10" width="35" height="22" rx="3" fill="#00C853"/>
-              <rect x="37" y="18" width="18" height="14" rx="2" fill="#00C853"/>
-              <circle cx="12" cy="34" r="5" fill="#111" stroke="#00C853" strokeWidth="2"/>
-              <circle cx="45" cy="34" r="5" fill="#111" stroke="#00C853" strokeWidth="2"/>
-              <rect x="37" y="18" width="18" height="10" rx="1" fill="#0a3d1f"/>
-              <line x1="42" y1="11" x2="42" y2="8" stroke="#00C853" strokeWidth="1.5"/>
+              <rect x="2" y="10" width="35" height="22" rx="3" fill="var(--dh-green)"/>
+              <rect x="37" y="18" width="18" height="14" rx="2" fill="var(--dh-green)"/>
+              <circle cx="12" cy="34" r="5" fill="#111" stroke="var(--dh-green)" strokeWidth="2"/>
+              <circle cx="45" cy="34" r="5" fill="#111" stroke="var(--dh-green)" strokeWidth="2"/>
+              <rect x="37" y="18" width="18" height="10" rx="1" fill="#4a3810"/>
+              <line x1="42" y1="11" x2="42" y2="8" stroke="var(--dh-green)" strokeWidth="1.5"/>
             </svg>
           </div>
           <p className="empty-title">No orders right now</p>

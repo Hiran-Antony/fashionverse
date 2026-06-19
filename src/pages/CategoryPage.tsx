@@ -786,7 +786,7 @@ export default function CategoryPage({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product) => (
                   <CategoryProductCard key={product.id} product={product} />
                 ))}
               </motion.div>

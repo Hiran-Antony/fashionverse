@@ -13,7 +13,6 @@ const DriverRegistration = lazy(() => import('./DriverRegistration'));
 
 interface ProfileTabProps {
   todayCount: number;
-  todayEarnings: number;
   totalDeliveries: number;
   totalEarnings: number;
   driverTier: string;
@@ -30,7 +29,6 @@ const COMPANY_COLORS: Record<string, string> = {
 
 export default function ProfileTab({
   todayCount,
-  todayEarnings,
   totalDeliveries,
   totalEarnings,
   driverTier,
@@ -137,7 +135,7 @@ export default function ProfileTab({
                         border: `1.5px solid ${color}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color, fontSize: 14, fontWeight: 700, flexShrink: 0,
-                        fontFamily: "'Inter', sans-serif",
+                        fontFamily: "'Outfit', sans-serif",
                       }}
                     >
                       {initial}
@@ -311,7 +309,6 @@ export default function ProfileTab({
                   border: '1px solid var(--dh-border)',
                   color: 'var(--dh-muted)',
                   cursor: 'pointer',
-                  fontFamily: "'Inter', sans-serif",
                   fontWeight: 600,
                 }}
               >
@@ -327,7 +324,6 @@ export default function ProfileTab({
                   border: 'none',
                   color: '#fff',
                   cursor: 'pointer',
-                  fontFamily: "'Inter', sans-serif",
                   fontWeight: 700,
                 }}
               >
@@ -355,3 +351,4 @@ export default function ProfileTab({
     </div>
   );
 }
+

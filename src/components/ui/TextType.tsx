@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, createElement, useMemo, useCallback, ElementType } from 'react';
+import React, { useEffect, useRef, useState, createElement, useMemo, useCallback } from 'react';
+import type { ElementType } from 'react';
 import gsap from 'gsap';
 import './TextType.css';
 

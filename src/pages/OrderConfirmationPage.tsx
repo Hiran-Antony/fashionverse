@@ -1,7 +1,8 @@
 import { useSearchParams, Link } from 'react-router-dom';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import { CheckCircle2, Package, Truck, Home, ShoppingBag, ArrowRight, Mail, Download, MessageCircle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import { useInvoice } from '../hooks/useInvoice';
@@ -86,7 +87,6 @@ export default function OrderConfirmationPage() {
     : orderId.toUpperCase();
 
   const { user, profile } = useAuthStore();
-  const [orderData, setOrderData] = useState<any>(null);
   const { invoiceOrder, setInvoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
 
   // Fetch the real order from DB if we have a real ID
@@ -99,7 +99,6 @@ export default function OrderConfirmationPage() {
       .single()
       .then(({ data }) => {
         if (data) {
-          setOrderData(data);
           setInvoiceOrder({ ...data, profiles: { name: profile?.name, email: user?.email } });
         }
       });
@@ -113,11 +112,11 @@ export default function OrderConfirmationPage() {
   });
 
   // Stagger variants
-  const container = {
+  const container: Variants = {
     hidden: {},
     show: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
   };
-  const fadeUp = {
+  const fadeUp: Variants = {
     hidden: { opacity: 0, y: 24 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
   };
@@ -230,13 +229,11 @@ export default function OrderConfirmationPage() {
               color: '#C9973A',
               marginBottom: 12,
               display: 'block',
-              fontFamily: "'Inter', sans-serif",
             }}>
               ✦ ORDER CONFIRMED
             </span>
 
             <h1 style={{
-              fontFamily: "'Playfair Display', serif",
               fontSize: 42,
               fontWeight: 700,
               color: '#F5EDD4',
@@ -251,7 +248,6 @@ export default function OrderConfirmationPage() {
               color: 'rgba(245,237,212,0.5)',
               marginBottom: 20,
               lineHeight: 1.6,
-              fontFamily: "'Inter', sans-serif",
             }}>
               Thank you for shopping with FashionVerse.{' '}
               We'll get your order ready right away.
@@ -283,7 +279,6 @@ export default function OrderConfirmationPage() {
                 color: 'rgba(201,151,58,0.55)',
                 marginBottom: 6,
                 display: 'block',
-                fontFamily: "'Inter', sans-serif",
               }}>
                 Order ID
               </span>
@@ -291,7 +286,6 @@ export default function OrderConfirmationPage() {
                 fontSize: 16,
                 fontWeight: 600,
                 color: '#E8B84B',
-                fontFamily: "'Space Grotesk', monospace",
                 letterSpacing: '0.04em',
               }}>
                 #{shortId}
@@ -312,7 +306,6 @@ export default function OrderConfirmationPage() {
                 color: 'rgba(201,151,58,0.55)',
                 marginBottom: 6,
                 display: 'block',
-                fontFamily: "'Inter', sans-serif",
               }}>
                 Est. Delivery
               </span>
@@ -320,7 +313,6 @@ export default function OrderConfirmationPage() {
                 fontSize: 14,
                 fontWeight: 600,
                 color: '#E8B84B',
-                fontFamily: "'Syne', sans-serif",
               }}>
                 {formattedDate}
               </span>
@@ -345,7 +337,6 @@ export default function OrderConfirmationPage() {
               color: 'rgba(201,151,58,0.55)',
               marginBottom: 20,
               textAlign: 'left',
-              fontFamily: "'Inter', sans-serif",
             }}>
               Order Status
             </p>
@@ -391,7 +382,6 @@ export default function OrderConfirmationPage() {
                     maxWidth: 60,
                     lineHeight: 1.4,
                     whiteSpace: 'pre-line',
-                    fontFamily: "'Inter', sans-serif",
                   }}>
                     {step.label}
                   </span>
@@ -420,7 +410,6 @@ export default function OrderConfirmationPage() {
               fontSize: 13,
               color: 'rgba(245,237,212,0.6)',
               lineHeight: 1.5,
-              fontFamily: "'Inter', sans-serif",
               margin: 0,
             }}>
               A confirmation email has been sent. Track your order in{' '}
@@ -458,7 +447,6 @@ export default function OrderConfirmationPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                fontFamily: "'Syne', sans-serif",
                 textDecoration: 'none',
               }}
               onMouseEnter={e => {
@@ -489,7 +477,6 @@ export default function OrderConfirmationPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                fontFamily: "'Syne', sans-serif",
                 textDecoration: 'none',
               }}
               onMouseEnter={e => {
@@ -542,3 +529,4 @@ export default function OrderConfirmationPage() {
   </>
   );
 }
+

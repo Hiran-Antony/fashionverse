@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
-import type { Product } from '../types';
 import { CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
 import CategoryProductCard from '../components/product/CategoryProductCard';
+import useDeviceOptimization from '../hooks/useDeviceOptimization';
+import { useProducts } from '../hooks/useProducts';
 
 export default function ProductListPage() {
+  const { isMobile } = useDeviceOptimization();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -17,69 +17,25 @@ export default function ProductListPage() {
   const categoryQuery = searchParams.get('category');
   const searchQuery = searchParams.get('search');
   const sortQuery = searchParams.get('sort') || 'newest';
-  const activeTypes = searchParams.get('types')?.split(',').filter(Boolean) || [];
+  const activeTypes = useMemo(() => searchParams.get('types')?.split(',').filter(Boolean) || [], [searchParams]);
 
-  // Fetch products (mock for now, or real if Supabase is connected)
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products', categoryQuery, searchQuery],
-    queryFn: async () => {
-      let query = supabase.from('products').select(`
-        *,
-        colors:product_colors (*),
-        sizes:product_sizes (*)
-      `);
-
-      if (categoryQuery) {
-        query = query.eq('category', categoryQuery);
-      }
-      if (searchQuery) {
-        query = query.ilike('name', `%${searchQuery}%`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []) as Product[];
-    },
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useProducts({
+    category: categoryQuery,
+    search: searchQuery,
+    sort: sortQuery,
+    types: activeTypes,
+    priceRange: searchParams.get('priceRange'),
   });
 
-  // Client-side sorting & filtering
   const filteredProducts = useMemo(() => {
-    let sorted = [...products];
-
-    // Basic active filters
-    const activeFilters = {
-      priceRange: searchParams.get('priceRange'), // 'under50', '50to100', 'over100'
-    };
-
-    if (activeFilters.priceRange) {
-      if (activeFilters.priceRange === 'under50') sorted = sorted.filter(p => p.price < 50);
-      else if (activeFilters.priceRange === '50to100') sorted = sorted.filter(p => p.price >= 50 && p.price <= 100);
-      else if (activeFilters.priceRange === 'over100') sorted = sorted.filter(p => p.price > 100);
-    }
-
-    if (activeTypes.length > 0) {
-      sorted = sorted.filter(p => p.tags && p.tags.some(tag => activeTypes.includes(tag)));
-    }
-
-    switch (sortQuery) {
-      case 'price-asc':
-        sorted.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        sorted.sort((a, b) => b.price - a.price);
-        break;
-      case 'name-asc':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'newest':
-      default:
-        // Newest by created_at
-        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-    }
-
-    return sorted;
-  }, [products, sortQuery, searchParams, activeTypes]);
+    return data?.pages.flat() || [];
+  }, [data]);
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -153,7 +109,7 @@ export default function ProductListPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
             className="text-5xl md:text-7xl font-bold mb-6"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+            style={{ color: 'var(--text-primary)' }}
           >
             {categoryQuery
               ? CATEGORIES.find((c) => c.value === categoryQuery)?.label || 'Collection'
@@ -442,7 +398,7 @@ export default function ProductListPage() {
           )}
 
           {isLoading ? (
-            <div className="products-grid">
+            <div className="products-grid" style={isMobile ? { gridTemplateColumns: '1fr' } : {}}>
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="editorial-product-card editorial-skeleton">
                   <div className="editorial-product-image-wrap skeleton" />
@@ -455,22 +411,37 @@ export default function ProductListPage() {
               ))}
             </div>
           ) : filteredProducts.length > 0 ? (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.05 },
-                },
-              }}
-              className="products-grid"
-            >
-              {filteredProducts.map((product, index) => (
-                <CategoryProductCard key={product.id} product={product} />
-              ))}
-            </motion.div>
+            <>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: { staggerChildren: 0.05 },
+                  },
+                }}
+                className="products-grid"
+                style={isMobile ? { gridTemplateColumns: '1fr' } : {}}
+              >
+                {filteredProducts.map((product) => (
+                  <CategoryProductCard key={product.id} product={product} />
+                ))}
+              </motion.div>
+
+              {hasNextPage && (
+                <div className="flex justify-center mt-12 mb-6">
+                  <button
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="btn btn-primary px-8 py-3 rounded-xl font-bold text-sm shadow-[0_4px_14px_rgba(201,151,58,0.25)] hover:shadow-[0_6px_20px_rgba(201,151,58,0.4)] transition-all disabled:opacity-50"
+                  >
+                    {isFetchingNextPage ? 'Loading more...' : 'Load More Products'}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-20">
               <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
@@ -493,3 +464,4 @@ export default function ProductListPage() {
     </div>
   );
 }
+

@@ -58,7 +58,7 @@ export default function CartPage() {
           </div>
           <h1
             className="text-3xl font-bold mb-3"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+            style={{ color: 'var(--text-primary)' }}
           >
             Your Cart is Empty
           </h1>
@@ -80,7 +80,7 @@ export default function CartPage() {
         <div>
           <h1
             className="text-3xl font-bold"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+            style={{ color: 'var(--text-primary)' }}
           >
             Shopping Cart
           </h1>
@@ -252,7 +252,7 @@ export default function CartPage() {
           >
             <h2
               className="text-lg font-bold mb-6"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+              style={{ color: 'var(--text-primary)' }}
             >
               Order Summary
             </h2>
@@ -365,3 +365,4 @@ export default function CartPage() {
     </div>
   );
 }
+

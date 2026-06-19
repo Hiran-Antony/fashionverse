@@ -9,6 +9,10 @@ import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
 import CategoryProductCard from '../components/product/CategoryProductCard';
 import SizeGuideModal from '../components/product/SizeGuideModal';
+import OptimizedImage from '../components/OptimizedImage';
+import { useProductDetail } from '../hooks/useProductDetail';
+
+const MotionOptimizedImage = motion(OptimizedImage);
 
 const TRUST_BADGES = [
   { icon: <Truck size={18} />, label: 'Free delivery', sub: 'On orders above ₹999' },
@@ -68,23 +72,12 @@ export default function ProductDetailPage() {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
 
-  const { data: product, isLoading, isError } = useQuery({
-    queryKey: ['product-detail', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, colors:product_colors(*), sizes:product_sizes(*)')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data as any;
-    },
-    enabled: !!id,
-  });
+  const { data: product, isLoading, isError } = useProductDetail(id);
 
   const { data: relatedProducts = [] } = useQuery({
     queryKey: ['product-related', id, product?.category],
     queryFn: async () => {
+      if (!product?.category) return [];
       const { data, error } = await supabase
         .from('products')
         .select('*, product_colors(*), product_sizes(*)')
@@ -199,7 +192,7 @@ export default function ProductDetailPage() {
           <div className="pdp-gallery-col">
             <div className={`pdp-gallery-main${is360Active ? ' is-rotating' : ''}`}>
               <AnimatePresence mode="wait">
-                <motion.img
+                <MotionOptimizedImage
                   ref={mainImageRef}
                   key={selectedColor?.image_url}
                   src={selectedColor?.image_url || ''}
@@ -209,8 +202,6 @@ export default function ProductDetailPage() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.35 }}
                   className="pdp-gallery-image"
-                  loading="lazy"
-                  decoding="async"
                 />
               </AnimatePresence>
 
@@ -247,7 +238,7 @@ export default function ProductDetailPage() {
                     onClick={() => setSelectedColorId(color.id)}
                     title={color.color_name}
                   >
-                    <img src={color.image_url} alt="" loading="lazy" />
+                    <OptimizedImage src={color.image_url} alt="" />
                   </button>
                 ))}
                 <span className="pdp-dot-counter">{activeColorIndex + 1} / {colors.length}</span>
@@ -361,7 +352,7 @@ export default function ProductDetailPage() {
               <div className="pdp-section">
                 <h3 className="pdp-details-title">Product Details</h3>
                 <p className="pdp-description">{product.description}</p>
-                {product.tags?.length > 0 && (
+                {product.tags && product.tags.length > 0 && (
                   <div className="pdp-tags">
                     {product.tags.map((tag: string) => (
                       <span key={tag} className="pdp-tag">{tag}</span>

@@ -61,6 +61,7 @@ export interface Product {
   colors?: ProductColorWithSizes[];
   sizes?: ProductSize[];
   image_url?: string;
+  slug?: string;
 }
 
 export type ProductCategory =

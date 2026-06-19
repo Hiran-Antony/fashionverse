@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Bot, Sparkles, TrendingUp, Palette, Target, IndianRupee } from 'lucide-react';
+import { Bot, Sparkles, TrendingUp, Palette, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStudioStore } from '../../store/studioStore';
 import { supabase } from '../../lib/supabase';
-import type { Product } from '../../lib/supabase';
 
 export default function AiStylistPanel() {
-  const { outfit, budget, setAiScore, aiScore, setBudget, equipItem, activeMannequin } = useStudioStore();
+  const { outfit, budget, setAiScore, aiScore, setBudget, equipItem } = useStudioStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 

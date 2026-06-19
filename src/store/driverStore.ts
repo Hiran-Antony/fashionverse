@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 
-export type DriverTab = 'orders' | 'active' | 'map' | 'done' | 'profile';
+export type DriverTab = 'orders' | 'active' | 'done' | 'profile' | 'map';
 
 export interface CourierCompany {
   id: string;

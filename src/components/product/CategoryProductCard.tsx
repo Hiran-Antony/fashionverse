@@ -4,6 +4,8 @@ import { Heart, Star } from 'lucide-react';
 import { useWishlistStore } from '../../store/wishlistStore';
 import { useCartStore } from '../../store/cartStore';
 import type { Product } from '../../types';
+import OptimizedImage from '../OptimizedImage';
+import useDeviceOptimization from '../../hooks/useDeviceOptimization';
 
 interface Props {
   product: Product;
@@ -11,6 +13,7 @@ interface Props {
 
 export default function CategoryProductCard({ product }: Props) {
   const navigate = useNavigate();
+  const { isMobile } = useDeviceOptimization();
   const [activeColorIndex, setActiveColorIndex] = useState(0);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const { openCart, addItem } = useCartStore();
@@ -56,7 +59,11 @@ export default function CategoryProductCard({ product }: Props) {
   return (
     <div className="product-card" onClick={() => navigate(`/product/${product.id}`)}>
       <div className="product-card-image-wrap">
-        <img src={activeColor?.image_url || product.image_url} alt={product.name} />
+        <OptimizedImage 
+          src={activeColor?.image_url || product.image_url} 
+          alt={product.name} 
+          sizes={isMobile ? "400px" : "(max-width: 640px) 400px, (max-width: 1024px) 800px, 1200px"}
+        />
         
         {onSale && (
           <div className="product-sale-badge">-{discountPct}% OFF</div>

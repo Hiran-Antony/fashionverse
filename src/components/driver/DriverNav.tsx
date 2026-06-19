@@ -2,13 +2,12 @@
 // FASHIONVERSE DELIVERY HUB — Bottom Navigation
 // ═══════════════════════════════════════════════════════════════
 
-import { Package, Truck, Map, CheckCircle, User } from 'lucide-react';
+import { Package, Truck, CheckCircle, User } from 'lucide-react';
 import { useDriverStore, type DriverTab } from '../../store/driverStore';
 
 const TABS: { id: DriverTab; label: string; icon: React.ReactNode }[] = [
   { id: 'orders',  label: 'ORDERS',  icon: <Package size={22} /> },
   { id: 'active',  label: 'ACTIVE',  icon: <Truck size={22} /> },
-  { id: 'map',     label: 'MAP',     icon: <Map size={22} /> },
   { id: 'done',    label: 'DONE',    icon: <CheckCircle size={22} /> },
   { id: 'profile', label: 'PROFILE', icon: <User size={22} /> },
 ];

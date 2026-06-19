@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import OptimizedImage from '../OptimizedImage';
 
 const BRANDS = [
   { name: 'US Polo Assn', image: '/photos/1.jpeg', type: 'light' },
@@ -31,7 +32,6 @@ export default function BrandsSection() {
           <h2
             className="m-0"
             style={{
-              fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
               fontWeight: 700,
               color: 'var(--text-primary)',
@@ -77,7 +77,7 @@ export default function BrandsSection() {
                   e.currentTarget.style.borderColor = 'rgba(201, 151, 58, 0.15)';
                 }}
               >
-                <img
+                <OptimizedImage
                   src={brand.image}
                   alt={brand.name}
                   className={`brand-logo-img brand-logo-img--${brand.type}`}
@@ -85,7 +85,6 @@ export default function BrandsSection() {
                 
                 <p
                   style={{
-                    fontFamily: 'Syne, sans-serif',
                     fontSize: '13px',
                     fontWeight: 500,
                     color: '#F5EDD4',
@@ -116,3 +115,4 @@ export default function BrandsSection() {
     </section>
   );
 }
+

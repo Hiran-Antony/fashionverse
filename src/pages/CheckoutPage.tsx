@@ -42,7 +42,7 @@ const RHF_FloatingInput = forwardRef<
     label: string;
     type?: string;
     placeholder?: string;
-    icon?: React.ElementType;
+    icon?: React.ComponentType<{ size?: number | string }>;
     error?: string;
     isSelect?: boolean;
     options?: string[];
@@ -69,12 +69,13 @@ const RHF_FloatingInput = forwardRef<
       <div
         className="relative flex items-center w-full rounded-xl transition-all duration-200"
         style={{
-          border: `2px solid ${error ? '#ef4444' : focused ? '#C9973A' : '#e5e7eb'}`,
-          background: error ? 'rgba(239,68,68,0.12)' : focused ? 'rgba(201,151,58,0.12)' : 'var(--bg-secondary)',
+          border: `1px solid ${error ? '#ef4444' : focused ? '#C9973A' : 'rgba(201, 151, 58, 0.2)'}`,
+          background: error ? 'rgba(239, 68, 68, 0.05)' : focused ? 'rgba(18, 10, 6, 0.95)' : 'rgba(10, 6, 2, 0.7)',
+          boxShadow: focused ? '0 0 0 3px rgba(201, 151, 58, 0.15)' : 'none',
         }}
       >
         {Icon && (
-          <div className="absolute left-4 flex items-center justify-center" style={{ color: error ? '#ef4444' : focused ? '#C9973A' : '#fff' }}>
+          <div className="absolute left-4 flex items-center justify-center transition-colors duration-200" style={{ color: error ? '#ef4444' : focused ? '#C9973A' : 'rgba(201, 151, 58, 0.5)' }}>
             <Icon size={16} />
           </div>
         )}
@@ -87,7 +88,7 @@ const RHF_FloatingInput = forwardRef<
               transform: active ? 'none' : 'translateY(-50%)',
               fontSize: active ? '10px' : '14px',
               fontWeight: active ? 700 : 500,
-              color: error ? '#ef4444' : focused ? '#C9973A' : '#fff',
+              color: error ? '#ef4444' : focused ? '#C9973A' : 'rgba(245, 237, 212, 0.55)',
               textTransform: active ? 'uppercase' : 'none',
               letterSpacing: active ? '0.06em' : 'normal',
               transition: 'all 0.15s ease',
@@ -106,15 +107,15 @@ const RHF_FloatingInput = forwardRef<
                 onBlur={handleBlur}
                 onFocus={() => setFocused(true)}
                 className="appearance-none w-full bg-transparent border-none outline-none"
-                style={{ fontSize: '15px', fontWeight: 600, color: '#fff', lineHeight: '1.4', cursor: 'pointer' }}
+                style={{ fontSize: '15px', fontWeight: 600, color: '#F5EDD4', lineHeight: '1.4', cursor: 'pointer' }}
                 {...(rest as any)}
               >
                 <option value="" disabled hidden></option>
                 {options?.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt} style={{ background: '#120a06', color: '#F5EDD4' }}>{opt}</option>
                 ))}
               </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#fff' }} />
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(201, 151, 58, 0.5)' }} />
             </>
           ) : (
             <input
@@ -126,7 +127,7 @@ const RHF_FloatingInput = forwardRef<
               onFocus={() => setFocused(true)}
               placeholder={active ? placeholder : ''}
               className="w-full bg-transparent border-none outline-none"
-              style={{ fontSize: '15px', fontWeight: 600, color: '#fff', lineHeight: '1.4' }}
+              style={{ fontSize: '15px', fontWeight: 600, color: '#F5EDD4', lineHeight: '1.4' }}
               {...(rest as any)}
             />
           )}
@@ -311,7 +312,7 @@ export default function CheckoutPage() {
       <div className="mb-8 flex items-center justify-between">
         <h1
           className="text-3xl font-bold"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+          style={{ color: 'var(--text-primary)' }}
         >
           Checkout
         </h1>
@@ -375,7 +376,7 @@ export default function CheckoutPage() {
                   <MapPin size={22} color="white" />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginBottom: '2px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '2px' }}>
                     Delivery Address
                   </h2>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Where should we send your order?</p>
@@ -572,7 +573,7 @@ export default function CheckoutPage() {
               }}
             >
               <h2
-                style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginBottom: '24px' }}
+                style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '24px' }}
               >
                 Order Summary
               </h2>
@@ -700,7 +701,7 @@ export default function CheckoutPage() {
                   }}>
                     <CreditCard size={22} color="white" />
                   </div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', }}>
                     Payment Method
                   </h2>
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>Choose how you want to pay</p>
@@ -832,3 +833,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+

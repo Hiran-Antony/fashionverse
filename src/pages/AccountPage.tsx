@@ -58,14 +58,13 @@ function DeliveryPinCard({ pin }: { pin: string }) {
               fontSize: '22px', fontWeight: 700,
               color: '#E8B84B',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: "'Space Grotesk', monospace",
               letterSpacing: revealed ? '0' : '0.2em',
             }}>{d}</div>
           ))}
         </div>
         <button
           onClick={() => setRevealed(r => !r)}
-          style={{ background: 'none', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '8px', color: '#C9973A', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, fontFamily: "'Syne', sans-serif", transition: 'all 0.2s' }}
+          style={{ background: 'none', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '8px', color: '#C9973A', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,151,58,0.08)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
@@ -92,7 +91,7 @@ function FloatingInput({
   label, value, onChange, type = 'text', placeholder, icon: Icon,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; icon?: React.ElementType;
+  type?: string; placeholder?: string; icon?: React.ComponentType<any>;
 }) {
   const [focused, setFocused] = useState(false);
   const active = focused || value.length > 0;
@@ -203,7 +202,7 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
             }}>
               <User size={22} color="white" />
             </div>
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', }}>
               Edit Profile
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Update your personal information</p>
@@ -443,7 +442,7 @@ export default function AccountPage() {
           {/* ── Sidebar ───────────────────────── */}
           <aside className="account-sidebar">
             {/* Avatar card */}
-            <div className="account-profile-card mb-4">
+            <div className="account-profile-card hidden lg:block mb-4">
               <div style={{
                 width: '72px', height: '72px', borderRadius: '50%', margin: '0 auto 14px',
                 background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center',
@@ -469,20 +468,25 @@ export default function AccountPage() {
               )}
             </div>
 
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <nav className="flex overflow-x-auto lg:flex-col gap-2 pb-2 mb-4 lg:mb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <style>{`.account-sidebar nav::-webkit-scrollbar { display: none; }`}</style>
               {tabs.map(tab => {
                 const active = currentTab === tab.id;
                 return (
-                  <Link key={tab.id} to={`/account/${tab.id}`} className="account-nav-link no-underline" data-active={active}>
+                  <Link key={tab.id} to={`/account/${tab.id}`} className="account-nav-link no-underline whitespace-nowrap" data-active={active}>
                     <span className="shrink-0">{tab.icon}</span>
-                    <span style={{ flex: 1 }}>{tab.label}</span>
-                    {active && <ChevronRight size={14} />}
+                    <span className="lg:flex-1">{tab.label}</span>
+                    {active && <ChevronRight size={14} className="hidden lg:block" />}
                   </Link>
                 );
               })}
+              <div className="lg:hidden" style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px', flexShrink: 0 }} />
+              <button onClick={handleSignOut} className="account-nav-link lg:!hidden whitespace-nowrap" style={{ color: '#ef4444' }}>
+                <LogOut size={17} /> Sign Out
+              </button>
             </nav>
 
-            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <div className="hidden lg:block" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
               <button onClick={handleSignOut} className="account-nav-link w-full text-left" style={{ color: '#ef4444' }}>
                 <LogOut size={17} /> Sign Out
               </button>
@@ -566,7 +570,7 @@ function ProfileTab() {
               <User size={18} color="white" />
             </div>
             <div>
-              <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' , fontFamily: 'var(--font-display)' }}>Personal Information</p>
+              <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' , }}>Personal Information</p>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Your basic profile details</p>
             </div>
           </div>
@@ -585,7 +589,7 @@ function ProfileTab() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+        <div className="account-info-grid">
           {[
             { label: 'Full Name',    value: profile?.name || '—',                                  icon: User,    iconBg: '#f5f3ff', iconColor: '#C9973A' },
             { label: 'Email Address', value: user?.email || '—',                                   icon: Mail,    iconBg: 'rgba(201,151,58,0.15)', iconColor: '#C9973A' },
@@ -606,7 +610,7 @@ function ProfileTab() {
       </div>
 
       {/* ── Stats Row ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '20px' }}>
+      <div className="account-stats-grid">
         {/* Loyalty */}
         <div style={{
           borderRadius: '20px', padding: '22px 20px', position: 'relative', overflow: 'hidden',
@@ -740,7 +744,7 @@ function ProfileTab() {
 function OrdersTab({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [cancelModal, setCancelModal] = useState<{ id: string; amount: number } | null>(null);
-  const { invoiceOrder, setInvoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
+  const { invoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
   const { user, profile } = useAuthStore();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -806,7 +810,7 @@ function OrdersTab({ userId }: { userId: string }) {
           <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg,#C9973A,#C9973A)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 12px 28px rgba(201,151,58,0.35)' }}>
             <ShoppingBag size={36} color="white" strokeWidth={1.5} />
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No orders yet</h3>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', }}>No orders yet</h3>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', maxWidth: '320px' }}>Your order history will appear here once you place your first order.</p>
           <Link to="/products" className="btn btn-primary no-underline">Start Shopping</Link>
         </div>
@@ -865,7 +869,7 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
         <div style={{ width: 56, height: 56, background: 'rgba(220,60,60,0.1)', border: '1px solid rgba(220,60,60,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <AlertTriangle size={24} color="#f87171" />
         </div>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', color: '#F5EDD4', textAlign: 'center', margin: '0 0 8px' }}>Cancel Order?</h3>
+        <h3 style={{ fontSize: '24px', color: '#F5EDD4', textAlign: 'center', margin: '0 0 8px' }}>Cancel Order?</h3>
         <p style={{ fontSize: '13px', color: 'rgba(245,237,212,0.45)', textAlign: 'center', marginBottom: '24px' }}>
           Order #{orderId.slice(0, 8).toUpperCase()} · ₹{amount?.toLocaleString('en-IN')}
         </p>
@@ -878,7 +882,7 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
           {CANCEL_REASONS.map((reason) => (
             <button key={reason} onClick={() => setSelected(reason)} style={{
               padding: '9px 16px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer',
-              fontFamily: 'inherit', transition: 'all 0.2s ease',
+              transition: 'all 0.2s ease',
               border: selected === reason ? '1px solid #C9973A' : '1px solid rgba(201,151,58,0.18)',
               background: selected === reason ? 'rgba(201,151,58,0.12)' : 'transparent',
               color: selected === reason ? '#E8B84B' : 'rgba(245,237,212,0.55)',
@@ -899,8 +903,7 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
             width: '100%', boxSizing: 'border-box', marginTop: '12px',
             background: 'rgba(26,15,8,0.7)', border: '1px solid rgba(201,151,58,0.18)',
             borderRadius: '10px', color: '#F5EDD4', fontSize: '13px',
-            padding: '12px 14px', resize: 'none', fontFamily: 'inherit',
-            outline: 'none',
+            padding: '12px 14px', resize: 'none', outline: 'none',
           }}
         />
         <p style={{ fontSize: '11px', color: 'rgba(245,237,212,0.3)', textAlign: 'right', marginTop: '4px' }}>{comment.length}/200</p>
@@ -909,8 +912,7 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
           <button onClick={onClose} style={{
             background: 'transparent', border: '1px solid rgba(201,151,58,0.25)', borderRadius: '10px',
-            color: 'rgba(245,237,212,0.7)', padding: '13px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
-          }}>
+            color: 'rgba(245,237,212,0.7)', padding: '13px', fontSize: '13px', cursor: 'pointer', }}>
             Keep Order
           </button>
           <button
@@ -919,7 +921,7 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
             style={{
               background: 'rgba(220,60,60,0.15)', border: '1px solid rgba(220,60,60,0.3)', borderRadius: '10px',
               color: '#f87171', padding: '13px', fontSize: '13px', fontWeight: 600, cursor: selected ? 'pointer' : 'not-allowed',
-              opacity: selected ? 1 : 0.4, fontFamily: 'inherit', transition: 'all 0.2s ease',
+              opacity: selected ? 1 : 0.4, transition: 'all 0.2s ease',
             }}
           >
             Confirm Cancellation
@@ -952,7 +954,7 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div>
             <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '4px' }}>Order ID</p>
-            <p style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'monospace', color: '#E8B84B' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
+            <p style={{ fontSize: '16px', fontWeight: 900, color: '#E8B84B' }}>#{order.id.slice(0, 8).toUpperCase()}</p>
           </div>
           <div style={{ width: '1px', height: '40px', background: 'var(--bg-tertiary)' }} />
           <div>
@@ -985,9 +987,10 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
       {/* Progress */}
       {!isCancelled && (
         <div style={{ padding: '24px', borderBottom: '1px solid var(--bg-tertiary)', background: 'var(--bg-secondary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          {/* Desktop Tracker */}
+          <div className="order-progress-desktop" style={{ alignItems: 'center', width: '100%' }}>
             {STATUS_STEPS.map((step, i) => {
-              const s = STATUS_META[step];
+              const s = STATUS_META[step] || STATUS_META.pending;
               const done = i <= stepIdx;
               const active = i === stepIdx;
               const isLast = i === STATUS_STEPS.length - 1;
@@ -1011,6 +1014,20 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
                 </div>
               );
             })}
+          </div>
+          
+          {/* Mobile Tracker */}
+          <div className="order-progress-mobile">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-flex', color: meta.color }}>{meta.icon}</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{meta.label}</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Step {Math.max(1, stepIdx + 1)} of 6</span>
+            </div>
+            <div style={{ width: '100%', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${((Math.max(0, stepIdx) + 1) / STATUS_STEPS.length) * 100}%`, background: meta.color === '#10B981' ? '#10b981' : '#C9973A', height: '100%', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+            </div>
           </div>
         </div>
       )}
@@ -1096,7 +1113,7 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
         </div>
       )}
 
-        <div style={{ padding: '12px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--bg-tertiary)' }}>
+        <div className="order-card-footer">
           {delivery && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapPin size={14} style={{ color: '#C9973A', flexShrink: 0 }} />
@@ -1105,7 +1122,7 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
               </p>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
+          <div className="order-card-footer-actions">
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
@@ -1152,7 +1169,7 @@ function WishlistTab() {
           <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
             <Heart size={36} style={{ color: '#ef4444' }} />
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>No saved items</h3>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', }}>No saved items</h3>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', maxWidth: '300px' }}>Heart a product while browsing to save it here.</p>
           <Link to="/products" className="btn btn-primary no-underline">Browse Products</Link>
         </div>
@@ -1185,3 +1202,5 @@ function WishlistTab() {
     </motion.div>
   );
 }
+
+

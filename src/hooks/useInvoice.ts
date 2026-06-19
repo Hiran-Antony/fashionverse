@@ -77,7 +77,9 @@ export function useInvoice() {
       ? `\n🔐 *Delivery PIN:* ${order.delivery_pin}\n_(Share only with your delivery partner)_`
       : '';
 
-    const msg = `✦ *FashionVerse Invoice*
+    const msg = `Hello *${customerName}*,
+
+✦ *FashionVerse Invoice*
 
 *Invoice No:* #FV-${order.id.slice(0, 8).toUpperCase()}
 *Date:* ${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}

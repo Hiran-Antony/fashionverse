@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function OutfitSummary() {
-  const { outfit, budget, getTotalPrice, clearOutfit, setCinematicPreview } = useStudioStore();
+  const { outfit, budget, getTotalPrice, setCinematicPreview } = useStudioStore();
   const { session } = useAuthStore();
   
   const totalPrice = getTotalPrice();

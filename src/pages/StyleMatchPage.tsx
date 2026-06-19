@@ -8,7 +8,7 @@ import type { Product } from '../types';
 import ProductPickerModal from '../components/ui/ProductPickerModal';
 
 function getOutfitSlot(product: Product): 'upper' | 'bottom' | 'other' {
-  const text = `${product.category} ${product.sub_category} ${product.name} ${product.tags?.join(' ')}`.toLowerCase();
+  const text = `${product.category} ${product.name} ${product.tags?.join(' ')}`.toLowerCase();
   if (/(top|shirt|t-shirt|sweatshirt|jacket|blazer|blouse|sweater|kurti)/.test(text)) return 'upper';
   if (/(bottom|jeans|trouser|short|skirt|legging|pant|cargo)/.test(text)) return 'bottom';
   return 'other';
@@ -56,8 +56,8 @@ export default function StyleMatchPage() {
         (slot1 === slot2); // fallback for 'other'
 
       const systemPrompt = `You are a high-end fashion AI stylist. Analyze the style compatibility of these two items.`;
-      const p1Desc = `Item 1: ${product1.name} (Color: ${product1.color || 'Unknown'}, Category: ${product1.category}/${product1.sub_category})`;
-      const p2Desc = `Item 2: ${product2.name} (Color: ${product2.color || 'Unknown'}, Category: ${product2.category}/${product2.sub_category})`;
+      const p1Desc = `Item 1: ${product1.name} (Color: ${product1.product_colors?.[0]?.color_name || 'Unknown'}, Category: ${product1.category})`;
+      const p2Desc = `Item 2: ${product2.name} (Color: ${product2.product_colors?.[0]?.color_name || 'Unknown'}, Category: ${product2.category})`;
       const userMessage = `${p1Desc}\n${p2Desc}`;
 
       if (isSameCategory) {
@@ -79,7 +79,7 @@ export default function StyleMatchPage() {
           required: ["score", "reason", "anchorItemIndex", "recommendedOppositeCategoryStyle"]
         };
 
-        const aiResult = await geminiCall(systemPrompt, userMessage, [], schemaA, setStatusText);
+        const aiResult = (await geminiCall(systemPrompt, userMessage, [], schemaA, setStatusText)) as any;
         setResult({ mode: 'A', ...aiResult });
 
         // Find a matching opposite piece
@@ -88,7 +88,7 @@ export default function StyleMatchPage() {
         const targetSlot = anchorSlot === 'upper' ? 'bottom' : 'upper';
         
         // Fetch a pool of opposite products from Supabase
-        const { data: pool } = await supabase.from('products').select('*').limit(50);
+        const { data: pool } = await supabase.from('products').select('*, product_colors(image_url, color_name)').limit(50);
         if (pool && pool.length > 0) {
           const oppositeItems = pool.filter(p => getOutfitSlot(p) === targetSlot || getOutfitSlot(p) === 'other');
           
@@ -105,9 +105,9 @@ export default function StyleMatchPage() {
             };
             
             const anchorName = aiResult.anchorItemIndex === 1 ? product1.name : product2.name;
-            const pickMsg = `Anchor piece: ${anchorName}\nRecommended style: ${aiResult.recommendedOppositeCategoryStyle.style}, Color: ${aiResult.recommendedOppositeCategoryStyle.color}\n\nSelect the BEST matching item from this list:\n` + JSON.stringify(oppositeItems.map(p => ({id: p.id, name: p.name, color: p.color, category: p.category})));
+            const pickMsg = `Anchor piece: ${anchorName}\nRecommended style: ${aiResult.recommendedOppositeCategoryStyle.style}, Color: ${aiResult.recommendedOppositeCategoryStyle.color}\n\nSelect the BEST matching item from this list:\n` + JSON.stringify(oppositeItems.map(p => ({id: p.id, name: p.name, color: p.product_colors?.[0]?.color_name || 'Unknown', category: p.category})));
             
-            const pickResult = await geminiCall("You are a stylist. Pick the best matching item from the list for the anchor piece.", pickMsg, [], pickSchema, setStatusText);
+            const pickResult = (await geminiCall("You are a stylist. Pick the best matching item from the list for the anchor piece.", pickMsg, [], pickSchema, setStatusText)) as any;
             
             const bestProduct = oppositeItems.find(p => p.id === pickResult.selectedId) || oppositeItems[0];
             setRecommendedProduct(bestProduct);
@@ -125,7 +125,7 @@ export default function StyleMatchPage() {
           required: ["score", "reason"]
         };
 
-        const aiResult = await geminiCall(systemPrompt, userMessage, [], schemaB, setStatusText);
+        const aiResult = (await geminiCall(systemPrompt, userMessage, [], schemaB, setStatusText)) as any;
         setResult({ mode: 'B', ...aiResult });
       }
 
@@ -180,7 +180,7 @@ export default function StyleMatchPage() {
           <div className="w-full md:w-64 aspect-[4/5] relative group">
             {product1 ? (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-[var(--border-color)] relative">
-                {product1.images?.[0] && <img src={product1.images[0]} alt={product1.name} className="w-full h-full object-cover" />}
+                {product1.product_colors?.[0]?.image_url && <img src={product1.product_colors[0].image_url} alt={product1.name} className="w-full h-full object-cover" />}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button onClick={() => openPicker(1)} className="btn btn-primary rounded-full px-6">Change</button>
                 </div>
@@ -208,7 +208,7 @@ export default function StyleMatchPage() {
           <div className="w-full md:w-64 aspect-[4/5] relative group">
             {product2 ? (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-[var(--border-color)] relative">
-                {product2.images?.[0] && <img src={product2.images[0]} alt={product2.name} className="w-full h-full object-cover" />}
+                {product2.product_colors?.[0]?.image_url && <img src={product2.product_colors[0].image_url} alt={product2.name} className="w-full h-full object-cover" />}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button onClick={() => openPicker(2)} className="btn btn-primary rounded-full px-6">Change</button>
                 </div>
@@ -295,8 +295,8 @@ export default function StyleMatchPage() {
                         className="w-full md:w-48 group block relative rounded-xl overflow-hidden border border-[var(--border-color)] hover:border-[#C9973A] transition-all"
                       >
                         <div className="aspect-[4/5] bg-black/20">
-                          {recommendedProduct.images?.[0] && (
-                            <img src={recommendedProduct.images[0]} alt={recommendedProduct.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          {recommendedProduct.product_colors?.[0]?.image_url && (
+                            <img src={recommendedProduct.product_colors[0].image_url} alt={recommendedProduct.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           )}
                         </div>
                         <div className="absolute bottom-0 inset-x-0 p-3 bg-black/80 backdrop-blur-md translate-y-full group-hover:translate-y-0 transition-transform">

@@ -21,6 +21,7 @@ export default function SmoothScroll({ children }: SmoothScrollProps) {
 
   useEffect(() => {
     if (reducedMotion) return;
+    if (window.innerWidth < 768) return;
 
     const instance = new Lenis({
       lerp: 0.1,

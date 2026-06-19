@@ -23,7 +23,7 @@ export default function PlaceholderPage({ title, description }: PlaceholderPageP
         </div>
         <h1
           className="text-3xl font-bold mb-3"
-          style={{ fontFamily: 'var(--font-display)' }}
+          style={{ }}
         >
           {title}
         </h1>
@@ -37,3 +37,4 @@ export default function PlaceholderPage({ title, description }: PlaceholderPageP
     </div>
   );
 }
+

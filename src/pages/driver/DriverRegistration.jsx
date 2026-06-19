@@ -42,7 +42,7 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Outfit', sans-serif",
     padding: '16px',
     boxSizing: 'border-box',
   },
@@ -62,6 +62,7 @@ const S = {
     overflow: 'hidden',
     position: 'relative',
     animation: 'dr-pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1) both',
+    minHeight: 0,
   },
 
   // Green top accent line
@@ -105,7 +106,7 @@ const S = {
     overflowY: 'auto',
     overflowX: 'hidden',
     padding: '24px 20px 0',
-    scrollbarWidth: 'none',
+    minHeight: 0,
   },
 
   // Step indicator dots
@@ -138,7 +139,7 @@ const S = {
     border: 'none',
     fontSize: 15,
     fontWeight: 700,
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Outfit', sans-serif",
     background: disabled ? '#1e1e1e' : 'var(--dh-green)',
     color: disabled ? '#444' : '#000',
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -181,7 +182,7 @@ function CompanyLogo({ company, size = 40, fontSize = 16 }) {
         border: `1.5px solid ${company.color}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, color: company.color, fontSize, fontWeight: 700,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Outfit', sans-serif",
       }}
     >
       {company.name.charAt(0)}
@@ -271,7 +272,7 @@ function StepSelectCompanies({ selected, onToggle, onContinue, onBack }) {
                   position: 'relative',
                   textAlign: 'left',
                   minWidth: 0,
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: "'Outfit', sans-serif",
                   transition: 'all 0.18s ease',
                   boxShadow: isSelected ? '0 0 0 1px rgba(0,200,83,0.15) inset' : 'none',
                 }}
@@ -395,7 +396,7 @@ function StepEmployeeIds({ selectedIds, employeeIds, onChange, onSubmit, onBack,
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '0 14px',
                 fontSize: 13, color: '#fff', outline: 'none',
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Outfit', sans-serif",
                 boxSizing: 'border-box',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
               }}
@@ -481,7 +482,7 @@ function SuccessScreen({ selectedIds }) {
             color: company.color, fontSize: 14, fontWeight: 700,
             marginLeft: i === 0 ? 0 : -12, zIndex: selectedCompanies.length - i,
             position: 'relative', boxShadow: '0 0 0 2px #0f0f0f',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Outfit', sans-serif",
           }}>
             {company.name.charAt(0)}
           </div>
@@ -493,7 +494,7 @@ function SuccessScreen({ selectedIds }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700,
             marginLeft: -12, position: 'relative', boxShadow: '0 0 0 2px #0f0f0f',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Outfit', sans-serif",
           }}>
             +{selectedCompanies.length - 6}
           </div>
@@ -513,7 +514,7 @@ function SuccessScreen({ selectedIds }) {
 // ══════════════════════════════════════════════════════════════
 // MAIN EXPORT — DriverRegistration
 // ══════════════════════════════════════════════════════════════
-export default function DriverRegistration({ driverId, onComplete, onBack, preSelected }) {
+export default function DriverRegistration({ driverId, onComplete, onBack, preSelected = new Set() }) {
   const [step, setStep] = useState(1);
   const [selected, setSelected] = useState(preSelected || new Set());
   const [employeeIds, setEmployeeIds] = useState({});
@@ -560,7 +561,7 @@ export default function DriverRegistration({ driverId, onComplete, onBack, preSe
 
   return (
     // Full-viewport dark backdrop
-    <div style={S.backdrop}>
+    <div style={S.backdrop} data-lenis-prevent="true">
       {/* Centered card */}
       <div style={S.card}>
         {/* Green top accent */}

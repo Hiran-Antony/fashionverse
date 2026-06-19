@@ -77,7 +77,6 @@ export default function ProductCarousel({
             </p>
             <h2
               style={{
-                fontFamily: 'var(--font-display)',
                 fontSize: 'clamp(2.25rem, 4vw, 3.5rem)',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
@@ -202,3 +201,4 @@ export default function ProductCarousel({
     </section>
   );
 }
+

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MIN_DISPLAY_MS = 1200;
+const MIN_DISPLAY_MS = 300;
 
 export default function PageLoader() {
   const [visible, setVisible] = useState(true);

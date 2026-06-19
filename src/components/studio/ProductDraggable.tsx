@@ -2,6 +2,7 @@ import { useDraggable } from '@dnd-kit/core';
 import type { Product } from '../../lib/supabase';
 import { GripVertical } from 'lucide-react';
 import { CSS } from '@dnd-kit/utilities';
+import OptimizedImage from '../OptimizedImage';
 
 interface Props {
   product: Product;
@@ -29,7 +30,7 @@ export default function ProductDraggable({ product, slotType }: Props) {
       {...listeners}
     >
       <div className="w-16 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-black/50">
-        <img 
+        <OptimizedImage 
           src={product.product_colors?.[0]?.image_url || product.images?.[0] || 'https://via.placeholder.com/150'} 
           alt={product.name} 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

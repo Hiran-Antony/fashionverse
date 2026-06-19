@@ -1,19 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Bot, Send, ShoppingBag, User, Camera, RefreshCcw, Wand2, Star, Zap, CheckCircle2, History, X, Clock, Trash2, ImagePlus, Palette, Tag, ScanLine, Mic } from 'lucide-react';
+import { Sparkles, Send, ShoppingBag, User, Camera, RefreshCcw, Wand2, Star, CheckCircle2, History, X, Clock, Trash2, ImagePlus, Palette, Tag, ScanLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useTryOnStore } from '../store/tryOnStore';
 import { useStylistStore } from '../store/stylistStore';
+import type {
+  Message,
+  StylistItem,
+  StylistResponse,
+  AIFeatureResponse,
+  AIColorAdvisor,
+  AIDressCode,
+  AIStyleChat,
+  AIFabricScanner
+} from '../store/stylistStore';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import StandaloneFashionTools from '../components/StandaloneFashionTools';
 import { geminiFetch } from '../lib/gemini';
+import useDeviceOptimization from '../hooks/useDeviceOptimization';
 
 // ─── BRAND TOKENS ─────────────────────────────────────────────────
 const GOLD    = '#D4A032';
-const GOLD_MU = '#9a7020';
+const GOLD_MU = '#C08552';
 const BG_BASE = '#0d0600';
 const SURFACE = '#160c03';
 const BORDER  = '#2a1a08';
@@ -25,67 +36,7 @@ interface CatalogItem {
   id: string; name: string; brand: string; price: number;
   category: string; image: string; color_name: string;
 }
-interface StylistItem {
-  slot: string; product_name: string; brand: string;
-  price: number; image_url: string; reason: string;
-}
-interface StylistResponse {
-  outfit_name: string; analysis: string; dress_code_level: string;
-  items: StylistItem[]; total_price: number; style_tip: string;
-  mediator_note: string; confidence_score: number;
-}
 
-// 5-feature AI response types
-interface AIColorAdvisor {
-  feature: 'color_advisor';
-  skin_tone: string;
-  best_colors: string[];
-  avoid_colors: string[];
-  borderline_colors: string[];
-  reason: string;
-  catalog_matches: { name: string; color: string; price: string; why: string }[];
-}
-interface AIDressCode {
-  feature: 'dress_code_explainer';
-  dress_code: string;
-  vibe_summary: string;
-  wear: string[];
-  avoid: string[];
-  borderline: string[];
-  indian_context: string;
-  catalog_picks: { name: string; price: string; why: string }[];
-}
-interface AIStyleChat {
-  feature: 'style_chat';
-  response: string;
-  style_tags: string[];
-  confidence: string;
-  catalog_recommendations: { name: string; price: string; occasion: string; why: string }[];
-}
-interface AIOutfit {
-  feature: 'outfit';
-  chat_response: string;
-  outfit_name: string; analysis: string; dress_code_level: string;
-  items: StylistItem[]; total_price: number; style_tip: string;
-  mediator_note: string; confidence_score: number;
-}
-interface AIFabricScanner {
-  feature: 'fabric_scanner';
-  fabric_type: string;
-  care_instructions: string;
-  season_suitability: string;
-  catalog_matches: { name: string; price: string; why: string }[];
-}
-type AIFeatureResponse = AIColorAdvisor | AIDressCode | AIStyleChat | AIOutfit | AIFabricScanner;
-
-interface Message {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
-  outfit?: StylistResponse;
-  aiResponse?: AIFeatureResponse;
-  photoThumb?: string; // base64 thumbnail shown in chat
-}
 
 // ─── SESSION HISTORY (localStorage) ───────────────────────────────
 const SESSION_KEY = 'fv_sessions_v1';
@@ -115,115 +66,7 @@ function timeAgo(ts: number) {
 // ─── FETCH WITH RETRY ─────────────────────────────────────────────
 const fetchWithRetry = geminiFetch;
 
-// ─── ANIMATED BACKGROUND ──────────────────────────────────────────
-function AnimatedBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouse = useRef({ x: -9999, y: -9999 });
-  const rafRef = useRef<number>(0);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    const isMobile = window.innerWidth < 768;
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const resize = () => {
-      canvas.width = window.innerWidth * DPR; canvas.height = window.innerHeight * DPR;
-      canvas.style.width = window.innerWidth + 'px'; canvas.style.height = window.innerHeight + 'px';
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    };
-    resize();
-    window.addEventListener('resize', resize, { passive: true });
-    const W = () => window.innerWidth, H = () => window.innerHeight;
-    const GR = '212, 160, 50', CR = '245, 237, 214';
-    type Particle = { x:number; y:number; vx:number; vy:number; size:number; alpha:number; phase:number; ps:number; };
-    const COUNT = isMobile ? 45 : 80;
-    const particles: Particle[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random()*W(), y: Math.random()*H(),
-      vx: (Math.random()-0.5)*0.28, vy: (Math.random()-0.5)*0.28,
-      size: 0.8 + Math.random()*1.8, alpha: 0.15 + Math.random()*0.5,
-      phase: Math.random()*Math.PI*2, ps: 0.012 + Math.random()*0.016,
-    }));
-    type Beam = { x:number;y:number;len:number;angle:number;speed:number;alpha:number;width:number;phase:number };
-    const BEAM_N = isMobile ? 2 : 4;
-    const beams: Beam[] = Array.from({ length: BEAM_N }, () => ({
-      x: Math.random()*W()*1.5 - W()*0.25, y: -150 - Math.random()*400,
-      len: 200 + Math.random()*250, angle: 0.28 + Math.random()*0.5,
-      speed: 0.06 + Math.random()*0.09, alpha: 0.010 + Math.random()*0.012,
-      width: 0.7 + Math.random()*1.5, phase: Math.random()*Math.PI*2,
-    }));
-    const ripples: { x:number;y:number;r:number;a:number }[] = [];
-    const onMove = (x:number, y:number) => { mouse.current = { x, y }; if (ripples.length < 3) ripples.push({ x, y, r: 0, a: 0.20 }); };
-    const onLeave = () => { mouse.current = { x:-9999, y:-9999 }; };
-    const CONNECT_DIST = isMobile ? 85 : 120, PUSH_DIST = isMobile ? 70 : 110;
-    const draw = () => {
-      const w=W(), h=H(); ctx.clearRect(0,0,w,h);
-      for (const p of particles) {
-        p.phase += p.ps;
-        const mdx = p.x - mouse.current.x, mdy = p.y - mouse.current.y;
-        const md = Math.sqrt(mdx*mdx + mdy*mdy);
-        if (md < PUSH_DIST && md > 0) { const f = ((PUSH_DIST-md)/PUSH_DIST)*0.3; p.vx += (mdx/md)*f; p.vy += (mdy/md)*f; }
-        p.vx *= 0.97; p.vy *= 0.97;
-        const sp = Math.sqrt(p.vx*p.vx+p.vy*p.vy);
-        if (sp > 1.4) { p.vx=p.vx/sp*1.4; p.vy=p.vy/sp*1.4; }
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x=w; if (p.x > w) p.x=0;
-        if (p.y < 0) p.y=h; if (p.y > h) p.y=0;
-      }
-      for (let i=0; i<particles.length; i++) for (let j=i+1; j<particles.length; j++) {
-        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist < CONNECT_DIST) { const op=(1-dist/CONNECT_DIST)*0.15; ctx.beginPath(); ctx.strokeStyle=`rgba(${GR},${op})`; ctx.lineWidth=0.5; ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.stroke(); }
-      }
-      for (const p of particles) {
-        const a=p.alpha*(0.5+0.5*Math.sin(p.phase));
-        const grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*3.5);
-        grd.addColorStop(0,`rgba(${GR},${a})`); grd.addColorStop(1,`rgba(${GR},0)`);
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.size*3.5,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle=`rgba(${GR},${Math.min(1,a*1.8)})`; ctx.fill();
-      }
-      for (const b of beams) {
-        b.phase += 0.004; b.y += b.speed;
-        if (b.y > h+300) { b.y=-300; b.x=Math.random()*w*1.5-w*0.25; }
-        const ba=b.alpha*(0.5+0.5*Math.sin(b.phase));
-        const bx2=b.x+Math.cos(b.angle+Math.PI/2)*b.len, by2=b.y+Math.sin(b.angle+Math.PI/2)*b.len;
-        const lg=ctx.createLinearGradient(b.x,b.y,bx2,by2);
-        lg.addColorStop(0,`rgba(${GR},0)`); lg.addColorStop(0.4,`rgba(${GR},${ba})`);
-        lg.addColorStop(0.6,`rgba(${CR},${ba*0.5})`); lg.addColorStop(1,`rgba(${GR},0)`);
-        ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.angle);
-        ctx.beginPath(); ctx.rect(-b.width/2,0,b.width,b.len); ctx.fillStyle=lg; ctx.fill(); ctx.restore();
-      }
-      for (let i=ripples.length-1; i>=0; i--) {
-        const rp=ripples[i]; rp.r += 2.0; rp.a -= 0.006;
-        if (rp.a <= 0) { ripples.splice(i,1); continue; }
-        ctx.beginPath(); ctx.arc(rp.x,rp.y,rp.r,0,Math.PI*2);
-        ctx.strokeStyle=`rgba(${GR},${rp.a})`; ctx.lineWidth=0.7; ctx.stroke();
-      }
-      const vg=ctx.createRadialGradient(w/2,h/2,h*0.28,w/2,h/2,h*0.9);
-      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(13,6,0,0.65)');
-      ctx.fillStyle=vg; ctx.fillRect(0,0,w,h);
-      rafRef.current=requestAnimationFrame(draw);
-    };
-    const handleMouse=(e:MouseEvent)=>onMove(e.clientX,e.clientY);
-    const handleTouch=(e:TouchEvent)=>{ if(e.touches[0]) onMove(e.touches[0].clientX,e.touches[0].clientY); };
-    window.addEventListener('mousemove',handleMouse,{passive:true}); window.addEventListener('mouseleave',onLeave,{passive:true});
-    window.addEventListener('touchmove',handleTouch,{passive:true}); window.addEventListener('touchend',onLeave,{passive:true});
-    rafRef.current=requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('resize',resize); window.removeEventListener('mousemove',handleMouse);
-      window.removeEventListener('mouseleave',onLeave); window.removeEventListener('touchmove',handleTouch);
-      window.removeEventListener('touchend',onLeave);
-    };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:0, willChange:'transform' }} />;
-}
 
 // ─── TYPING INDICATOR ─────────────────────────────────────────────
 function TypingDots() {
@@ -258,18 +101,18 @@ function ProductRow({ item, idx, onTryOn }: { item: StylistItem; idx: number; on
               <ShoppingBag size={20} color={BORDER} />
             </div>
           )}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(13,6,0,0.85))', padding: '4px 5px 3px', fontSize: 8, fontFamily: 'Inter', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(13,6,0,0.85))', padding: '4px 5px 3px', fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD }}>
             {item.slot}
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
-          <p style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: TEXT_SEC, margin: 0 }}>{item.brand}</p>
-          <p style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 500, color: TEXT_PRI, margin: '2px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{item.product_name}</p>
-          <p style={{ fontFamily: 'Playfair Display', fontSize: 15, fontWeight: 600, color: GOLD, margin: '2px 0' }}>₹{(item.price || 0).toLocaleString('en-IN')}</p>
-          {item.reason && <p style={{ fontFamily: 'Inter', fontSize: 12, color: TEXT_SEC, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: '2px 0' }}>{item.reason}</p>}
+          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: TEXT_SEC, margin: 0 }}>{item.brand}</p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: TEXT_PRI, margin: '2px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{item.product_name}</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: GOLD, margin: '2px 0' }}>₹{(item.price || 0).toLocaleString('en-IN')}</p>
+          {item.reason && <p style={{ fontSize: 12, color: TEXT_SEC, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: '2px 0' }}>{item.reason}</p>}
           {item.image_url && (
             <button onClick={onTryOn} className="tryon-btn"
-              style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 10px', border: `1px solid ${GOLD}`, borderRadius: 4, background: 'transparent', color: GOLD, cursor: 'pointer', fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', transition: 'background 200ms ease, color 200ms ease', alignSelf: 'flex-start' }}
+              style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 10px', border: `1px solid ${GOLD}`, borderRadius: 4, background: 'transparent', color: GOLD, cursor: 'pointer', fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', transition: 'background 200ms ease, color 200ms ease', alignSelf: 'flex-start' }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GOLD; (e.currentTarget as HTMLButtonElement).style.color = BG_BASE; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = GOLD; }}>
               <Camera size={11} /> Try On
@@ -291,17 +134,17 @@ function OutfitCard({ outfit, onAddToCart, onTryOn }: { outfit: StylistResponse;
       whileHover={{ y: -2, boxShadow: '0 8px 32px rgba(212,160,50,0.08)' }}>
       <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD, border: `1px solid ${GOLD}`, borderRadius: 20, padding: '3px 10px' }}>{outfit.dress_code_level}</span>
-          <span className="match-badge" style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4ade80', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD, border: `1px solid ${GOLD}`, borderRadius: 20, padding: '3px 10px' }}>{outfit.dress_code_level}</span>
+          <span className="match-badge" style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4ade80', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
             <CheckCircle2 size={10} /> {outfit.confidence_score}% Match
           </span>
         </div>
-        <h2 style={{ fontFamily: 'Playfair Display', fontSize: 26, fontWeight: 700, color: TEXT_PRI, margin: '0 0 8px', lineHeight: 1.25, letterSpacing: '-0.01em' }}>{outfit.outfit_name}</h2>
-        {outfit.analysis && <p style={{ fontFamily: 'Inter', fontSize: 13, color: TEXT_SEC, lineHeight: 1.7, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{outfit.analysis}</p>}
+        <h2 style={{ fontSize: 26, fontWeight: 700, color: TEXT_PRI, margin: '0 0 8px', lineHeight: 1.25, letterSpacing: '-0.01em' }}>{outfit.outfit_name}</h2>
+        {outfit.analysis && <p style={{ fontSize: 13, color: TEXT_SEC, lineHeight: 1.7, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{outfit.analysis}</p>}
       </div>
       <div style={{ padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 16, marginBottom: 4 }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <Sparkles size={10} /> Curated Selection
           </span>
           <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${GOLD}40, transparent)` }} />
@@ -310,18 +153,18 @@ function OutfitCard({ outfit, onAddToCart, onTryOn }: { outfit: StylistResponse;
       </div>
       {(outfit.mediator_note || outfit.style_tip) && (
         <div style={{ margin: '12px 24px', padding: '12px 16px', background: 'rgba(212,160,50,0.06)', borderLeft: `2px solid ${GOLD}`, borderRadius: '0 4px 4px 0' }}>
-          {outfit.mediator_note && <p style={{ fontFamily: 'Inter', fontSize: 12, color: TEXT_SEC, fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 4px' }}>"{outfit.mediator_note}"</p>}
-          {outfit.style_tip && <p style={{ fontFamily: 'Inter', fontSize: 12, color: TEXT_SEC, lineHeight: 1.6, margin: 0, display: 'flex', alignItems: 'flex-start', gap: 5 }}><span style={{ fontSize: 13 }}>💡</span>{outfit.style_tip}</p>}
+          {outfit.mediator_note && <p style={{ fontSize: 12, color: TEXT_SEC, fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 4px' }}>"{outfit.mediator_note}"</p>}
+          {outfit.style_tip && <p style={{ fontSize: 12, color: TEXT_SEC, lineHeight: 1.6, margin: 0, display: 'flex', alignItems: 'flex-start', gap: 5 }}><span style={{ fontSize: 13 }}>💡</span>{outfit.style_tip}</p>}
         </div>
       )}
       <div style={{ padding: '14px 24px 20px', borderTop: `1px solid ${BORDER}` }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: TEXT_SEC }}>Total</span>
-          <span style={{ fontFamily: 'Playfair Display', fontSize: 18, fontWeight: 600, color: GOLD }}>₹{(outfit.total_price || 0).toLocaleString('en-IN')}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: TEXT_SEC }}>Total</span>
+          <span style={{ fontSize: 18, fontWeight: 600, color: GOLD }}>₹{(outfit.total_price || 0).toLocaleString('en-IN')}</span>
         </div>
         <motion.button whileHover={{ filter: 'brightness(1.12)', scale: 1.01 }} whileTap={{ scale: 0.99 }}
           onClick={onAddToCart}
-          style={{ width: '100%', height: 44, background: GOLD, color: BG_BASE, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          style={{ width: '100%', height: 44, background: GOLD, color: BG_BASE, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <ShoppingBag size={15} /> Add to Cart
         </motion.button>
       </div>
@@ -331,7 +174,7 @@ function OutfitCard({ outfit, onAddToCart, onTryOn }: { outfit: StylistResponse;
 
 // ─── AI FEATURE CARDS ─────────────────────────────────────────────
 function Pill({ label, color = GOLD }: { label: string; color?: string }) {
-  return <span style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color, border: `1px solid ${color}55`, borderRadius: 20, padding: '2px 9px', background: `${color}0d` }}>{label}</span>;
+  return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color, border: `1px solid ${color}55`, borderRadius: 20, padding: '2px 9px', background: `${color}0d` }}>{label}</span>;
 }
 
 function FeatureCard({ children, accent = GOLD }: { children: React.ReactNode; accent?: string }) {
@@ -371,24 +214,24 @@ function ProductPickRow({ name, price, why, occasion, catalog, onAddItem, onTryO
       </div>
       {/* Details */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 600, color: TEXT_PRI, margin: '0 0 2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.35 }}>{name}</p>
-        {occasion && <p style={{ fontFamily: 'Inter', fontSize: 9, color: GOLD, margin: '0 0 2px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{occasion}</p>}
-        <p style={{ fontFamily: 'Inter', fontSize: 11, color: TEXT_SEC, margin: '0 0 3px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{why}</p>
-        <p style={{ fontFamily: 'Playfair Display', fontSize: 13, color: GOLD, margin: 0 }}>{price}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: TEXT_PRI, margin: '0 0 2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.35 }}>{name}</p>
+        {occasion && <p style={{ fontSize: 9, color: GOLD, margin: '0 0 2px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{occasion}</p>}
+        <p style={{ fontSize: 11, color: TEXT_SEC, margin: '0 0 3px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{why}</p>
+        <p style={{ fontSize: 13, color: GOLD, margin: 0 }}>{price}</p>
       </div>
       {/* Action buttons */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
         {match?.image && onTryOn && (
           <button onClick={() => onTryOn(match.image, name)}
             title="Try On"
-            style={{ height: 28, padding: '0 10px', border: `1px solid ${BORDER}`, borderRadius: 6, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontFamily: 'Inter', fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 150ms ease' }}
+            style={{ height: 28, padding: '0 10px', border: `1px solid ${BORDER}`, borderRadius: 6, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 150ms ease' }}
             onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = GOLD; b.style.color = GOLD; }}
             onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = BORDER; b.style.color = TEXT_SEC; }}>
             <Camera size={10} /> Try
           </button>
         )}
         <button onClick={() => onAddItem(name)}
-          style={{ height: 28, padding: '0 10px', border: `1px solid ${GOLD}`, borderRadius: 6, background: 'transparent', color: GOLD, cursor: 'pointer', fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', transition: 'all 150ms ease' }}
+          style={{ height: 28, padding: '0 10px', border: `1px solid ${GOLD}`, borderRadius: 6, background: 'transparent', color: GOLD, cursor: 'pointer', fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', transition: 'all 150ms ease' }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = GOLD; (e.currentTarget as HTMLButtonElement).style.color = BG_BASE; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = GOLD; }}>
           Add
@@ -405,25 +248,25 @@ function ColorAdvisorCard({ data, catalog, onAddItem, onTryOn }: { data: AIColor
       <div style={{ padding: '18px 22px 14px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Palette size={14} color="#c084fc" />
-          <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#c084fc' }}>Color Advisor</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#c084fc' }}>Color Advisor</span>
           <div style={{ width: 16, height: 16, borderRadius: '50%', background: toneColor[data.skin_tone] || '#d4a373', border: '1px solid #3a2a18', marginLeft: 4 }} />
-          <span style={{ fontFamily: 'Inter', fontSize: 10, color: TEXT_SEC }}>{data.skin_tone} Skin Tone</span>
+          <span style={{ fontSize: 10, color: TEXT_SEC }}>{data.skin_tone} Skin Tone</span>
         </div>
-        <p style={{ fontFamily: 'Inter', fontSize: 13, color: TEXT_SEC, lineHeight: 1.65, margin: 0 }}>{data.reason}</p>
+        <p style={{ fontSize: 13, color: TEXT_SEC, lineHeight: 1.65, margin: 0 }}>{data.reason}</p>
       </div>
       <div style={{ padding: '14px 22px' }}>
-        <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4ade80', margin: '0 0 8px' }}>✓ Your Best Colors</p>
+        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4ade80', margin: '0 0 8px' }}>✓ Your Best Colors</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
           {data.best_colors.map(c => <Pill key={c} label={c} color="#4ade80" />)}
         </div>
         {data.avoid_colors.length > 0 && <>
-          <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#f87171', margin: '0 0 8px' }}>✕ Avoid</p>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#f87171', margin: '0 0 8px' }}>✕ Avoid</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             {data.avoid_colors.map(c => <Pill key={c} label={c} color="#f87171" />)}
           </div>
         </>}
         {data.catalog_matches.length > 0 && <>
-          <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> Catalog Picks</p>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> Catalog Picks</p>
           {data.catalog_matches.map((item, i) => (
             <ProductPickRow key={i} name={item.name} price={item.price} why={item.why} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} isLast={i === 0 && data.catalog_matches.length === 1} />
           ))}
@@ -439,25 +282,25 @@ function DressCodeCard({ data, catalog, onAddItem, onTryOn }: { data: AIDressCod
       <div style={{ padding: '18px 22px 14px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <Tag size={14} color={GOLD} />
-          <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD }}>Dress Code</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD }}>Dress Code</span>
           <Pill label={data.dress_code} />
         </div>
-        <p style={{ fontFamily: 'Playfair Display', fontSize: 15, color: TEXT_PRI, margin: '0 0 6px', fontStyle: 'italic' }}>{data.vibe_summary}</p>
-        <p style={{ fontFamily: 'Inter', fontSize: 12, color: TEXT_SEC, margin: 0, lineHeight: 1.6 }}>{data.indian_context}</p>
+        <p style={{ fontSize: 15, color: TEXT_PRI, margin: '0 0 6px', fontStyle: 'italic' }}>{data.vibe_summary}</p>
+        <p style={{ fontSize: 12, color: TEXT_SEC, margin: 0, lineHeight: 1.6 }}>{data.indian_context}</p>
       </div>
       <div style={{ padding: '14px 22px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
           <div>
-            <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#4ade80', margin: '0 0 6px' }}>✓ Wear</p>
-            {data.wear.map((item, i) => <p key={i} style={{ fontFamily: 'Inter', fontSize: 11, color: TEXT_SEC, margin: '2px 0' }}>• {item}</p>)}
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#4ade80', margin: '0 0 6px' }}>✓ Wear</p>
+            {data.wear.map((item, i) => <p key={i} style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0' }}>• {item}</p>)}
           </div>
           <div>
-            <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f87171', margin: '0 0 6px' }}>✕ Avoid</p>
-            {data.avoid.map((item, i) => <p key={i} style={{ fontFamily: 'Inter', fontSize: 11, color: TEXT_SEC, margin: '2px 0' }}>• {item}</p>)}
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f87171', margin: '0 0 6px' }}>✕ Avoid</p>
+            {data.avoid.map((item, i) => <p key={i} style={{ fontSize: 11, color: TEXT_SEC, margin: '2px 0' }}>• {item}</p>)}
           </div>
         </div>
         {data.catalog_picks.length > 0 && <>
-          <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> From Your Catalog</p>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> From Your Catalog</p>
           {data.catalog_picks.map((pick, i) => (
             <ProductPickRow key={i} name={pick.name} price={pick.price} why={pick.why} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} isLast={i === 0 && data.catalog_picks.length === 1} />
           ))}
@@ -472,7 +315,7 @@ function StyleChatCard({ data, catalog, onAddItem, onTryOn }: { data: AIStyleCha
     <FeatureCard accent={GOLD}>
       {data.catalog_recommendations.length > 0 && (
         <div style={{ padding: '14px 22px 18px' }}>
-          <p style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> {data.confidence}</p>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={10} /> {data.confidence}</p>
           {data.catalog_recommendations.map((item, i) => (
             <ProductPickRow key={i} name={item.name} price={item.price} why={item.why} occasion={item.occasion} catalog={catalog} onAddItem={onAddItem} onTryOn={onTryOn} isLast={i === 0 && data.catalog_recommendations.length === 1} />
           ))}
@@ -544,12 +387,12 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
         {open && (
           <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 320, background: '#0f0803', borderLeft: `1px solid ${BORDER}`, boxShadow: '-8px 0 40px rgba(0,0,0,0.6)', zIndex: 50, display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 320, background: '#0f0803', borderLeft: `1px solid ${BORDER}`, boxShadow: '-8px 0 40px rgba(0,0,0,0.6)', zIndex: 50, display: 'flex', flexDirection: 'column', }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 18px 14px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <History size={15} color={GOLD} />
-                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 700, color: TEXT_PRI }}>Chat History</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_PRI }}>Chat History</span>
               </div>
               <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${BORDER}`, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 180ms ease' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = GOLD; (e.currentTarget as HTMLButtonElement).style.color = GOLD; }}
@@ -561,13 +404,13 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
             <div style={{ padding: '12px 14px 8px', flexShrink: 0 }}>
               <motion.button whileHover={{ filter: 'brightness(1.1)' }} whileTap={{ scale: 0.98 }}
                 onClick={() => { onNewChat(); onClose(); }}
-                style={{ width: '100%', height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: `linear-gradient(135deg, ${GOLD}, ${GOLD_MU})`, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'Inter', fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: BG_BASE }}>
+                style={{ width: '100%', height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: `linear-gradient(135deg, ${GOLD}, ${GOLD_MU})`, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: BG_BASE }}>
                 <RefreshCcw size={12} /> New Conversation
               </motion.button>
             </div>
             {/* Count */}
             <div style={{ padding: '2px 14px 8px', flexShrink: 0 }}>
-              <span style={{ fontFamily: 'Inter', fontSize: 9, color: TEXT_SEC, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 9, color: TEXT_SEC, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 {sessions.length === 0 ? 'No saved chats yet' : `${sessions.length} saved conversation${sessions.length > 1 ? 's' : ''}`}
               </span>
             </div>
@@ -576,7 +419,7 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
               {sessions.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '55%', gap: 10 }}>
                   <Clock size={28} color={BORDER} />
-                  <p style={{ fontFamily: 'Inter', fontSize: 12, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.6, margin: 0 }}>Your past conversations<br />will appear here.</p>
+                  <p style={{ fontSize: 12, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.6, margin: 0 }}>Your past conversations<br />will appear here.</p>
                 </div>
               ) : sessions.map(s => (
                 <motion.div key={s.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
@@ -585,16 +428,16 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = BORDER}
                   onClick={() => { onLoadSession(s); onClose(); }}>
                   <div style={{ padding: '10px 12px 6px' }}>
-                    <p style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 600, color: TEXT_PRI, margin: '0 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{s.title}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: TEXT_PRI, margin: '0 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{s.title}</p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={9} color={TEXT_SEC} />
-                        <span style={{ fontFamily: 'Inter', fontSize: 10, color: TEXT_SEC }}>{timeAgo(s.ts)}</span>
-                        <span style={{ fontFamily: 'Inter', fontSize: 10, color: BORDER }}>·</span>
-                        <span style={{ fontFamily: 'Inter', fontSize: 10, color: TEXT_SEC }}>{s.messages.filter(m => m.role === 'user').length} msgs</span>
+                        <span style={{ fontSize: 10, color: TEXT_SEC }}>{timeAgo(s.ts)}</span>
+                        <span style={{ fontSize: 10, color: BORDER }}>·</span>
+                        <span style={{ fontSize: 10, color: TEXT_SEC }}>{s.messages.filter(m => m.role === 'user').length} msgs</span>
                       </div>
                       <button onClick={(e) => handleDelete(s.id, e)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontFamily: 'Inter', fontSize: 8, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b4f3a', transition: 'all 150ms ease' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontSize: 8, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b4f3a', transition: 'all 150ms ease' }}
                         onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#f87171'; b.style.color = '#f87171'; }}
                         onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = BORDER; b.style.color = '#6b4f3a'; }}>
                         <Trash2 size={8} /> Del
@@ -605,7 +448,7 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
               ))}
             </div>
             <div style={{ padding: '10px 14px', borderTop: `1px solid ${BORDER}`, flexShrink: 0 }}>
-              <p style={{ fontFamily: 'Inter', fontSize: 9, color: '#3a2a18', letterSpacing: '0.14em', textTransform: 'uppercase', margin: 0, textAlign: 'center' }}>FashionVerse AI · History</p>
+              <p style={{ fontSize: 9, color: '#3a2a18', letterSpacing: '0.14em', textTransform: 'uppercase', margin: 0, textAlign: 'center' }}>FashionVerse AI · History</p>
             </div>
           </motion.div>
         )}
@@ -616,6 +459,7 @@ function HistoryDrawer({ open, onClose, onLoadSession, onNewChat }: {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────
 export default function StyleBuilderPage() {
+  useDeviceOptimization();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const { messages, setMessages, clearMessages } = useStylistStore();
@@ -940,8 +784,7 @@ feature: "style_chat":
       {/* History Drawer */}
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} onNewChat={handleNewChat} />
 
-      <div className="fv-page" style={{ height: '100vh', background: BG_BASE, color: TEXT_PRI, fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-        <AnimatedBackground />
+      <div className="fv-page" style={{ height: '100vh', background: BG_BASE, color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         <div style={{ maxWidth: 860, margin: '0 auto', width: '100%', padding: '0 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative', zIndex: 1 }}>
 
@@ -957,13 +800,13 @@ feature: "style_chat":
                   style={{ position: 'absolute', top: -1, right: -1, width: 10, height: 10, borderRadius: '50%', background: '#4ade80', border: `2px solid ${BG_BASE}` }} />
               </div>
               <div>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 20, fontWeight: 700, color: GOLD, letterSpacing: '-0.01em', lineHeight: 1 }}>FashionVerse AI</div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: TEXT_SEC, marginTop: 2 }}>Elite Style Consultant</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: GOLD, letterSpacing: '-0.01em', lineHeight: 1 }}>FashionVerse AI</div>
+                <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: TEXT_SEC, marginTop: 2 }}>Elite Style Consultant</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', border: `1px solid ${BORDER}`, borderRadius: 20, fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: catalogLoaded ? '#4ade80' : TEXT_SEC }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', border: `1px solid ${BORDER}`, borderRadius: 20, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: catalogLoaded ? '#4ade80' : TEXT_SEC }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: catalogLoaded ? '#4ade80' : TEXT_SEC, flexShrink: 0 }} />
                 {catalogLoaded ? `${catalog.length} Products` : 'Loading…'}
               </div>
@@ -980,7 +823,7 @@ feature: "style_chat":
               {/* History button */}
               <motion.button whileHover={{ borderColor: GOLD, color: GOLD }} whileTap={{ scale: 0.96 }}
                 onClick={() => setHistoryOpen(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1px solid ${BORDER}`, borderRadius: 20, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', transition: 'border-color 200ms ease, color 200ms ease' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1px solid ${BORDER}`, borderRadius: 20, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', transition: 'border-color 200ms ease, color 200ms ease' }}>
                 <History size={12} /> History
               </motion.button>
               {/* New Chat */}
@@ -988,7 +831,7 @@ feature: "style_chat":
                 <motion.button initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ borderColor: GOLD, color: GOLD }} whileTap={{ scale: 0.96 }}
                   onClick={handleNewChat}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1px solid ${BORDER}`, borderRadius: 20, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', transition: 'border-color 200ms ease, color 200ms ease' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1px solid ${BORDER}`, borderRadius: 20, background: 'transparent', color: TEXT_SEC, cursor: 'pointer', fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', transition: 'border-color 200ms ease, color 200ms ease' }}>
                   <RefreshCcw size={12} /> New Chat
                 </motion.button>
               )}
@@ -997,7 +840,7 @@ feature: "style_chat":
 
           {/* ── CHAT LOG OR TOOLS ── */}
           {viewMode === 'tools' ? (
-            <div className="fv-elegant-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 8px 20px 0' }}>
+            <div className="fv-elegant-scroll" onWheel={(e) => e.stopPropagation()} style={{ flex: 1, overflowY: 'auto', padding: '20px 8px 20px 0', minHeight: 0 }}>
               <StandaloneFashionTools />
             </div>
           ) : (
@@ -1020,7 +863,7 @@ feature: "style_chat":
                       <div style={{ width: '100%' }}>
                         {msg.text && (
                           <div className="ai-bubble" style={{ paddingTop: 2, paddingBottom: 2 }}>
-                            <p style={{ fontFamily: 'Inter', fontSize: 14, color: TEXT_PRI, lineHeight: 1.75, margin: 0, fontWeight: 400 }}>
+                            <p style={{ fontSize: 14, color: TEXT_PRI, lineHeight: 1.75, margin: 0, fontWeight: 400 }}>
                               {msg.text.split('**').map((part, i) =>
                                 i % 2 === 1 ? <strong key={i} style={{ color: GOLD, fontWeight: 700 }}>{part}</strong> : <span key={i}>{part}</span>
                               )}
@@ -1054,7 +897,7 @@ feature: "style_chat":
                           </div>
                         )}
                         <div style={{ background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_MU} 100%)`, borderRadius: '16px 16px 4px 16px', padding: '12px 16px', boxShadow: `0 4px 16px rgba(212,160,50,0.2)` }}>
-                          <p style={{ fontFamily: 'Inter', fontSize: 14, color: BG_BASE, fontWeight: 500, lineHeight: 1.65, margin: 0 }}>{msg.text}</p>
+                          <p style={{ fontSize: 14, color: BG_BASE, fontWeight: 500, lineHeight: 1.65, margin: 0 }}>{msg.text}</p>
                         </div>
                       </div>
                     </div>
@@ -1088,7 +931,7 @@ feature: "style_chat":
                 <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, padding: '8px 12px', background: 'rgba(212,160,50,0.06)', border: `1px solid rgba(212,160,50,0.2)`, borderRadius: 10 }}>
                   <img src={photoThumb} alt="Photo" style={{ height: 40, borderRadius: 6, border: `1px solid ${GOLD}55`, objectFit: 'cover' }} />
-                  <span style={{ fontFamily: 'Inter', fontSize: 11, color: TEXT_SEC, flex: 1 }}>📸 Photo attached — I'll analyze it for you!</span>
+                  <span style={{ fontSize: 11, color: TEXT_SEC, flex: 1 }}>📸 Photo attached — I'll analyze it for you!</span>
                   <button onClick={clearPhoto}
                     style={{ background: 'transparent', border: 'none', color: TEXT_SEC, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <X size={14} />
@@ -1120,7 +963,7 @@ feature: "style_chat":
                       background: 'rgba(10,6,0,0.82)',
                       border: `1px solid rgba(212,160,50,0.28)`,
                       borderRadius: 20, cursor: 'pointer',
-                      fontFamily: 'Inter', fontSize: 11, fontWeight: 500,
+                      fontSize: 11, fontWeight: 500,
                       color: TEXT_PRI, backdropFilter: 'blur(8px)',
                       WebkitBackdropFilter: 'blur(8px)',
                       boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
@@ -1162,7 +1005,7 @@ feature: "style_chat":
                   placeholder={catalogLoaded ? 'Ask about outfit, dress code, color advice, or share a photo…' : 'Loading catalog…'}
                   disabled={isGenerating || !catalogLoaded}
                   rows={1}
-                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontFamily: 'Inter', fontSize: 14, color: TEXT_PRI, lineHeight: 1.65, fontWeight: 400, padding: '2px 0 4px', maxHeight: 110, caretColor: GOLD }}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 14, color: TEXT_PRI, lineHeight: 1.65, fontWeight: 400, padding: '2px 0 4px', maxHeight: 110, caretColor: GOLD }}
                   onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px'; }} />
 
                 <motion.button className="send-btn" whileHover={{ scale: 1.07, boxShadow: `0 0 22px rgba(212,160,50,0.45)` }} whileTap={{ scale: 0.94 }}
@@ -1180,22 +1023,22 @@ feature: "style_chat":
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: catalogLoaded ? '#4ade80' : '#f59e0b' }} />
-                    <span style={{ fontFamily: 'Inter', fontSize: 10, color: '#4a3a28', letterSpacing: '0.1em' }}>
+                    <span style={{ fontSize: 10, color: '#4a3a28', letterSpacing: '0.1em' }}>
                       {catalogLoaded ? `${catalog.length} items in catalog` : 'Loading catalog…'}
                     </span>
                   </div>
                   <span style={{ color: '#2a1a08', fontSize: 10 }}>·</span>
-                  <span style={{ fontFamily: 'Inter', fontSize: 10, color: '#4a3a28', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: '#4a3a28', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
                     Enter to send &middot; <span style={{ position: 'relative', top: '-1px', fontSize: 11 }}>📸</span> for photo analysis
                   </span>
                 </div>
-                <span style={{ fontFamily: 'Inter', fontSize: 10, color: inputValue.length > 400 ? '#f59e0b' : '#4a3a28', letterSpacing: '0.06em', transition: 'color 200ms' }}>
+                <span style={{ fontSize: 10, color: inputValue.length > 400 ? '#f59e0b' : '#4a3a28', letterSpacing: '0.06em', transition: 'color 200ms' }}>
                   {inputValue.length}/500
                 </span>
               </div>
             </div>
 
-            <p style={{ textAlign: 'center', fontFamily: 'Inter', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#3a2a18', margin: '10px 0 0' }}>
+            <p style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#3a2a18', margin: '10px 0 0' }}>
               FashionVerse AI · Recommendations sourced from your live catalog
             </p>
             </div>

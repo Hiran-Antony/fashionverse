@@ -20,7 +20,11 @@ export function useTitleReveal(
     if (!container || !title) return;
 
     const reduced = usePrefersReducedMotionStatic();
-    if (reduced) return;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (reduced || isMobile) {
+      gsap.set(title, { opacity: 1, x: 0 });
+      return;
+    }
 
     const wipe = document.createElement('div');
     wipe.className = 'title-reveal-wipe';

@@ -187,20 +187,21 @@ export default function Navbar() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 sm:gap-2">
             <IconBtn
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               label="Search"
               isLight={!isScrolled && isHomePage}
+              className="w-8 h-8 sm:w-10 sm:h-10"
             >
-              <Search size={19} />
+              <Search size={18} className="sm:w-[19px] sm:h-[19px]" />
             </IconBtn>
 
             <IconBtn
               onClick={toggleTheme}
               label="Toggle theme"
               isLight={!isScrolled && isHomePage}
-              className="hidden sm:flex"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -210,14 +211,14 @@ export default function Navbar() {
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+                  {theme === 'light' ? <Moon size={18} className="sm:w-[19px] sm:h-[19px]" /> : <Sun size={18} className="sm:w-[19px] sm:h-[19px]" />}
                 </motion.div>
               </AnimatePresence>
             </IconBtn>
 
             <Link
               to="/wishlist"
-              className="relative hidden sm:flex w-10 h-10 items-center justify-center rounded-xl transition-colors no-underline"
+              className="relative flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl transition-colors no-underline"
               style={{ color: !isScrolled && isHomePage ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)' }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.background = !isScrolled && isHomePage ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)';
@@ -227,10 +228,10 @@ export default function Navbar() {
               }}
               aria-label="Wishlist"
             >
-              <Heart size={19} />
+              <Heart size={18} className="sm:w-[19px] sm:h-[19px]" />
               {wishlistItems.length > 0 && (
                 <span
-                  className="absolute top-1 right-1 w-4 h-4 rounded-full text-white text-[0.6rem] font-bold flex items-center justify-center"
+                  className="absolute top-0 right-0 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-white text-[0.55rem] sm:text-[0.6rem] font-bold flex items-center justify-center"
                   style={{ background: 'var(--error)' }}
                 >
                   {wishlistItems.length}
@@ -241,17 +242,17 @@ export default function Navbar() {
             <button
               id="nav-cart-btn"
               onClick={openCart}
-              className={`cinematic-nav-icon relative${cartBounce ? ' cart-bounce' : ''}`}
+              className={`cinematic-nav-icon relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center${cartBounce ? ' cart-bounce' : ''}`}
               data-light={!isScrolled && isHomePage ? 'true' : 'false'}
               aria-label="Cart"
             >
-              <ShoppingBag size={19} />
+              <ShoppingBag size={18} className="sm:w-[19px] sm:h-[19px]" />
               {cartCount > 0 && (
                 <motion.span
                   key={cartCount}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="cinematic-nav-badge"
+                  className="cinematic-nav-badge absolute top-0 right-0 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-white text-[0.55rem] sm:text-[0.6rem] font-bold flex items-center justify-center"
                 >
                   {cartCount}
                 </motion.span>
@@ -259,7 +260,7 @@ export default function Navbar() {
             </button>
 
             {user ? (
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative hidden sm:block" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="w-10 h-10 flex items-center justify-center rounded-xl transition-colors"
@@ -322,7 +323,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/auth"
-                className="hidden sm:flex btn btn-primary btn-sm no-underline ml-2"
+                className="hidden sm:flex btn btn-primary px-3 py-1.5 text-xs sm:btn-sm sm:px-4 sm:py-2 no-underline ml-1 sm:ml-2"
               >
                 Sign In
               </Link>
@@ -330,7 +331,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`hamburger-btn cinematic-hamburger lg:hidden${isMobileMenuOpen ? ' open' : ''}`}
+              className={`hamburger-btn cinematic-hamburger lg:hidden ml-1 sm:ml-2${isMobileMenuOpen ? ' open' : ''}`}
               data-light={!isScrolled && isHomePage ? 'true' : 'false'}
               aria-label="Toggle menu"
               aria-expanded={isMobileMenuOpen}
@@ -596,33 +597,6 @@ function IconBtn({
   );
 }
 
-function MobileNavLink({
-  to,
-  label,
-  onClick,
-  secondary = false,
-}: {
-  to: string;
-  label: string;
-  onClick: () => void;
-  secondary?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className="flex items-center px-4 py-3 rounded-xl text-base font-medium no-underline transition-colors"
-      style={{
-        color: secondary ? 'var(--text-secondary)' : 'var(--text-primary)',
-        fontSize: secondary ? '0.9375rem' : '1rem',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-    >
-      {label}
-    </Link>
-  );
-}
 
 function UserMenuItem({
   to,

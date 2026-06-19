@@ -253,7 +253,7 @@ export default function ProductCard({ product, featured = false }: ProductCardPr
 
             {/* Product Title */}
             <Link to={`/product/${product.id}`} className="no-underline block mb-3">
-              <h2 className="text-xl md:text-2xl font-bold leading-tight hover:text-[var(--color-gold-primary)] transition-colors" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+              <h2 className="text-xl md:text-2xl font-bold leading-tight hover:text-[var(--color-gold-primary)] transition-colors" style={{ color: 'var(--text-primary)', }}>
                 {product.name}
               </h2>
             </Link>
@@ -356,3 +356,4 @@ export default function ProductCard({ product, featured = false }: ProductCardPr
     </motion.article>
   );
 }
+

@@ -217,7 +217,6 @@ export default function VirtualTryOn() {
       <div style={{
         background: "linear-gradient(135deg, #0d0b07 0%, #1a1208 50%, #0d0b07 100%)",
         minHeight: "100vh",
-        fontFamily: "'Outfit', system-ui, sans-serif",
         color: "#f5f0e8",
         padding: "2rem"
       }}>
@@ -237,7 +236,6 @@ export default function VirtualTryOn() {
           </div>
           <h1 style={{
             fontSize: "clamp(2rem, 5vw, 3.5rem)",
-            fontFamily: "serif",
             background: "linear-gradient(135deg, #c9a84c, #f0d080, #c9a84c)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
@@ -296,7 +294,7 @@ export default function VirtualTryOn() {
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
           
           {/* TOP ROW: Photo & Garments */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))", gap: "2rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", gap: "2rem" }}>
             
             {/* Left Column - Capture Zone (Your Photo) */}
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
@@ -472,15 +470,15 @@ export default function VirtualTryOn() {
                 </label>
 
                 {/* Filter Tabs */}
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+                <div className="tryon-filter-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
+                  <style>{`.tryon-filter-tabs::-webkit-scrollbar { display: none; }`}</style>
                   {UPPER_FILTER_TABS.map((tab) => (
                     <button key={tab} onClick={() => setUpperTab(tab)} style={{
-                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer",
+                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
                       border: upperTab === tab ? "1px solid rgba(201,151,58,0.35)" : "1px solid rgba(201,151,58,0.15)",
                       background: upperTab === tab ? "rgba(201,151,58,0.12)" : "transparent",
                       color: upperTab === tab ? "#E8B84B" : "rgba(245,237,212,0.5)",
-                      transition: "all 0.15s ease", fontFamily: "inherit",
-                    }}>
+                      transition: "all 0.15s ease", }}>
                       {tab === "Wishlist" ? "♡ Wishlist" : tab}
                     </button>
                   ))}
@@ -506,7 +504,7 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedUpperProduct?.id === product.id;
                         return (
@@ -563,15 +561,14 @@ export default function VirtualTryOn() {
                 </label>
 
                 {/* Filter Tabs */}
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+                <div className="tryon-filter-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
                   {LOWER_FILTER_TABS.map((tab) => (
                     <button key={tab} onClick={() => setLowerTab(tab)} style={{
-                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer",
+                      padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
                       border: lowerTab === tab ? "1px solid rgba(201,151,58,0.35)" : "1px solid rgba(201,151,58,0.15)",
                       background: lowerTab === tab ? "rgba(201,151,58,0.12)" : "transparent",
                       color: lowerTab === tab ? "#E8B84B" : "rgba(245,237,212,0.5)",
-                      transition: "all 0.15s ease", fontFamily: "inherit",
-                    }}>
+                      transition: "all 0.15s ease", }}>
                       {tab === "Wishlist" ? "♡ Wishlist" : tab}
                     </button>
                   ))}
@@ -596,7 +593,7 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedLowerProduct?.id === product.id;
                         return (
@@ -1184,3 +1181,5 @@ export default function VirtualTryOn() {
     </>
   );
 }
+
+

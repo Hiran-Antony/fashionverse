@@ -1,10 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_'],
   plugins: [
     react(),
     tailwindcss(),
@@ -42,7 +44,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/driver',
+        navigateFallback: '/index.html',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -68,6 +70,14 @@ export default defineConfig({
           }
         ]
       }
+    }),
+    visualizer({
+      filename: 'dist/stats.html',
+      title: 'FashionVerse Bundle Analyzer Report',
+      template: 'treemap',
+      gzipSize: true,
+      brotliSize: true,
+      open: false // Do not auto open in terminal mode
     })
   ],
   resolve: {
@@ -101,24 +111,35 @@ export default defineConfig({
     },
   },
   build: {
+    minify: "terser",
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 300,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react';
+            if (
+              id.includes('react-router-dom') ||
+              id.includes('react-dom') ||
+              id.includes('react/')
+            ) {
+              return 'vendor';
             }
-            if (id.includes('zustand') || id.includes('@tanstack')) {
-              return 'vendor-state';
+            if (id.includes('@tanstack/react-query')) {
+              return 'query';
             }
-            if (id.includes('framer-motion') || id.includes('lucide-react')) {
-              return 'vendor-ui';
+            if (id.includes('framer-motion')) {
+              return 'motion';
+            }
+            if (id.includes('@supabase/supabase-js') || id.includes('@supabase/')) {
+              return 'supabase';
+            }
+            if (id.includes('three') || id.includes('@react-three')) {
+              return 'three';
             }
           }
-        },
-      },
-    },
-  },
-})
-
-
+        }
+      }
+    }
+  }
+});

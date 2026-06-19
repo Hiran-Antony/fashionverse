@@ -82,7 +82,6 @@ export default function ActiveTab({ onMarkDelivered }: ActiveTabProps) {
               padding: '8px 20px',
               cursor: 'pointer',
               fontSize: '13px',
-              fontFamily: "'Inter', sans-serif",
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
@@ -106,3 +105,4 @@ export default function ActiveTab({ onMarkDelivered }: ActiveTabProps) {
     </div>
   );
 }
+

@@ -89,6 +89,11 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
   const [cursorAngle, setCursorAngle] = useState(45);
   const [edgeProximity, setEdgeProximity] = useState(0);
   const [sweepActive, setSweepActive] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  useEffect(() => {
+    setIsMobileDevice(window.innerWidth < 768);
+  }, []);
 
   const getCenterOfElement = useCallback((el: HTMLElement) => {
     const { width, height } = el.getBoundingClientRect();
@@ -160,6 +165,22 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
   const borderBg = meshGradients.map(g => `${g} border-box`);
   const fillBg = meshGradients.map(g => `${g} padding-box`);
   const angleDeg = `${cursorAngle.toFixed(3)}deg`;
+
+  if (isMobileDevice) {
+    return (
+      <div
+        className={`relative grid isolate border border-white/15 ${className}`}
+        style={{
+          background: backgroundColor,
+          borderRadius: `${borderRadius}px`,
+        }}
+      >
+        <div className="flex flex-col relative z-[1] h-full w-full" style={{ borderRadius: 'inherit' }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

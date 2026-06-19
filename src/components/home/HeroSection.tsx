@@ -39,13 +39,12 @@ export function FeaturesSection() {
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: '#E8B84B', marginBottom: '1rem' }}
+            style={{ color: '#C08552', marginBottom: '1rem' }}
           >
             Powered by AI
           </p>
           <h2
             style={{
-              fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.875rem, 4vw, 2.75rem)',
               fontWeight: 700,
               color: 'var(--text-primary)',
@@ -85,7 +84,7 @@ export function FeaturesSection() {
             >
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                style={{ background: 'rgba(201,151,58,0.15)', color: '#E8B84B', boxShadow: 'var(--glow-gold-soft)' }}
+                style={{ background: 'rgba(192,133,82,0.15)', color: '#C08552', boxShadow: 'var(--glow-gold-soft)' }}
               >
                 {feature.icon}
               </div>
@@ -170,7 +169,6 @@ export function CTABanner() {
             </p>
             <h2
               style={{
-                fontFamily: 'var(--font-display)',
                 fontSize: 'clamp(2rem, 5vw, 3.25rem)',
                 fontWeight: 800,
                 color: 'white',
@@ -235,7 +233,7 @@ export function CTABanner() {
                   >
                     <span
                       className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
-                      style={{ background: 'rgba(201,151,58,0.2)', fontSize: '0.6rem', color: '#D4A935' }}
+                      style={{ background: 'rgba(192,133,82,0.2)', fontSize: '0.6rem', color: '#C08552' }}
                     >
                       ✓
                     </span>
@@ -276,3 +274,4 @@ export function CTABanner() {
     </section>
   );
 }
+

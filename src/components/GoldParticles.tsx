@@ -1,52 +1,165 @@
 import { useEffect, useRef } from 'react';
+import useDeviceOptimization from '../hooks/useDeviceOptimization';
 
 export default function GoldParticles() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const { isMobile, isLowEnd, prefersReducedMotion, prefersReducedData } = useDeviceOptimization();
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    // 1. Accessibility: Honoring reduced motion preference
+    if (prefersReducedMotion) return;
 
-    const particles: HTMLDivElement[] = [];
-    const count = 25;
-    for (let i = 0; i < count; i++) {
-      const particle = document.createElement('div');
-      const isLeaf = Math.random() > 0.5;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-      particle.style.cssText = `
-        position: absolute;
-        width: ${isLeaf ? Math.random() * 8 + 4 : Math.random() * 4 + 2}px;
-        height: ${isLeaf ? Math.random() * 12 + 6 : Math.random() * 4 + 2}px;
-        background: ${Math.random() > 0.5 ? '#C9973A' : '#E8B84B'};
-        border-radius: ${isLeaf ? '50% 0 50% 0' : '50%'};
-        opacity: ${Math.random() * 0.5 + 0.15};
-        left: ${Math.random() * 100}%;
-        top: ${Math.random() * 100}%;
-        animation: floatParticle${i % 5} ${Math.random() * 8 + 6}s ease-in-out infinite;
-        animation-delay: ${Math.random() * 5}s;
-        pointer-events: none;
-        transform: rotate(${Math.random() * 360}deg);
-      `;
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    
+    const resize = () => {
+      canvas.width = window.innerWidth * DPR;
+      canvas.height = window.innerHeight * DPR;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    };
+    
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
 
-      container.appendChild(particle);
-      particles.push(particle);
+    const W = () => window.innerWidth;
+    const H = () => window.innerHeight;
+
+    // Curated elegant gold palette
+    const GOLDS = ['#C9973A', '#E8B84B', '#D4A032', '#C08552', '#F3D078'];
+
+    interface Flake {
+      x: number;
+      y: number;
+      type: 'leaf' | 'circle';
+      width: number;
+      height: number;
+      size: number;
+      speedY: number;
+      swaySpeed: number;
+      swayAmplitude: number;
+      swayPhase: number;
+      rotation: number;
+      spinSpeed: number;
+      color: string;
+      maxAlpha: number;
     }
 
-    return () => {
-      particles.forEach((p) => p.remove());
+    // 2. Performance: Dynamic particle density based on device resources
+    let COUNT = 40;
+    if (isLowEnd || prefersReducedData) {
+      COUNT = 8;
+    } else if (isMobile) {
+      COUNT = 15;
+    }
+
+    const flakes: Flake[] = Array.from({ length: COUNT }, () => {
+      const isLeaf = Math.random() > 0.4;
+      return {
+        x: Math.random() * W(),
+        y: Math.random() * H(),
+        type: isLeaf ? 'leaf' : 'circle',
+        width: isLeaf ? Math.random() * 8 + 6 : 0,
+        height: isLeaf ? Math.random() * 12 + 8 : 0,
+        size: !isLeaf ? Math.random() * 5 + 3 : 0,
+        speedY: Math.random() * 0.7 + 0.4,
+        swaySpeed: Math.random() * 0.02 + 0.01,
+        swayAmplitude: Math.random() * 20 + 10,
+        swayPhase: Math.random() * Math.PI * 2,
+        rotation: Math.random() * Math.PI * 2,
+        spinSpeed: (Math.random() - 0.5) * 0.03,
+        color: GOLDS[Math.floor(Math.random() * GOLDS.length)],
+        maxAlpha: Math.random() * 0.4 + 0.2,
+      };
+    });
+
+    const draw = () => {
+      // 3. Performance: Pause updates if tab is in the background
+      if (document.hidden) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const w = W();
+      const h = H();
+      ctx.clearRect(0, 0, w, h);
+
+      for (const f of flakes) {
+        // Update positions & physics
+        f.y += f.speedY;
+        f.rotation += f.spinSpeed;
+        f.swayPhase += f.swaySpeed;
+
+        // Reset when flake exits the screen bottom
+        if (f.y > h + 20) {
+          f.y = -20;
+          f.x = Math.random() * w;
+        }
+
+        const renderX = f.x + Math.sin(f.swayPhase) * f.swayAmplitude;
+
+        // Fading edges (fade-in at top, fade-out at bottom)
+        let alpha = f.maxAlpha;
+        if (f.y < 60) {
+          alpha *= f.y / 60;
+        } else if (f.y > h - 100) {
+          alpha *= Math.max(0, (h - f.y) / 100);
+        }
+
+        ctx.save();
+        ctx.translate(renderX, f.y);
+        ctx.rotate(f.rotation);
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = alpha;
+
+        if (f.type === 'leaf') {
+          // Draw leaf shape
+          ctx.beginPath();
+          ctx.moveTo(0, -f.height / 2);
+          ctx.quadraticCurveTo(f.width / 2, 0, 0, f.height / 2);
+          ctx.quadraticCurveTo(-f.width / 2, 0, 0, -f.height / 2);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // Draw circle flake
+          ctx.beginPath();
+          ctx.arc(0, 0, f.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
     };
-  }, []);
+
+    rafRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, [isMobile, isLowEnd, prefersReducedMotion, prefersReducedData]);
+
+  if (prefersReducedMotion) return null;
 
   return (
-    <div
-      ref={containerRef}
-      aria-hidden="true"
+    <canvas
+      ref={canvasRef}
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
         pointerEvents: 'none',
-        zIndex: 45,
-        overflow: 'hidden',
+        zIndex: 3, // Draw directly above Layout elements (zIndex 2) but below headers/modals
       }}
     />
   );

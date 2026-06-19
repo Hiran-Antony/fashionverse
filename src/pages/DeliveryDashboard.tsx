@@ -24,9 +24,9 @@ import OTPModal from '../components/driver/OTPModal';
 // Tab Pages
 import OrdersTab from './driver/OrdersTab';
 import ActiveTab from './driver/ActiveTab';
-import MapTab from './driver/MapTab';
 import DoneTab from './driver/DoneTab';
 import ProfileTab from './driver/ProfileTab';
+import MapTab from './driver/MapTab';
 
 // ── Driver Registration (lazy — only for new drivers) ─────────
 const DriverRegistration = lazy(() => import('./driver/DriverRegistration'));
@@ -95,8 +95,7 @@ function OfflineOverlay({ onGoOnline }: { onGoOnline: () => void }) {
           fontSize: '17px',
           fontWeight: 800,
           cursor: 'pointer',
-          fontFamily: "'Inter', sans-serif",
-          boxShadow: '0 8px 32px rgba(0,200,83,0.4)',
+          boxShadow: '0 8px 32px rgba(201, 168, 76, 0.4)',
           letterSpacing: '0.04em',
         }}
       >
@@ -125,7 +124,6 @@ export default function DeliveryDashboard() {
   } = useDriver();
 
   const [otpOrder, setOtpOrder] = useState<DriverDelivery | null>(null);
-  const [mapMounted, setMapMounted] = useState(false);
 
   // ── Registration flow state (new drivers only) ───────────
   const [showRegistration, setShowRegistration] = useState(false);
@@ -186,12 +184,7 @@ export default function DeliveryDashboard() {
     };
   }, []);
 
-  // Mount map lazily on first visit
-  useEffect(() => {
-    if (activeTab === 'map' && !mapMounted) {
-      setMapMounted(true);
-    }
-  }, [activeTab, mapMounted]);
+
 
   const handleMarkDelivered = (order: DriverDelivery) => {
     setOtpOrder(order);
@@ -239,13 +232,7 @@ export default function DeliveryDashboard() {
                   <ActiveTab onMarkDelivered={handleMarkDelivered} />
                 </div>
 
-                {/* Map Tab — uses CSS show/hide to preserve Leaflet instance */}
-                <div
-                  className={`dh-tab-panel ${activeTab === 'map' ? 'active' : ''}`}
-                  style={{ display: mapMounted ? (activeTab === 'map' ? 'block' : 'none') : 'none' }}
-                >
-                  {mapMounted && <MapTab key={activeDeliveries.length} />}
-                </div>
+
 
                 {/* Done Tab */}
                 <div className={`dh-tab-panel ${activeTab === 'done' ? 'active' : ''}`}>
@@ -256,12 +243,16 @@ export default function DeliveryDashboard() {
                 <div className={`dh-tab-panel ${activeTab === 'profile' ? 'active' : ''}`}>
                   <ProfileTab
                     todayCount={todayCount}
-                    todayEarnings={todayEarnings}
                     totalDeliveries={totalDeliveries}
                     totalEarnings={totalEarnings}
                     driverTier={driverTier}
                     weeklyData={weeklyData}
                   />
+                </div>
+
+                {/* Map Tab */}
+                <div className={`dh-tab-panel ${activeTab === 'map' ? 'active' : ''}`}>
+                  <MapTab />
                 </div>
               </div>
             )}
@@ -288,6 +279,7 @@ export default function DeliveryDashboard() {
         <Suspense fallback={null}>
           <DriverRegistration
             driverId={user.id}
+            preSelected={new Set()}
             onComplete={handleRegistrationComplete}
             onBack={() => {
               setShowRegistration(false);
@@ -299,3 +291,4 @@ export default function DeliveryDashboard() {
     </>
   );
 }
+

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Ruler } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface SizeGuideModalProps {
   isOpen: boolean;

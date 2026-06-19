@@ -112,8 +112,20 @@ function EditorialFooter() {
             </ul>
           </div>
 
-          {/* Help */}
+          {/* Explore */}
           <div data-reveal="fade-up" data-reveal-delay="120">
+            <p className="editorial-footer-heading">Explore</p>
+            <ul className="editorial-footer-links">
+              {QUICK_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to}>{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Help */}
+          <div data-reveal="fade-up" data-reveal-delay="160">
             <p className="editorial-footer-heading">Help</p>
             <ul className="editorial-footer-links">
               {HELP_LINKS.map((link) => (
@@ -136,7 +148,7 @@ function EditorialFooter() {
           </div>
 
           {/* Newsletter */}
-          <div data-reveal="fade-up" data-reveal-delay="160">
+          <div className="editorial-footer-newsletter" data-reveal="fade-up" data-reveal-delay="200">
             <p className="editorial-footer-heading">Newsletter</p>
             <p className="editorial-footer-newsletter-desc">
               Exclusive drops, style tips, and early access. Join 50,000+ subscribers.
@@ -163,13 +175,6 @@ function EditorialFooter() {
                 {submitted ? 'Subscribed ✓' : 'Subscribe'}
               </button>
             </form>
-            <ul className="editorial-footer-links editorial-footer-quick">
-              {QUICK_LINKS.slice(0, 3).map((link) => (
-                <li key={link.label}>
-                  <Link to={link.to}>{link.label}</Link>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>

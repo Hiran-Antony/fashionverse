@@ -9,17 +9,17 @@ import {
   Star, IndianRupee, ShoppingCart, Bell, TrendingUp,
   TrendingDown, Crown, CheckCircle, Clock, Truck,
   ArrowUpRight, BarChart3, Filter, ChevronLeft, ChevronRight, AlertTriangle,
-  Download, MessageCircle,
+  Download, MessageCircle, Menu,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { uploadImage, getOptimizedUrl } from '../lib/cloudinary';
 import { useAuthStore } from '../store/authStore';
-import { CATEGORIES, SIZES, ORDER_STATUSES, SUB_CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
+import { CATEGORIES, SIZES, ORDER_STATUSES, GROUPED_CATEGORIES } from '../utils/constants';
 import InvoiceTemplate from '../components/InvoiceTemplate';
 import { useInvoice } from '../hooks/useInvoice';
 import toast from 'react-hot-toast';
@@ -158,14 +158,16 @@ function StatCard({ label, value, icon: Icon, sub, color, trend }: {
   const [hovered, setHovered] = useState(false);
   return (
     <GlassCard
+      className="admin-stat-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: 24, position: 'relative', overflow: 'hidden', cursor: 'default',
+        position: 'relative', overflow: 'hidden', cursor: 'default',
         transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
         transform: hovered ? 'translateY(-4px)' : 'none',
         boxShadow: hovered ? `${SHADOW_LG}, 0 0 32px ${color}30` : `${SHADOW_MD}, ${SHADOW_GOLD}`,
         borderColor: hovered ? `${color}40` : T.border,
+        minWidth: 0,
       }}
     >
       {/* Geometric bg pattern */}
@@ -194,10 +196,9 @@ function StatCard({ label, value, icon: Icon, sub, color, trend }: {
       </div>
 
       {/* Value */}
-      <div style={{
-        fontSize: 36, fontWeight: 800, color: T.accentGold, lineHeight: 1,
-        marginBottom: 6, fontFamily: "'Space Grotesk', 'Inter', monospace",
-        letterSpacing: '-0.02em',
+      <div className="admin-stat-value" style={{
+        fontWeight: 800, color: T.accentGold, lineHeight: 1,
+        marginBottom: 6, letterSpacing: '-0.02em',
       }}>
         {value}
       </div>
@@ -205,7 +206,7 @@ function StatCard({ label, value, icon: Icon, sub, color, trend }: {
       {/* Label */}
       <div style={{
         fontSize: 13, fontWeight: 600, color: T.textPrim,
-        fontFamily: "'Inter', sans-serif", marginBottom: 4,
+        marginBottom: 4,
       }}>
         {label}
       </div>
@@ -235,9 +236,9 @@ function ChartTooltip({ active, payload, label }: any) {
       background: 'rgba(19,12,5,0.97)', border: `1px solid ${T.border}`,
       borderRadius: 12, padding: '10px 14px', boxShadow: SHADOW_LG,
     }}>
-      <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{label}</div>
+      <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4, }}>{label}</div>
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ fontSize: 14, fontWeight: 700, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>
+        <div key={i} style={{ fontSize: 14, fontWeight: 700, color: T.accentGold, }}>
           {typeof p.value === 'number' && label !== undefined && String(label).match(/[A-Z]/) ? p.value : `₹${p.value?.toLocaleString('en-IN')}`}
         </div>
       ))}
@@ -266,7 +267,6 @@ function SectionDivider({ label }: { label: string }) {
       <span style={{
         fontSize: 9, fontWeight: 800, color: T.textMuted,
         textTransform: 'uppercase', letterSpacing: '0.18em',
-        fontFamily: "'Inter', sans-serif",
       }}>
         {label}
       </span>
@@ -293,7 +293,6 @@ function StatusBadge({ status }: { status: string }) {
       background: c.bg, color: c.color,
       fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
       border: `1px solid ${c.color}30`,
-      fontFamily: "'Inter', sans-serif",
     }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: c.color, display: 'inline-block' }}/>
       {st?.label || c.label}
@@ -307,7 +306,6 @@ const inp: React.CSSProperties = {
   borderRadius: 12, border: `1.5px solid ${T.border}`,
   background: 'rgba(20,12,5,0.8)', color: T.textPrim,
   fontSize: 13, outline: 'none', boxSizing: 'border-box',
-  fontFamily: "'Inter', sans-serif",
   transition: 'border-color 0.2s, box-shadow 0.2s',
 };
 
@@ -328,6 +326,7 @@ export default function AdminDashboard() {
   const { user, profile, isLoading } = useAuthStore();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const { data: pendingCount = 0 } = useQuery({
     queryKey: ['admin-pending-orders'],
@@ -375,7 +374,7 @@ export default function AdminDashboard() {
             border: `3px solid ${T.border}`, borderTopColor: T.gold,
             animation: 'adminSpin 0.8s linear infinite', margin: '0 auto 16px',
           }}/>
-          <div style={{ color: T.textMuted, fontSize: 13, fontFamily:"'Inter', sans-serif" }}>Loading dashboard…</div>
+          <div style={{ color: T.textMuted, fontSize: 13, }}>Loading dashboard…</div>
         </div>
       </div>
     );
@@ -386,7 +385,7 @@ export default function AdminDashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
         @keyframes adminSpin { to { transform: rotate(360deg); } }
         @keyframes adminShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes adminFadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
@@ -399,25 +398,257 @@ export default function AdminDashboard() {
         ::-webkit-scrollbar-thumb:hover { background: ${T.lightGold}; }
         /* Dot-grid background pattern */
         .admin-bg { background-image: radial-gradient(circle, rgba(201,168,76,0.07) 1px, transparent 1px); background-size: 28px 28px; }
+
+        /* Responsive Layout Classes */
+        .admin-layout {
+          font-family: 'Outfit', sans-serif !important;
+          display: flex;
+          min-height: 100vh;
+          position: relative;
+          z-index: 2;
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+
+        .admin-sidebar {
+          background: ${T.sidebar} !important;
+          border-right: 1px solid ${T.border} !important;
+          display: flex !important;
+          flex-direction: column !important;
+          position: sticky !important;
+          top: 0 !important;
+          height: 100vh !important;
+          overflow-y: auto !important;
+          flex-shrink: 0 !important;
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease !important;
+          z-index: 100 !important;
+        }
+
+        .admin-sidebar.expanded {
+          width: 240px;
+        }
+
+        .admin-sidebar.collapsed {
+          width: 68px;
+        }
+
+        .admin-sidebar-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 90;
+        }
+
+        .admin-header {
+          height: 70px;
+          background: rgba(15, 10, 6, 0.9);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid ${T.border};
+          padding: 0 32px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: sticky;
+          top: 0;
+          z-index: 80;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .admin-hamburger {
+          display: none;
+          background: transparent;
+          border: none;
+          color: ${T.textMuted};
+          cursor: pointer;
+          padding: 8px;
+          margin-right: 12px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid ${T.border};
+          transition: all 0.2s;
+        }
+        .admin-hamburger:hover {
+          background: rgba(201,168,76,0.1);
+          color: ${T.gold};
+        }
+
+        .admin-main-body {
+          flex: 1;
+          padding: 28px 32px;
+          overflow-y: auto;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        /* Responsive grid utility classes */
+        .admin-grid-4col {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+        }
+
+        .admin-grid-3fr-2fr {
+          display: grid;
+          grid-template-columns: 3fr 2fr;
+          gap: 20px;
+        }
+
+        .admin-grid-3col {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+
+        .admin-grid-2col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .admin-grid-5col {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 10px;
+        }
+
+        .admin-order-row-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          padding: 16px;
+        }
+
+        @media (max-width: 1100px) {
+          .admin-grid-4col {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .admin-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 240px !important;
+            transform: translateX(-100%) !important;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8) !important;
+          }
+          .admin-sidebar.mobile-open {
+            transform: translateX(0) !important;
+          }
+          .admin-sidebar-backdrop.mobile-open {
+            display: block;
+          }
+          .admin-sidebar-collapse-btn {
+            display: none !important;
+          }
+          .admin-hamburger {
+            display: flex;
+          }
+          .admin-grid-3fr-2fr {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 960px) {
+          .admin-grid-3col {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .admin-header {
+            padding: 0 16px;
+          }
+          .admin-main-body {
+            padding: 20px 16px;
+          }
+          .admin-grid-2col {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .admin-order-row-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .admin-grid-4col {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .admin-grid-3col {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .admin-grid-5col {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+          }
+        }
+
+        .admin-grid-4col > *,
+        .admin-grid-3fr-2fr > *,
+        .admin-grid-3col > *,
+        .admin-grid-2col > *,
+        .admin-grid-5col > * {
+          min-width: 0;
+        }
+
+        .admin-header-subtitle {
+          font-size: 10px;
+        }
+        .admin-header-title {
+          font-size: 26px;
+        }
+        .admin-stat-card {
+          padding: 24px !important;
+        }
+        .admin-stat-value {
+          font-size: 36px;
+          font-family: 'Outfit', sans-serif !important;
+        }
+        @media (max-width: 640px) {
+          .admin-header-subtitle {
+            font-size: 9px;
+            letter-spacing: 0.1em !important;
+          }
+          .admin-header-title {
+            font-size: 18px !important;
+          }
+          .admin-stat-card {
+            padding: 16px !important;
+          }
+          .admin-stat-value {
+            font-size: 28px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .admin-order-row-grid {
+            grid-template-columns: auto 1fr auto auto auto auto auto;
+            gap: 20px;
+            padding: 20px 24px;
+            align-items: center;
+          }
+        }
       `}</style>
 
-      <div className="admin-bg" style={{
-        display: 'flex', minHeight: '100vh',
-        background: T.bgDark,
-        fontFamily: "'Inter', sans-serif",
-      }}>
+      <div className="admin-layout admin-bg" style={{ background: T.bgDark }}>
+        {/* Backdrop for mobile drawer sidebar */}
+        <div 
+          className={`admin-sidebar-backdrop ${mobileSidebarOpen ? 'mobile-open' : ''}`} 
+          onClick={() => setMobileSidebarOpen(false)} 
+        />
 
         {/* ── SIDEBAR ──────────────────────────────────── */}
-        <aside style={{
-          width: sidebarCollapsed ? 68 : 240, minWidth: sidebarCollapsed ? 68 : 240,
-          background: T.sidebar,
-          borderRight: `1px solid ${T.border}`,
-          display: 'flex', flexDirection: 'column',
-          position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
-          flexShrink: 0,
-          transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
-          zIndex: 30,
-        }}>
+        <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : 'expanded'} ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
           {/* Logo */}
           <div style={{ padding: sidebarCollapsed ? '24px 12px 20px' : '28px 20px 20px', textAlign: 'center' }}>
             <div style={{
@@ -435,7 +666,6 @@ export default function AdminDashboard() {
               <div style={{
                 fontSize: 9, fontWeight: 800, color: T.gold,
                 textTransform: 'uppercase', letterSpacing: '0.22em',
-                fontFamily: "'Inter', sans-serif",
               }}>
                 Admin Panel
               </div>
@@ -463,7 +693,7 @@ export default function AdminDashboard() {
                 <button
                   key={item.id}
                   className="admin-nav-btn"
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => { setActiveTab(item.id); setMobileSidebarOpen(false); }}
                   title={sidebarCollapsed ? item.label : undefined}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center',
@@ -502,7 +732,7 @@ export default function AdminDashboard() {
                 Store
               </div>
             )}
-            <Link to="/" title={sidebarCollapsed ? 'Back to Store' : undefined} style={{
+            <Link to="/" onClick={() => setMobileSidebarOpen(false)} title={sidebarCollapsed ? 'Back to Store' : undefined} style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: sidebarCollapsed ? '12px 0' : '12px 14px',
               borderRadius: 12, color: T.textMuted, fontSize: 13, fontWeight: 600,
               textDecoration: 'none', transition: 'color 0.2s',
@@ -575,28 +805,26 @@ export default function AdminDashboard() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
           {/* Topbar */}
-          <header style={{
-            height: 70, background: 'rgba(15,10,6,0.9)',
-            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: `1px solid ${T.border}`,
-            padding: '0 32px', display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 20,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          }}>
-            <div>
-              <div style={{
-                fontSize: 10, fontWeight: 700, color: T.textMuted,
-                textTransform: 'uppercase', letterSpacing: '0.16em',
-                fontFamily: "'Inter', sans-serif", marginBottom: 2,
-              }}>
-                FashionVerse / {PAGE_TITLES[activeTab]}
-              </div>
-              <div style={{
-                fontSize: 26, fontWeight: 700, color: T.lightGold,
-                fontFamily: "'Playfair Display', serif",
-                letterSpacing: '-0.02em', lineHeight: 1,
-              }}>
-                {PAGE_TITLES[activeTab]}
+          <header className="admin-header">
+            <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+              <button className="admin-hamburger" onClick={() => setMobileSidebarOpen(true)}>
+                <Menu size={20} />
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div className="admin-header-subtitle" style={{
+                  fontWeight: 700, color: T.textMuted,
+                  textTransform: 'uppercase', marginBottom: 2,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                }}>
+                  FashionVerse / {PAGE_TITLES[activeTab]}
+                </div>
+                <div className="admin-header-title" style={{
+                  fontWeight: 700, color: T.lightGold,
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                }}>
+                  {PAGE_TITLES[activeTab]}
+                </div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -626,8 +854,7 @@ export default function AdminDashboard() {
                         minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10,
                         background: T.danger, color: '#fff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, fontWeight: 800, fontFamily: "'Inter', sans-serif",
-                        border: '2px solid #0F0A06', zIndex: 10, pointerEvents: 'none'
+                        fontSize: 10, fontWeight: 800, border: '2px solid #0F0A06', zIndex: 10, pointerEvents: 'none'
                       }}
                     >
                       {pendingCount}
@@ -650,7 +877,7 @@ export default function AdminDashboard() {
           </header>
 
           {/* Page body */}
-          <main style={{ flex: 1, padding: '28px 32px', overflowY: 'auto' }}>
+          <main className="admin-main-body">
             <AnimatePresence mode="wait">
               {activeTab === 'overview'  && <OverviewTab  key="overview" />}
               {activeTab === 'products'  && <ProductsTab  key="products" />}
@@ -675,7 +902,7 @@ function OverviewTab() {
   const currentYear = calendarDate.getFullYear();
   const daysInMonth = new Date(currentYear, calendarDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, calendarDate.getMonth(), 1).getDay();
-  const calendarGrid = Array.from({ length: firstDayOfMonth }).map(() => null).concat(
+  const calendarGrid = (Array.from({ length: firstDayOfMonth }).map(() => null) as (number | null)[]).concat(
     Array.from({ length: daysInMonth }).map((_, i) => i + 1)
   );
   
@@ -796,19 +1023,7 @@ function OverviewTab() {
     return `₹${v}`;
   };
 
-  // Category donut
-  const { data: catData } = useQuery({
-    queryKey: ['admin-category-counts'],
-    queryFn: async () => {
-      const { data } = await supabase.from('products').select('category').eq('is_active', true);
-      const counts: Record<string, number> = {};
-      (data || []).forEach((p: any) => { counts[p.category] = (counts[p.category] || 0) + 1; });
-      return Object.entries(counts).map(([name, value]) => ({ name, value }));
-    },
-  });
 
-  const PIE_COLORS = [T.gold, T.teal, T.purple, T.warning, T.blue];
-  const totalCatProducts = (catData || []).reduce((s, c) => s + c.value, 0);
 
   const STATS_CFG = [
     { label: 'Total Revenue',   value: `₹${(stats?.revenue || 0).toLocaleString('en-IN')}`, icon: IndianRupee, color: T.gold,    sub: 'All-time earnings',  trend: 12 },
@@ -824,7 +1039,7 @@ function OverviewTab() {
       style={{ display: 'flex', flexDirection: 'column', gap: 28 }}
     >
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+      <div className="admin-grid-4col">
         {STATS_CFG.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             {statsLoading ? <Skeleton h={160} r={20}/> : <StatCard {...s}/>}
@@ -833,12 +1048,12 @@ function OverviewTab() {
       </div>
 
       {/* Charts row 1 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 20 }}>
+      <div className="admin-grid-3fr-2fr">
         {/* Area chart */}
-        <GlassCard style={{ padding: 24 }}>
+        <GlassCard style={{ padding: 24, minWidth: 0 }}>
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
                 Weekly Sales Overview
               </div>
               <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Revenue by day of week</div>
@@ -860,14 +1075,14 @@ function OverviewTab() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
-              <XAxis dataKey="day" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="day" tick={{ fill: T.textMuted, fontSize: 11, }} axisLine={false} tickLine={false}/>
               <YAxis
                 ticks={weeklyTicks}
                 domain={[0, weeklyTicks[weeklyTicks.length - 1]]}
                 tickFormatter={fmtTick}
                 interval={0}
                 width={55}
-                tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }}
+                tick={{ fill: T.textMuted, fontSize: 10, }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -879,10 +1094,10 @@ function OverviewTab() {
         </GlassCard>
 
         {/* Calendar Widget */}
-        <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+        <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
                 Calendar
               </div>
               <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{currentMonth} {currentYear}</div>
@@ -898,7 +1113,7 @@ function OverviewTab() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, textAlign: 'center', marginBottom: 12 }}>
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-              <div key={day} style={{ fontSize: 11, fontWeight: 800, color: T.textMuted, fontFamily: "'Inter', sans-serif" }}>{day}</div>
+              <div key={day} style={{ fontSize: 11, fontWeight: 800, color: T.textMuted, }}>{day}</div>
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px 4px', textAlign: 'center' }}>
@@ -911,7 +1126,7 @@ function OverviewTab() {
                   color: isToday ? '#000' : (day ? T.textPrim : 'transparent'),
                   border: day && !isToday ? `1px solid ${T.border}40` : 'none',
                   borderRadius: '50%', fontWeight: isToday ? 800 : 500,
-                  fontFamily: "'Space Grotesk', monospace", transition: 'all 0.2s', cursor: day ? 'pointer' : 'default'
+                  transition: 'all 0.2s', cursor: day ? 'pointer' : 'default'
                 }}>
                   {day || ''}
                 </div>
@@ -922,10 +1137,10 @@ function OverviewTab() {
       </div>
 
       {/* Bar chart - Monthly Revenue */}
-      <GlassCard style={{ padding: 24 }}>
+      <GlassCard style={{ padding: 24, minWidth: 0 }}>
         <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
               Monthly Revenue Trend
             </div>
             <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Last 6 months performance</div>
@@ -941,14 +1156,14 @@ function OverviewTab() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(201,168,76,0.08)" vertical={false}/>
-            <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11, fontFamily: "'Inter', sans-serif" }} axisLine={false} tickLine={false}/>
+            <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11, }} axisLine={false} tickLine={false}/>
             <YAxis
               ticks={monthlyTicks}
               domain={[0, monthlyTicks[monthlyTicks.length - 1]]}
               tickFormatter={fmtTick}
               interval={0}
               width={55}
-              tick={{ fill: T.textMuted, fontSize: 10, fontFamily: "'Space Grotesk', monospace" }}
+              tick={{ fill: T.textMuted, fontSize: 10, }}
               axisLine={false}
               tickLine={false}
             />
@@ -968,13 +1183,13 @@ function OverviewTab() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         
         {/* Recent Orders Table */}
-        <GlassCard style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <GlassCard style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{
             padding: '20px 24px 16px', borderBottom: `1px solid ${T.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
                 Recent Orders
               </div>
               <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Latest transactions</div>
@@ -994,8 +1209,7 @@ function OverviewTab() {
                     <th key={h} style={{
                       padding: '12px 20px', textAlign: 'left',
                       fontSize: 9, fontWeight: 800, color: T.textMuted,
-                      textTransform: 'uppercase', letterSpacing: '0.14em',
-                      fontFamily: "'Inter', sans-serif", fontVariant: 'small-caps',
+                      textTransform: 'uppercase', letterSpacing: '0.18em', fontVariant: 'small-caps',
                     }}>{h}</th>
                   ))}
                 </tr>
@@ -1021,14 +1235,14 @@ function OverviewTab() {
                         }}
                       >
                         <td style={{ padding: '14px 20px' }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: T.gold, fontFamily: "'Space Grotesk', monospace" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.gold, }}>
                             #{orderNum}
                           </span>
                         </td>
                         <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 600, color: T.textPrim }}>
                           {order.address?.name || 'Customer'}
                         </td>
-                        <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>
+                        <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 800, color: T.accentGold, }}>
                           ₹{order.total_amount?.toLocaleString('en-IN')}
                         </td>
                         <td style={{ padding: '14px 20px' }}>
@@ -1047,12 +1261,12 @@ function OverviewTab() {
         </GlassCard>
 
         {/* Alerts Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div className="admin-grid-2col">
           {/* Low Stock Alerts */}
-          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
                   Inventory Alerts
                 </div>
                 <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Low stock items</div>
@@ -1068,10 +1282,10 @@ function OverviewTab() {
                     <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.05)', overflow: 'hidden', flexShrink: 0 }}>
                       <img src={getOptimizedUrl(alert.image, 80)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alert.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                        <span style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(201,168,76,0.1)', color: T.gold, borderRadius: 4, fontFamily: "'Space Grotesk', monospace", fontWeight: 700 }}>Size {alert.size}</span>
+                        <span style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(201,168,76,0.1)', color: T.gold, borderRadius: 4, fontWeight: 700 }}>Size {alert.size}</span>
                         <span style={{ fontSize: 11, color: T.danger, fontWeight: 700 }}>{alert.stock} left</span>
                       </div>
                     </div>
@@ -1082,13 +1296,13 @@ function OverviewTab() {
           </GlassCard>
 
           {/* Cancelled Orders Notifications */}
-          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: `${T.danger}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <AlertTriangle size={20} color={T.danger}/>
               </div>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, fontFamily: "'Playfair Display', serif" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: T.textPrim, }}>
                   Cancelled Orders
                 </h3>
                 <p style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Customer cancellation alerts</p>
@@ -1112,7 +1326,7 @@ function OverviewTab() {
               return (
                 <>
                   {/* Summary Stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+                  <div className="admin-grid-3col" style={{ gap: 8, marginBottom: 16 }}>
                     {[
                       { num: todayCount, label: 'TODAY' },
                       { num: topReasonShort, label: 'TOP REASON' },
@@ -1135,7 +1349,7 @@ function OverviewTab() {
                         <div key={co.id} style={{ background: 'rgba(220,60,60,0.05)', border: '1px solid rgba(220,60,60,0.12)', borderRadius: 12, padding: 14 }}>
                           {/* Row 1 */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: 10, color: 'rgba(220,60,60,0.7)', letterSpacing: '0.1em', fontFamily: 'monospace' }}>#{co.id.slice(0, 8).toUpperCase()}</span>
+                            <span style={{ fontSize: 10, color: 'rgba(220,60,60,0.7)', letterSpacing: '0.1em', }}>#{co.id.slice(0, 8).toUpperCase()}</span>
                             <span style={{ fontSize: 10, color: 'rgba(245,237,212,0.35)' }}>{fmtDate}</span>
                           </div>
                           {/* Row 2 - Customer */}
@@ -1167,7 +1381,7 @@ function OverviewTab() {
                       <p style={{ fontSize: 10, color: T.gold, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Cancellation Reasons</p>
                       {Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).map(([reason, count]) => (
                         <div key={reason} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                          <span style={{ fontSize: 11, color: 'rgba(245,237,212,0.5)', width: 140, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reason}</span>
+                          <span style={{ fontSize: 11, color: 'rgba(245,237,212,0.5)', width: 110, flexShrink: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reason}</span>
                           <div style={{ flex: 1, height: 4, background: 'rgba(220,60,60,0.1)', borderRadius: 2 }}>
                             <div style={{ width: `${(count / cancelledOrders.length) * 100}%`, height: '100%', background: 'rgba(220,60,60,0.5)', borderRadius: 2, transition: 'width 0.5s ease' }} />
                           </div>
@@ -1387,7 +1601,7 @@ function ProductsTab() {
                       <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: T.glass, color: T.textMuted, textTransform: 'capitalize', border: `1px solid ${T.border}` }}>{p.category}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 8 }}>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>₹{p.price?.toLocaleString('en-IN')}</span>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: T.accentGold, }}>₹{p.price?.toLocaleString('en-IN')}</span>
                       {p.original_price && <span style={{ fontSize: 11, color: T.textMuted, textDecoration: 'line-through' }}>₹{p.original_price?.toLocaleString('en-IN')}</span>}
                     </div>
                     {p.created_at && (
@@ -1451,7 +1665,7 @@ function ProductsTab() {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10,
                 }}>
                   <div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: T.lightGold, fontFamily: "'Playfair Display', serif", letterSpacing: '0.02em' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: T.lightGold, letterSpacing: '0.02em' }}>
                       {editingId ? '✦ Edit Product' : '✦ Add New Product'}
                     </div>
                     <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Fill in all details carefully before saving</div>
@@ -1465,7 +1679,7 @@ function ProductsTab() {
                   {/* BASIC INFO */}
                   <section>
                     <SectionDivider label="Basic Info"/>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="admin-grid-2col" style={{ gap: 14 }}>
                       <div style={{ gridColumn: '1/-1' }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Product Name *</label>
                         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Premium Slim Fit Oxford Shirt"
@@ -1527,7 +1741,7 @@ function ProductsTab() {
                   {/* PRICING */}
                   <section>
                     <SectionDivider label="Pricing"/>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="admin-grid-2col" style={{ gap: 14 }}>
                       <div>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sale Price (₹) *</label>
                         <input value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="1499" type="number"
@@ -1541,7 +1755,7 @@ function ProductsTab() {
                     </div>
 
                     {/* Labels */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+                    <div className="admin-grid-2col" style={{ gap: 12, marginTop: 16 }}>
                       {[
                         { key: 'is_featured' as const, label: '⭐ New Arrival', desc: 'Shows in New Arrivals section' },
                         { key: 'is_trending' as const, label: '🔥 Trending',   desc: 'Shows in Trending section' },
@@ -1564,7 +1778,7 @@ function ProductsTab() {
                     {/* Stock */}
                     <div style={{ marginTop: 20 }}>
                       <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.gold, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Stock Per Size</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+                      <div className="admin-grid-5col">
                         {form.sizes.map((s, i) => (
                           <div key={s.size} style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: 10, fontWeight: 800, marginBottom: 8, padding: '4px 8px', borderRadius: 8, background: s.stock > 0 ? `${T.gold}20` : 'rgba(20,12,5,0.6)', color: s.stock > 0 ? T.gold : T.textMuted, display: 'inline-block' }}>{s.size}</div>
@@ -1613,7 +1827,7 @@ function ProductsTab() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <input type="color" value={c.hex_code} onChange={e => { const n = [...form.colors]; n[i] = { ...n[i], hex_code: e.target.value }; setForm(f => ({ ...f, colors: n })); }}
                                   style={{ width: 38, height: 38, borderRadius: 10, border: `1.5px solid ${T.border}`, cursor: 'pointer', padding: 2, background: 'rgba(12,7,3,0.8)' }}/>
-                                <span style={{ fontSize: 11, fontFamily: 'monospace', color: T.textMuted }}>{c.hex_code}</span>
+                                <span style={{ fontSize: 11, color: T.textMuted }}>{c.hex_code}</span>
                               </div>
                             </div>
                             <button onClick={() => removeColor(i)} style={{ width: 28, height: 28, borderRadius: 8, background: `${T.danger}15`, color: T.danger, border: `1px solid ${T.danger}30`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, alignSelf: 'flex-start' }}>
@@ -1671,7 +1885,6 @@ function OrdersTab() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const { invoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
-  const { profile } = useAuthStore();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -1732,14 +1945,14 @@ function OrdersTab() {
       style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Mini stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div className="admin-grid-4col" style={{ gap: 14 }}>
         {MINI_STATS.map(s => (
           <GlassCard key={s.label} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.color}30`, flexShrink: 0 }}>
               <s.icon size={18} color={s.color}/>
             </div>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>{s.value}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.accentGold, }}>{s.value}</div>
               <div style={{ fontSize: 11, color: T.textMuted }}>{s.label}</div>
             </div>
           </GlassCard>
@@ -1792,11 +2005,11 @@ function OrdersTab() {
             return (
               <motion.div key={order.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
                 <GlassCard style={{ overflow: 'hidden', borderLeft: `4px solid ${accentColor}50`, transition: 'border-color 0.2s' }}>
-                  <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto auto auto', gap: 20, alignItems: 'center' }}>
+                  <div className="admin-order-row-grid">
                     {/* Order # */}
                     <div>
                       <div style={{ fontSize: 9, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Order</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: T.gold, fontFamily: "'Space Grotesk', monospace" }}>#{orderNum}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: T.gold, }}>#{orderNum}</div>
                     </div>
 
                     {/* Customer */}
@@ -1818,7 +2031,7 @@ function OrdersTab() {
                     {/* Amount */}
                     <div>
                       <div style={{ fontSize: 9, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Amount</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>₹{order.total_amount?.toLocaleString('en-IN')}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: T.accentGold, }}>₹{order.total_amount?.toLocaleString('en-IN')}</div>
                     </div>
 
                     {/* Items */}
@@ -1833,7 +2046,7 @@ function OrdersTab() {
                         fontSize: 12, fontWeight: 700, padding: '8px 32px 8px 12px',
                         borderRadius: 999, border: `1.5px solid ${accentColor}40`, outline: 'none',
                         cursor: 'pointer', background: `${accentColor}15`, color: accentColor,
-                        appearance: 'none', fontFamily: "'Inter', sans-serif",
+                        appearance: 'none',
                       }}>
                         {ORDER_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
@@ -1880,7 +2093,7 @@ function OrdersTab() {
                                       {[item.color_name, item.size && `Size ${item.size}`, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
                                     </div>
                                   </div>
-                                  <div style={{ fontSize: 14, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace", flexShrink: 0 }}>
+                                  <div style={{ fontSize: 14, fontWeight: 800, color: T.accentGold, flexShrink: 0 }}>
                                     ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                                   </div>
                                 </div>
@@ -2044,14 +2257,14 @@ function CustomersTab() {
       style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Mini stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div className="admin-grid-4col" style={{ gap: 14 }}>
         {USER_MINI_STATS.map(s => (
           <GlassCard key={s.label} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.color}30`, flexShrink: 0 }}>
               <s.icon size={18} color={s.color}/>
             </div>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.accentGold, fontFamily: "'Space Grotesk', monospace" }}>{s.value}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.accentGold, }}>{s.value}</div>
               <div style={{ fontSize: 11, color: T.textMuted }}>{s.label}</div>
             </div>
           </GlassCard>
@@ -2140,7 +2353,7 @@ function CustomersTab() {
                         </div>
                       </td>
                       <td style={{ padding: '14px 20px', fontSize: 12, color: T.textMuted }}>{getPhone(c)}</td>
-                      <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 800, color: totalSpent > 0 ? T.accentGold : T.textMuted, fontFamily: "'Space Grotesk', monospace" }}>
+                      <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 800, color: totalSpent > 0 ? T.accentGold : T.textMuted, }}>
                         {totalSpent > 0 ? `₹${totalSpent.toLocaleString('en-IN')}` : '—'}
                       </td>
                       <td style={{ padding: '14px 20px' }}>
@@ -2184,7 +2397,6 @@ function CustomersTab() {
 // Staff Tab — Delivery Partner Management
 // ══════════════════════════════════════════════════════════════
 function StaffTab() {
-  const { user } = useAuthStore();
   const qc = useQueryClient();
 
   const { data: applications = [], isLoading: loadingApps } = useQuery({
@@ -2267,7 +2479,7 @@ function StaffTab() {
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
 
       {/* ── Analytics strip ──────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+      <div className="admin-grid-4col" style={{ gap: 14, marginBottom: 28 }}>
         {[
           { label: 'Pending Applications', value: pending.length, color: T.warning },
           { label: 'Active Drivers', value: drivers.filter((d: any) => d.role === 'delivery_approved').length, color: T.success },
@@ -2310,7 +2522,7 @@ function StaffTab() {
                   Applied {new Date(app.applied_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+              <div className="admin-grid-3col" style={{ gap: 10, marginBottom: 16 }}>
                 {[
                   { label: 'Vehicle', value: `${app.vehicle_type} — ${app.vehicle_number}` },
                   { label: 'License', value: app.license_number },
@@ -2419,4 +2631,6 @@ function StaffTab() {
     </motion.div>
   );
 }
+
+
 

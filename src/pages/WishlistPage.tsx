@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Trash2, ArrowRight, Sparkles } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { useWishlistStore } from '../store/wishlistStore';
 import toast from 'react-hot-toast';
 
@@ -64,7 +64,7 @@ export default function WishlistPage() {
       <div className="mb-8">
         <h1
           className="text-3xl font-bold"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+          style={{ color: 'var(--text-primary)' }}
         >
           My Wishlist
         </h1>
@@ -155,3 +155,4 @@ export default function WishlistPage() {
     </div>
   );
 }
+

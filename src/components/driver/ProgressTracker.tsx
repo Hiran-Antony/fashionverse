@@ -17,7 +17,6 @@ export default function ProgressTracker({ step }: ProgressTrackerProps) {
       {STEPS.map((label, i) => {
         const isCompleted = i < step;
         const isActive = i === step;
-        const isPending = i > step;
 
         return (
           <div key={label} style={{ display: 'contents' }}>

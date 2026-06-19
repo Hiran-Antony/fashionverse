@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, Heart, Sparkles, Shield, Mail, Lock, User, Eye, EyeOff, Loader, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Heart, Sparkles, Shield, Mail, User, Eye, EyeOff, Loader } from 'lucide-react';
 import BrandLogo from '../components/layout/BrandLogo';
 import { supabase } from '../lib/supabase';
 
@@ -244,22 +244,21 @@ export default function AuthPage() {
     borderRadius: '12px',
     fontSize: '22px',
     fontWeight: 600,
-    color: otpBoxState === 'success' ? '#E8B84B' : '#F5EDD4',
+    color: otpBoxState === 'success' ? '#D5A075' : '#F5EDD4',
     textAlign: 'center',
     outline: 'none',
     transition: 'all 0.2s ease',
-    fontFamily: "'Syne', sans-serif",
-    caretColor: '#E8B84B',
+    caretColor: '#D5A075',
     animation: otpBoxState === 'error' ? 'otpShake 0.3s ease' : 'none',
   });
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen flex flex-col-reverse lg:flex-row" style={{ background: 'var(--bg-primary)' }}>
 
       {/* ── LEFT PANEL ─────────────────────────────── */}
       <div
-        className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #120a06 0%, #A07828 45%, #1a0f08 100%)' }}
+        className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden py-12 lg:py-0"
+        style={{ background: 'linear-gradient(145deg, #120a06 0%, #C08552 45%, #1a0f08 100%)' }}
       >
         {/* Decorative orb top-right */}
         <motion.div
@@ -279,7 +278,7 @@ export default function AuthPage() {
           style={{
             position: 'absolute', bottom: '-60px', left: '-60px',
             width: '340px', height: '340px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(201,151,58,0.25) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(192,133,82,0.25) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -306,7 +305,6 @@ export default function AuthPage() {
             style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '3rem 0' }}
           >
             <h1 style={{
-              fontFamily: 'var(--font-display)',
               fontSize: 'clamp(2rem, 3.5vw, 2.875rem)',
               fontWeight: 800,
               color: 'white',
@@ -316,7 +314,7 @@ export default function AuthPage() {
             }}>
               Your style journey<br />
               <span style={{
-                background: 'linear-gradient(135deg, #D4A935 0%, #E8B84B 100%)',
+                background: 'linear-gradient(135deg, #C08552 0%, #D5A075 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
@@ -412,7 +410,6 @@ export default function AuthPage() {
                   </div>
 
                   <h2 style={{
-                    fontFamily: "'Playfair Display', serif",
                     fontSize: '28px',
                     fontWeight: 700,
                     color: '#F5EDD4',
@@ -524,7 +521,6 @@ export default function AuthPage() {
                     boxShadow: '0 8px 28px rgba(201,151,58,0.35)',
                     transition: 'all 0.2s ease',
                     marginBottom: '16px',
-                    fontFamily: "'Syne', sans-serif",
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -584,7 +580,6 @@ export default function AuthPage() {
                           textDecoration: 'underline',
                           textUnderlineOffset: '3px',
                           transition: 'color 0.2s',
-                          fontFamily: "'Syne', sans-serif",
                         }}
                         onMouseEnter={e => (e.currentTarget.style.color = '#E8B84B')}
                         onMouseLeave={e => (e.currentTarget.style.color = '#C9973A')}
@@ -805,3 +800,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+

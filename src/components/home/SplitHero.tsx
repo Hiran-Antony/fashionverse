@@ -5,6 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight } from 'lucide-react';
 import { animateCountUp, usePrefersReducedMotionStatic } from '../../hooks/useScrollAnimation';
 import TextType from './TextType';
+import HeroVideo from '../HeroVideo';
+import useDeviceOptimization from '../../hooks/useDeviceOptimization';
 
 const LOOKBOOK_VIDEOS = [
   { src: '/videos/hero1.mp4', label: 'SS 2025 Lookbook' },
@@ -47,7 +49,6 @@ function HeroTicker() {
 
 export default function SplitHero() {
   const leftRef = useRef<HTMLDivElement>(null);
-  const wordsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const subtextRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -55,10 +56,11 @@ export default function SplitHero() {
   const [activeVideo, setActiveVideo] = useState(0);
   const [progress, setProgress] = useState(0);
   const reducedMotion = usePrefersReducedMotionStatic();
+  const { isMobile } = useDeviceOptimization();
 
-  // GSAP subtext & CTA on load
+  // GSAP subtext & CTA on load (disabled on mobile to reduce TBT)
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || isMobile) return;
 
     if (subtextRef.current) gsap.set(subtextRef.current, { opacity: 0, y: 20 });
     if (ctaRef.current) gsap.set(ctaRef.current, { opacity: 0, y: 20 });
@@ -70,16 +72,16 @@ export default function SplitHero() {
     return () => {
       tl.kill();
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, isMobile]);
 
-  // Stat counters on scroll into view
+  // Stat counters on scroll into view (disabled scroll trigger animations on mobile)
   useEffect(() => {
     const statsEl = statsRef.current;
     if (!statsEl) return;
 
     const numberEls = statsEl.querySelectorAll<HTMLElement>('[data-stat-value]');
 
-    if (reducedMotion) {
+    if (reducedMotion || isMobile) {
       numberEls.forEach((el) => {
         const target = el.dataset.target;
         const suffix = el.dataset.suffix || '';
@@ -109,7 +111,7 @@ export default function SplitHero() {
     });
 
     return () => trigger.kill();
-  }, [reducedMotion]);
+  }, [reducedMotion, isMobile]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -144,7 +146,7 @@ export default function SplitHero() {
           <div className="split-hero-content">
             <p className="split-hero-tag">AI-DRIVEN STYLE EXPERIENCE</p>
 
-            <h1 className="split-hero-headline min-h-[1.2em]">
+            <h1 className="split-hero-headline" style={{ minHeight: '140px', overflow: 'visible' }}>
               <TextType 
                 text={['Discover Your\nPerfect Style', 'Curate Your\nWardrobe', 'Elevate Your\nLook']} 
                 typingSpeed={70}
@@ -153,6 +155,8 @@ export default function SplitHero() {
                 cursorCharacter="_"
                 loop={true}
                 className="gradient-text-gold"
+                style={{ minHeight: '140px', overflow: 'visible' }}
+                aria-live="polite"
               />
             </h1>
 
@@ -196,22 +200,15 @@ export default function SplitHero() {
         {/* Right panel — video (absolute positioned, z-index: 1) */}
         <div className="split-hero-right">
           <div className="split-hero-video-wrap hero-video-panel">
-            <video
+            <HeroVideo
               key={LOOKBOOK_VIDEOS[activeVideo].src}
               ref={videoRef}
+              src={LOOKBOOK_VIDEOS[activeVideo].src}
+              poster="/photos/hero-bg.jpeg"
               className="split-hero-video"
-              autoPlay
-              muted
-              loop
-              playsInline
-              disablePictureInPicture
-              controlsList="nodownload noplaybackrate nofullscreen"
-              style={{ objectPosition: '50% center' }}
-              preload="auto"
-              aria-label={LOOKBOOK_VIDEOS[activeVideo].label}
-            >
-              <source src={LOOKBOOK_VIDEOS[activeVideo].src} type="video/mp4" />
-            </video>
+              alt={LOOKBOOK_VIDEOS[activeVideo].label}
+              priority={true}
+            />
 
             <div className="split-hero-video-gradient" aria-hidden="true" />
 

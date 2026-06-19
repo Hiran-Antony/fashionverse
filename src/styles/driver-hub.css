@@ -5,20 +5,20 @@
 
 /* ── Design Tokens ────────────────────────────────────────────── */
 :root {
-  --dh-bg:            #0a0a0a;
-  --dh-card:          #111111;
-  --dh-card-hover:    #161616;
-  --dh-green:         #00C853;
-  --dh-green-glow:    rgba(0,200,83,0.15);
-  --dh-green-border:  rgba(0,200,83,0.4);
-  --dh-gold:          #D4A032;
-  --dh-gold-glow:     rgba(212,160,50,0.12);
+  --dh-bg:            #120a06;
+  --dh-card:          #1e1209;
+  --dh-card-hover:    #251608;
+  --dh-green:         #c9a84c;
+  --dh-green-glow:    rgba(201, 168, 76, 0.15);
+  --dh-green-border:  rgba(201, 168, 76, 0.4);
+  --dh-gold:          #e0be6c;
+  --dh-gold-glow:     rgba(224, 190, 108, 0.12);
   --dh-orange:        #FF9800;
   --dh-blue:          #2979FF;
   --dh-red:           #FF4444;
-  --dh-text:          #FFFFFF;
-  --dh-muted:         rgba(255,255,255,0.45);
-  --dh-border:        rgba(255,255,255,0.07);
+  --dh-text:          #f5f0e8;
+  --dh-muted:         rgba(201, 168, 76, 0.5);
+  --dh-border:        rgba(201, 168, 76, 0.2);
   --dh-r:             16px;
   --dh-r-btn:         10px;
 }
@@ -122,7 +122,7 @@
   background: var(--dh-bg);
   z-index: 9999;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   color: var(--dh-text);
 }
 
@@ -137,6 +137,13 @@
 }
 
 /* ── Header ──────────────────────────────────────────────────────── */
+.dh-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
 .dh-header {
   display: flex;
   align-items: center;
@@ -863,7 +870,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.02em;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     line-height: 1;
     margin-bottom: 2px;
   }
@@ -938,7 +945,7 @@
 .dh-nav-label {
   font-size: 10px;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -1066,7 +1073,7 @@
   outline: none;
   caret-color: var(--dh-green);
   transition: all 200ms ease;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .dh-otp-box:focus {
@@ -1390,7 +1397,7 @@
   transition: all 0.2s ease;
   margin-top: 24px;
   margin-bottom: 40px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .dh-logout-btn:hover {
@@ -1431,7 +1438,7 @@
 /* ── Map Overrides ───────────────────────────────────────────── */
 .dh-map-container .leaflet-container {
   background: #0a0a0a !important;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .dh-map-legend {
@@ -1645,9 +1652,9 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #00C853;
-  background: rgba(0,200,83,0.1);
-  border: 1px solid rgba(0,200,83,0.25);
+  color: var(--dh-green);
+  background: var(--dh-green-glow);
+  border: 1px solid var(--dh-green-border);
   border-radius: 50px;
   padding: 6px 14px;
   margin-top: 4px;
@@ -1656,9 +1663,9 @@
 .live-dot {
   width: 7px;
   height: 7px;
-  background: #00C853;
+  background: var(--dh-green);
   border-radius: 50%;
-  animation: pulse-green 1.5s infinite;
+  animation: dh-pulse-green 1.5s infinite;
 }
 
 /* STATS ROW FIX — labels breaking to 2 lines */
@@ -1680,7 +1687,7 @@
   justify-content: center;
 }
 
-.stat-card.green  { border-top: 2.5px solid #00C853; }
+.stat-card.green  { border-top: 2.5px solid var(--dh-green); }
 .stat-card.orange { border-top: 2.5px solid #FF9800; }
 .stat-card.blue   { border-top: 2.5px solid #2979FF; }
 
@@ -1690,7 +1697,7 @@
   line-height: 1;
 }
 
-.stat-card.green  .stat-value { color: #00C853; }
+.stat-card.green  .stat-value { color: var(--dh-green); }
 .stat-card.orange .stat-value { color: #FF9800; }
 .stat-card.blue   .stat-value { color: #2979FF; }
 
@@ -1730,10 +1737,10 @@
 }
 
 .company-pill.active {
-  background: #00C853;
+  background: var(--dh-green);
   color: #000;
   font-weight: 700;
-  border-color: #00C853;
+  border-color: var(--dh-green);
 }
 
 .company-pill img {
@@ -1762,13 +1769,13 @@
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background: #00C853;
+  background: var(--dh-green);
   border-radius: 50%;
-  animation: pulse-green 2s infinite;
+  animation: dh-pulse-green 2s infinite;
 }
 
 .new-badge {
-  background: #00C853;
+  background: var(--dh-green);
   color: #000;
   font-size: 11px;
   font-weight: 700;
@@ -1806,7 +1813,7 @@
 }
 
 .nav-tab.active {
-  color: #00C853;
+  color: var(--dh-green);
   font-weight: 700;
 }
 
@@ -1816,7 +1823,7 @@
   bottom: 0;
   width: 24px;
   height: 2.5px;
-  background: #00C853;
+  background: var(--dh-green);
   border-radius: 2px 2px 0 0;
 }
 
@@ -1931,7 +1938,7 @@
   border-radius: 4px;
 }
 .dh-content-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #00e676;
+  background: var(--dh-gold);
 }
 
 
@@ -1939,14 +1946,14 @@
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: var(--dh-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #00C853;
+  background: var(--dh-green);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00e676;
+  background: var(--dh-gold);
 }
 
 html::-webkit-scrollbar,
@@ -1955,7 +1962,7 @@ body::-webkit-scrollbar,
 .dh-root::-webkit-scrollbar,
 .dh-container::-webkit-scrollbar {
   width: 12px !important;
-  background-color: #0a0a0a !important;
+  background-color: var(--dh-bg) !important;
   display: block !important;
 }
 
@@ -1964,7 +1971,7 @@ body::-webkit-scrollbar-track,
 .dh-content-wrapper::-webkit-scrollbar-track,
 .dh-root::-webkit-scrollbar-track,
 .dh-container::-webkit-scrollbar-track {
-  background: #0a0a0a !important;
+  background: var(--dh-bg) !important;
 }
 
 html::-webkit-scrollbar-thumb,
@@ -1972,9 +1979,9 @@ body::-webkit-scrollbar-thumb,
 .dh-content-wrapper::-webkit-scrollbar-thumb,
 .dh-root::-webkit-scrollbar-thumb,
 .dh-container::-webkit-scrollbar-thumb {
-  background: #00C853 !important;
+  background: var(--dh-green) !important;
   border-radius: 6px !important;
-  border: 2px solid #0a0a0a !important;
+  border: 2px solid var(--dh-bg) !important;
 }
 
 html::-webkit-scrollbar-thumb:hover,
@@ -1982,11 +1989,11 @@ body::-webkit-scrollbar-thumb:hover,
 .dh-content-wrapper::-webkit-scrollbar-thumb:hover,
 .dh-root::-webkit-scrollbar-thumb:hover,
 .dh-container::-webkit-scrollbar-thumb:hover {
-  background: #00e676 !important;
+  background: var(--dh-gold) !important;
 }
 
 html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
-  scrollbar-color: #00C853 #0a0a0a !important;
+  scrollbar-color: var(--dh-green) var(--dh-bg) !important;
   scrollbar-width: auto !important;
 }
 
@@ -2079,7 +2086,7 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   text-align: left;
   overflow: hidden;
   min-width: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .dr-company-card:active {
@@ -2122,7 +2129,7 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   color: #fff;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   margin-top: 10px;
   box-sizing: border-box;
 }
@@ -2156,7 +2163,7 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   padding: 8px 16px;
   border-radius: 50px;
   margin-bottom: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   animation: dh-fade-in 0.2s ease;
 }
 
@@ -2168,7 +2175,7 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   border: none;
   font-size: 16px;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2227,7 +2234,7 @@ html, body, .dh-content-wrapper, .dh-root, .dh-container, * {
   color: var(--dh-green);
   font-size: 14px;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;

@@ -824,7 +824,7 @@ Return ONLY valid JSON matching this exact format:
   const accentOf = TABS.find(t => t.id === tab)?.accent || G;
 
   return (
-    <div style={{ fontFamily:"'Outfit','Inter',sans-serif" }}>
+    <div style={{ fontFamily:"'Outfit', sans-serif" }}>
 
       {/* ── TAB BAR ─────────────────────────────────── */}
       <div style={{ display:"flex", gap:6, marginBottom:24, flexWrap:"wrap" }}>

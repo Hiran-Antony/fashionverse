@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Product } from '../lib/supabase';
 
 export type MannequinType = 'male' | 'female' | 'kids';
-export type SlotType = 'top' | 'bottom' | 'shoes';
+export type SlotType = 'top' | 'bottom' | 'shoes' | 'accessory';
 
 interface StudioState {
   activeMannequin: MannequinType;
@@ -28,6 +28,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     top: null,
     bottom: null,
     shoes: null,
+    accessory: null,
   },
   budget: null,
   aiScore: null,

@@ -18,7 +18,7 @@ export default function ProductPickerModal({ isOpen, onClose, onSelect, excludeP
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products-picker', searchQuery],
     queryFn: async () => {
-      let query = supabase.from('products').select('*');
+      let query = supabase.from('products').select('*, product_colors(image_url)');
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
       }
@@ -99,8 +99,8 @@ export default function ProductPickerModal({ isOpen, onClose, onSelect, excludeP
                       }}
                     >
                       <div className="w-16 h-16 rounded-lg bg-black/30 overflow-hidden flex-shrink-0">
-                        {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                        {product.product_colors?.[0]?.image_url ? (
+                          <img src={product.product_colors[0].image_url} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs text-white/30">No Img</div>
                         )}
@@ -108,7 +108,7 @@ export default function ProductPickerModal({ isOpen, onClose, onSelect, excludeP
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold truncate text-sm" style={{ color: 'var(--text-primary)' }}>{product.name}</h4>
                         <p className="text-xs truncate mt-1" style={{ color: 'var(--text-secondary)' }}>
-                          {product.category} {product.sub_category ? `• ${product.sub_category}` : ''}
+                          {product.category}
                         </p>
                         <p className="text-sm font-semibold mt-1" style={{ color: '#C9973A' }}>${product.price.toFixed(2)}</p>
                       </div>

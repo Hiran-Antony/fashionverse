@@ -1,9 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-
-import { queryClient } from './lib/queryClient';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
@@ -13,14 +10,15 @@ import SmoothScroll from './components/SmoothScroll';
 import PageTransition from './components/PageTransition';
 import GoldParticles from './components/GoldParticles';
 import HomePage from './pages/HomePage';
-import PlaceholderPage from './pages/PlaceholderPage';
+import AuthPage from './pages/AuthPage';
+import PageSkeleton from './components/PageSkeleton';
 
 // ─── Lazy-loaded pages (code splitting) ──────────────────────
+const PlaceholderPage = lazy(() => import('./pages/PlaceholderPage'));
 const ProductListPage = lazy(() => import('./pages/ProductListPage'));
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
-const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
@@ -31,33 +29,11 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const MenPage = lazy(() => import('./pages/MenPage'));
 const WomenPage = lazy(() => import('./pages/WomenPage'));
 const KidsPage = lazy(() => import('./pages/KidsPage'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const DeliveryApplyPage = lazy(() => import('./pages/DeliveryApplyPage'));
 const DeliveryDashboard = lazy(() => import('./pages/DeliveryDashboard'));
 
-// ─── Loading Spinner ─────────────────────────────────────────
-function PageLoader() {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black overflow-hidden">
-      <div 
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: 'url("/photos/hero-bg.jpeg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          transform: 'scale(1.05)',
-        }}
-      />
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-0" />
-      <div className="relative z-10 flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-[#C9973A]/20 border-t-[#C9973A] rounded-full animate-spin" />
-        <p className="text-sm tracking-[0.2em] uppercase font-bold text-[#C9973A]">
-          Loading FashionVerse
-        </p>
-      </div>
-    </div>
-  );
-}
+
 
 // ─── Route-aware gold particles (hidden on delivery dashboard) ──
 function GoldParticlesGuard() {
@@ -116,12 +92,12 @@ function App() {
   }, [setSession, fetchProfile, setLoading]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <BrowserRouter>
         <GoldParticlesGuard />
         <SmoothScroll>
           <PageTransition>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 {/* ── Standalone pages (no Navbar/Footer) ─── */}
                 <Route path="/auth" element={<AuthPage />} />
@@ -141,6 +117,7 @@ function App() {
                   <Route path="/men" element={<MenPage />} />
                   <Route path="/women" element={<WomenPage />} />
                   <Route path="/kids" element={<KidsPage />} />
+                  <Route path="/category-preview-hidden" element={<CategoryPage category="men" heroTitle="Preview" subTabs={[]} />} />
                   <Route path="/products" element={<ProductListPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
@@ -167,13 +144,13 @@ function App() {
             borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-color)',
             boxShadow: 'var(--shadow-lg)',
-            fontFamily: 'var(--font-sans)',
             fontSize: '0.875rem',
           },
         }}
       />
-    </QueryClientProvider>
+    </>
   );
 }
 
 export default App;
+

@@ -91,7 +91,6 @@ export default function LoginPromptModal() {
                   <h2
                     className="font-bold"
                     style={{
-                      fontFamily: 'var(--font-display)',
                       fontSize: '1.4rem',
                       color: 'var(--text-primary)',
                       marginBottom: '0.625rem',
@@ -198,3 +197,4 @@ export default function LoginPromptModal() {
     </AnimatePresence>
   );
 }
+

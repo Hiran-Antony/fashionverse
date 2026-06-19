@@ -14,7 +14,7 @@ interface OTPModalProps {
 }
 
 function spawnConfetti() {
-  const colors = ['#00C853', '#D4A032', '#ffffff', '#FF9800', '#2979FF'];
+  const colors = ['#c9a84c', '#D4A032', '#ffffff', '#FF9800', '#2979FF'];
   for (let i = 0; i < 60; i++) {
     const particle = document.createElement('div');
     particle.className = 'dh-confetti-particle';
@@ -117,7 +117,7 @@ export default function OTPModal({ order, onClose, onVerify, onSuccess }: OTPMod
     }
   };
 
-  const boxClass = (idx: number) => {
+  const boxClass = () => {
     let cls = 'dh-otp-box';
     if (state === 'success') cls += ' success';
     else if (state === 'error') cls += ' error';
@@ -169,7 +169,7 @@ export default function OTPModal({ order, onClose, onVerify, onSuccess }: OTPMod
               inputMode="numeric"
               maxLength={1}
               value={digit}
-              className={boxClass(idx)}
+              className={boxClass()}
               onChange={(e) => handleChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
               disabled={state === 'locked' || state === 'success'}
@@ -230,7 +230,6 @@ export default function OTPModal({ order, onClose, onVerify, onSuccess }: OTPMod
             fontSize: '15px',
             fontWeight: 700,
             cursor: pins.join('').length < 4 || state === 'locked' ? 'not-allowed' : 'pointer',
-            fontFamily: "'Inter', sans-serif",
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -250,3 +249,4 @@ export default function OTPModal({ order, onClose, onVerify, onSuccess }: OTPMod
     </div>
   );
 }
+

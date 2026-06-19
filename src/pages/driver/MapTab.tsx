@@ -8,7 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 // Fix default icon URLs
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({ iconUrl: markerIcon, shadowUrl: markerShadow });
 import { Crosshair, Maximize, Minimize } from 'lucide-react';
 import { useDriverStore } from '../../store/driverStore';
@@ -19,8 +19,8 @@ import { supabase } from '../../lib/supabase';
 // Custom driver icon (pulsing effect)
 const driverIcon = L.divIcon({
   html: `<div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
-    <div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,200,83,0.2);animation:dh-pulse-ring 2s infinite"></div>
-    <div style="width:16px;height:16px;border-radius:50%;background:#00C853;border:3px solid #fff;position:relative;z-index:1"></div>
+    <div style="position:absolute;inset:0;border-radius:50%;background:rgba(201,168,76,0.2);animation:dh-pulse-ring 2s infinite"></div>
+    <div style="width:16px;height:16px;border-radius:50%;background:#c9a84c;border:3px solid #fff;position:relative;z-index:1"></div>
   </div>`,
   className: '',
   iconSize: [40, 40],
@@ -115,7 +115,7 @@ export default function MapTab() {
     // Add delivery markers (active deliveries)
     activeDeliveries.forEach((o) => {
       const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, driverLocation[0], driverLocation[1]);
-      const marker = L.marker(pos as [number, number], { icon: dropIcon })
+      L.marker(pos as [number, number], { icon: dropIcon })
         .bindPopup(`<strong>Drop: #${o.id.slice(0, 8).toUpperCase()}</strong><br/>${o.address?.city || 'Customer'}<br/>₹${o.driver_earnings || Math.round((o.total_amount || 0) * 0.1)}`)
         .addTo(map);
     });
@@ -123,7 +123,7 @@ export default function MapTab() {
     // Add available order markers (limited to 20)
     availableOrders.slice(0, 20).forEach((o) => {
       const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, driverLocation[0], driverLocation[1]);
-      const marker = L.marker(pos as [number, number], { icon: availableIcon })
+      L.marker(pos as [number, number], { icon: availableIcon })
         .bindPopup(`<strong>Available: #${o.id.slice(0, 8).toUpperCase()}</strong><br/>${o.address?.city || 'City'}<br/>₹${o.driver_earnings || Math.round((o.total_amount || 0) * 0.1)}`)
         .addTo(map);
     });

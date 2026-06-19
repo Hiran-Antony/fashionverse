@@ -7,7 +7,7 @@ import {
   useTransform,
 } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { usePrefersReducedMotionStatic } from '../../hooks/useScrollAnimation';
+import useDeviceOptimization from '../../hooks/useDeviceOptimization';
 
 interface Product3DCardProps {
   to: string;
@@ -20,7 +20,7 @@ import BorderGlow from '../animations/BorderGlow';
 
 export default function Product3DCard({ to, label, icon, index = 0 }: Product3DCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null);
-  const reducedMotion = usePrefersReducedMotionStatic();
+  const { isMobile, prefersReducedMotion: reducedMotion } = useDeviceOptimization();
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -58,7 +58,7 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
     >
       <BorderGlow
         edgeSensitivity={10}
-        glowIntensity={2}
+        glowIntensity={isMobile ? 0 : 2}
         borderRadius={28}
         backgroundColor="#1e1209"
         glowColor="280 80 60"
@@ -67,18 +67,21 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
         <motion.div
           className="collection-3d-card-perspective h-full w-full"
           style={
-            reducedMotion
+            reducedMotion || isMobile
               ? { borderRadius: 'inherit' }
               : { rotateX, rotateY, transformStyle: 'preserve-3d', borderRadius: 'inherit' }
           }
-          whileHover={reducedMotion ? undefined : { y: -8, scale: 1.02 }}
+          whileHover={reducedMotion || isMobile ? undefined : { y: -8, scale: 1.02 }}
           transition={{ type: 'spring', stiffness: 320, damping: 22 }}
         >
           <Link
             ref={cardRef}
             to={to}
             className="collection-3d-card no-underline block h-full w-full bg-[#1e1209]"
-            style={{ borderRadius: 'inherit' }}
+            style={{
+              borderRadius: 'inherit',
+              ...(isMobile ? { backdropFilter: 'none', background: 'rgba(30, 18, 9, 0.95)' } : {})
+            }}
             onMouseMove={handleMove}
             onMouseLeave={handleLeave}
           >

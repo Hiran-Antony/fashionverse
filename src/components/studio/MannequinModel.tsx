@@ -2,12 +2,11 @@ import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStudioStore } from '../../store/studioStore';
-import type { MannequinType } from '../../store/studioStore';
 import { getDominantColorFromImage } from '../../utils/colorExtractor';
 
 export default function MannequinModel() {
   const groupRef = useRef<THREE.Group>(null);
-  const { activeMannequin, outfit } = useStudioStore();
+  const { outfit } = useStudioStore();
 
   const [topColor, setTopColor] = useState('#AAAAAA');
   const [bottomColor, setBottomColor] = useState('#AAAAAA');

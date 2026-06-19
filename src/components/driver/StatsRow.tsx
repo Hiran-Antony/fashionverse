@@ -39,15 +39,15 @@ export default function StatsRow({ earnings, done, inProgress }: StatsRowProps) 
   return (
     <div className="stats-row">
       <div className="stat-card green">
-        <div className="stat-value">₹{earnings}</div>
+        <div className="stat-value"><CountUp target={earnings} prefix="₹" /></div>
         <div className="stat-label">TODAY'S EARNINGS</div>
       </div>
       <div className="stat-card orange">
-        <div className="stat-value">{done}</div>
+        <div className="stat-value"><CountUp target={done} /></div>
         <div className="stat-label">DELIVERIES DONE</div>
       </div>
       <div className="stat-card blue">
-        <div className="stat-value">{inProgress}</div>
+        <div className="stat-value"><CountUp target={inProgress} /></div>
         <div className="stat-label">IN PROGRESS</div>
       </div>
     </div>

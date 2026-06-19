@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   IndianRupee, Clock, Shield, Truck, Hourglass,
-  CheckCircle, ChevronDown, AlertCircle
+  ChevronDown, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -49,7 +49,6 @@ const inputBase: React.CSSProperties = {
   borderRadius: '10px',
   padding: '14px 16px',
   color: '#F5EDD4',
-  fontFamily: "'Syne', sans-serif",
   fontSize: '14px',
   outline: 'none',
   transition: 'all 0.2s ease',
@@ -66,7 +65,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       fontWeight: 700,
       marginBottom: '12px',
       marginTop: '24px',
-      fontFamily: "'Syne', sans-serif",
     }}>
       {children}
     </p>
@@ -308,8 +306,7 @@ export default function DeliveryApplyPage() {
                 background: 'none', border: '1px solid rgba(239,68,68,0.3)',
                 borderRadius: '8px', color: '#f87171',
                 padding: '8px 18px', cursor: 'pointer',
-                fontSize: '13px', fontFamily: "'Syne', sans-serif",
-                fontWeight: 600, transition: 'all 0.2s',
+                fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
@@ -324,8 +321,7 @@ export default function DeliveryApplyPage() {
               background: 'none', border: '1px solid rgba(201,151,58,0.3)',
               borderRadius: '8px', color: '#C9973A',
               padding: '8px 18px', cursor: 'pointer',
-              fontSize: '13px', fontFamily: "'Syne', sans-serif",
-              fontWeight: 600, transition: 'all 0.2s',
+              fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,151,58,0.1)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
@@ -372,7 +368,6 @@ export default function DeliveryApplyPage() {
                   </div>
 
                   <h1 style={{
-                    fontFamily: "'Playfair Display', serif",
                     fontSize: '28px', fontWeight: 700,
                     color: '#F5EDD4', marginBottom: '12px',
                   }}>
@@ -432,7 +427,6 @@ export default function DeliveryApplyPage() {
                       padding: '12px 28px',
                       cursor: 'pointer',
                       fontSize: '13px',
-                      fontFamily: "'Syne', sans-serif",
                       fontWeight: 600,
                       transition: 'all 0.2s',
                     }}
@@ -471,7 +465,6 @@ export default function DeliveryApplyPage() {
                   </div>
 
                   <h1 style={{
-                    fontFamily: "'Playfair Display', serif",
                     fontSize: 'clamp(28px, 5vw, 36px)',
                     fontWeight: 700, color: '#F5EDD4',
                     lineHeight: 1.2, marginBottom: '12px',
@@ -632,7 +625,6 @@ export default function DeliveryApplyPage() {
                           fontWeight: 700,
                           letterSpacing: '0.06em',
                           cursor: isLoading ? 'not-allowed' : 'pointer',
-                          fontFamily: "'Syne', sans-serif",
                           boxShadow: '0 8px 28px rgba(201,151,58,0.3)',
                           transition: 'all 0.2s',
                           display: 'flex',
@@ -670,8 +662,7 @@ export default function DeliveryApplyPage() {
                           style={{
                             background: 'none', border: 'none',
                             color: '#C9973A', fontSize: '13px',
-                            cursor: 'pointer', fontFamily: "'Syne', sans-serif",
-                            textAlign: 'center', padding: '4px',
+                            cursor: 'pointer', textAlign: 'center', padding: '4px',
                             transition: 'color 0.2s',
                           }}
                           onMouseEnter={e => (e.currentTarget.style.color = '#E8B84B')}
@@ -701,3 +692,4 @@ export default function DeliveryApplyPage() {
     </div>
   );
 }
+

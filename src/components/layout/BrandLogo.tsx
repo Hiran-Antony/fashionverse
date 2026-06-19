@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 interface BrandLogoProps {
@@ -21,7 +20,6 @@ export default function BrandLogo({
   lightText = false,
 }: BrandLogoProps) {
   const dim = SIZES[size];
-  const [logoSrc, setLogoSrc] = useState('/brand-logo.png');
 
   return (
     <Link to="/" className={`brand-logo-link no-underline shrink-0 ${className}`}>

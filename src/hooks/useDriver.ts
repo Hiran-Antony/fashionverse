@@ -64,7 +64,7 @@ export function useDriver() {
     try {
       const { data, error } = await supabase
         .from('courier_companies')
-        .select('*')
+        .select('id, name, logo_url, brand_color, commission_rate, is_active')
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
@@ -92,7 +92,7 @@ export function useDriver() {
       // Try fetching from 'orders' table (existing schema)
       const { data: avail } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('id, user_id, status, total_amount, payment_method, coupon_code, discount_amount, created_at, delivery_pin, driver_id, pin_verified, pin_attempts, claimed_at, delivered_at, order_items(id, order_id, product_id, color_name, size, quantity, price)')
         .eq('status', 'packed')
         .is('driver_id', null)
         .order('created_at', { ascending: false });
@@ -105,7 +105,7 @@ export function useDriver() {
 
       const { data: mine } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('id, user_id, status, total_amount, payment_method, coupon_code, discount_amount, created_at, delivery_pin, driver_id, pin_verified, pin_attempts, claimed_at, delivered_at, order_items(id, order_id, product_id, color_name, size, quantity, price)')
         .eq('driver_id', user.id)
         .eq('status', 'out_for_delivery')
         .order('claimed_at', { ascending: false });
@@ -118,7 +118,7 @@ export function useDriver() {
 
       const { data: done } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('id, user_id, status, total_amount, payment_method, coupon_code, discount_amount, created_at, delivery_pin, driver_id, pin_verified, pin_attempts, claimed_at, delivered_at, order_items(id, order_id, product_id, color_name, size, quantity, price)')
         .eq('driver_id', user.id)
         .eq('status', 'delivered')
         .order('delivered_at', { ascending: false })
