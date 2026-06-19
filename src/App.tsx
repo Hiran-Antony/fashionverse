@@ -26,6 +26,7 @@ const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const OrderConfirmationPage = lazy(() => import('./pages/OrderConfirmationPage'));
 const TryOnPage = lazy(() => import('./pages/TryOnPage'));
 const StyleBuilderPage = lazy(() => import('./pages/StyleBuilderPage'));
+const StyleMatchPage = lazy(() => import('./pages/StyleMatchPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const MenPage = lazy(() => import('./pages/MenPage'));
 const WomenPage = lazy(() => import('./pages/WomenPage'));
@@ -148,6 +149,7 @@ function App() {
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/try-on" element={<TryOnPage />} />
                   <Route path="/style-builder" element={<StyleBuilderPage />} />
+                  <Route path="/style-match" element={<StyleMatchPage />} />
                   <Route path="*" element={<PlaceholderPage title="404 — Page Not Found" description="The page you're looking for doesn't exist." />} />
                 </Route>
               </Routes>
