@@ -9,7 +9,7 @@ import {
   Star, IndianRupee, ShoppingCart, Bell, TrendingUp,
   TrendingDown, Crown, CheckCircle, Clock, Truck,
   ArrowUpRight, BarChart3, Filter, ChevronLeft, ChevronRight, AlertTriangle,
-  Download, MessageCircle, Menu,
+  Download, MessageCircle, Menu, Ticket,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -50,7 +50,7 @@ const SHADOW_LG  = '0 20px 60px rgba(0,0,0,0.5)';
 const SHADOW_GOLD= '0 0 20px rgba(201,168,76,0.2)';
 
 // ── Types ─────────────────────────────────────────────────────
-type AdminTab = 'overview' | 'products' | 'orders' | 'customers' | 'staff';
+type AdminTab = 'overview' | 'products' | 'orders' | 'customers' | 'staff' | 'coupons' | 'reviews';
 interface SizeStock { size: string; stock: number; }
 interface ColorEntry { color_name: string; hex_code: string; image_url: string; imageFile?: File; }
 interface ProductForm {
@@ -71,6 +71,8 @@ const NAV_ITEMS = [
   { id: 'orders'    as AdminTab, label: 'Orders',     icon: ShoppingBag },
   { id: 'customers' as AdminTab, label: 'Users',      icon: Users },
   { id: 'staff'     as AdminTab, label: 'Delivery Staff', icon: Truck },
+  { id: 'coupons'   as AdminTab, label: 'Coupons',    icon: Ticket },
+  { id: 'reviews'   as AdminTab, label: 'Reviews',    icon: MessageCircle },
 ];
 
 const PAGE_TITLES: Record<AdminTab, string> = {
@@ -79,6 +81,8 @@ const PAGE_TITLES: Record<AdminTab, string> = {
   orders:    'Order Management',
   customers: 'User Management',
   staff:     'Delivery Staff',
+  coupons:   'Coupon Management',
+  reviews:   'Customer Reviews',
 };
 
 // ── GlassCard ─────────────────────────────────────────────────
@@ -407,7 +411,6 @@ export default function AdminDashboard() {
           position: relative;
           z-index: 2;
           max-width: 100%;
-          overflow-x: hidden;
         }
 
         .admin-sidebar {
@@ -418,6 +421,7 @@ export default function AdminDashboard() {
           position: sticky !important;
           top: 0 !important;
           height: 100vh !important;
+          align-self: flex-start !important;
           overflow-y: auto !important;
           flex-shrink: 0 !important;
           transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease !important;
@@ -884,6 +888,8 @@ export default function AdminDashboard() {
               {activeTab === 'orders'    && <OrdersTab    key="orders" />}
               {activeTab === 'customers' && <CustomersTab key="customers" />}
               {activeTab === 'staff'     && <StaffTab     key="staff" />}
+              {activeTab === 'coupons'   && <CouponsTab   key="coupons" />}
+              {activeTab === 'reviews'   && <ReviewsTab   key="reviews" />}
             </AnimatePresence>
           </main>
         </div>
@@ -898,6 +904,79 @@ export default function AdminDashboard() {
 function OverviewTab() {
   const [calendarDate, setCalendarDate] = useState(new Date());
 
+  const secureAdminFetch = async (table: string, builder: (q: any) => any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') throw new Error('Unauthorized');
+    return builder(supabase.from(table));
+  };
+
+  const { data: accessLogs = [] } = useQuery({
+    queryKey: ['admin-access-logs'],
+    queryFn: async () => {
+      const { data } = await secureAdminFetch('admin_access_log', q => q.select('*').order('timestamp', { ascending: false }).limit(10));
+      return data || [];
+    },
+    refetchInterval: 10000,
+  });
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const [pRes, oRes, uRes] = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        secureAdminFetch('orders', q => q.select('id,total_amount,created_at,status')),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
+      ]);
+      const orderData = oRes.data || [];
+      const validOrders = orderData.filter((o: any) => o.status !== 'cancelled');
+      const totalRevenue = validOrders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+      const ordersToday = orderData.filter((o: any) => new Date(o.created_at).toDateString() === new Date().toDateString()).length;
+
+      return {
+        products: pRes.count || 0,
+        orders: validOrders.length,
+        users: uRes.count || 0,
+        revenue: totalRevenue,
+        ordersToday,
+        recentOrders: orderData.slice(0, 5),
+      };
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: lowStockAlerts = [] } = useQuery({
+    queryKey: ['admin-low-stock'],
+    queryFn: async () => {
+      const { data } = await supabase.from('products').select('name, product_sizes(size, stock), product_colors(image_url)').eq('is_active', true);
+      const alerts: any[] = [];
+      data?.forEach((p: any) => {
+        p.product_sizes?.forEach((s: any) => {
+          if (s.stock < 10) {
+            alerts.push({ name: p.name, size: s.size, stock: s.stock, image: p.product_colors?.[0]?.image_url });
+          }
+        });
+      });
+      return alerts.sort((a, b) => a.stock - b.stock);
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: cancelledOrders = [] } = useQuery({
+    queryKey: ['admin-cancelled-orders'],
+    queryFn: async () => {
+      const { data } = await secureAdminFetch('orders', q => q
+        .select('id,total_amount,created_at,cancelled_at,cancellation_reason,cancellation_category,profiles:user_id(name)')
+        .eq('status', 'cancelled')
+        .order('cancelled_at', { ascending: false })
+        .limit(20)
+      );
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
   const currentMonth = calendarDate.toLocaleString('default', { month: 'long' });
   const currentYear = calendarDate.getFullYear();
   const daysInMonth = new Date(currentYear, calendarDate.getMonth() + 1, 0).getDate();
@@ -910,59 +989,15 @@ function OverviewTab() {
   const handleNextMonth = () => setCalendarDate(new Date(currentYear, calendarDate.getMonth() + 1, 1));
   const today = new Date();
   
-  const { data: lowStockAlerts = [] } = useQuery({
-    queryKey: ['admin-low-stock'],
-    queryFn: async () => {
-      const { data } = await supabase.from('products').select('name, product_sizes(size, stock), product_colors(image_url)').eq('is_active', true);
-      const alerts: any[] = [];
-      (data || []).forEach((p: any) => {
-        const image = p.product_colors?.[0]?.image_url || '';
-        (p.product_sizes || []).forEach((s: any) => {
-          if (s.stock < 5) alerts.push({ name: p.name, size: s.size, stock: s.stock, image });
-        });
-      });
-      return alerts.sort((a, b) => a.stock - b.stock).slice(0, 6);
-    }
-  });
-
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['admin-stats'],
-    queryFn: async () => {
-      const [products, orders, customers] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('orders').select('id,total_amount,created_at,status'),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
-      ]);
-      const orderData = orders.data || [];
-      const validOrders = orderData.filter((o: any) => o.status !== 'cancelled');
-      const revenue = validOrders.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
-      return { products: products.count ?? 0, orders: validOrders.length, revenue, customers: customers.count ?? 0, orderData: validOrders };
-    },
-    placeholderData: { products: 0, orders: 0, revenue: 0, customers: 0, orderData: [] },
-  });
-
   const { data: recentOrders = [] } = useQuery({
     queryKey: ['admin-recent-orders'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('orders')
+      const { data } = await secureAdminFetch('orders', q => q
         .select('id,total_amount,status,created_at,address')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
-        .limit(6);
-      return data || [];
-    },
-  });
-
-  const { data: cancelledOrders = [] } = useQuery({
-    queryKey: ['admin-cancelled-orders'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('id,total_amount,created_at,cancelled_at,cancellation_reason,cancellation_category,profiles:user_id(name)')
-        .eq('status', 'cancelled')
-        .order('cancelled_at', { ascending: false })
-        .limit(10);
+        .limit(6)
+      );
       return data || [];
     },
   });
@@ -1393,6 +1428,53 @@ function OverviewTab() {
                 </>
               );
             })()}
+          </GlassCard>
+        </div>
+
+        {/* Recent Access Attempts (Security Layer 5) */}
+        <div style={{ marginTop: 24 }}>
+          <GlassCard style={{ padding: 24, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrim }}>
+                  Recent Access Attempts
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Admin Dashboard Logins</div>
+              </div>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: `${T.gold}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={16} color={T.gold} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', flex: 1, paddingRight: 4, maxHeight: 300 }}>
+              {accessLogs.length === 0 ? (
+                <div style={{ color: T.textMuted, fontSize: 13, textAlign: 'center', padding: '40px 0' }}>No recent access logs found.</div>
+              ) : (
+                accessLogs.map((log: any, i: number) => {
+                  const d = new Date(log.timestamp);
+                  const timeStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <div key={log.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: 12, borderRadius: 10,
+                      background: log.success ? 'rgba(76,175,125,0.05)' : 'rgba(220,60,60,0.05)',
+                      border: `1px solid ${log.success ? 'rgba(76,175,125,0.15)' : 'rgba(220,60,60,0.15)'}`
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: log.success ? T.success : T.danger, marginBottom: 4 }}>
+                          {log.action}
+                        </div>
+                        <div style={{ fontSize: 10, color: T.textMuted }}>
+                          {timeStr}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10, color: 'rgba(245,237,212,0.3)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {log.user_agent?.split(' ')[0] || 'Unknown'}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </GlassCard>
         </div>
       </div>
@@ -2632,5 +2714,134 @@ function StaffTab() {
   );
 }
 
+// ── Coupons Tab ──────────────────────────────────────────────────
+function CouponsTab() {
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [code, setCode] = useState('');
+  const [discountPercent, setDiscountPercent] = useState('');
+  const [minOrder, setMinOrder] = useState('');
+  const [maxUses, setMaxUses] = useState('');
 
+  useEffect(() => { fetchCoupons(); }, []);
 
+  async function fetchCoupons() {
+    setLoading(true);
+    const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    if (data) setCoupons(data);
+    setLoading(false);
+  }
+
+  async function createCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return toast.error('Code required');
+    const { error } = await supabase.from('coupons').insert({
+      code: code.toUpperCase(),
+      discount_percent: discountPercent ? parseInt(discountPercent) : null,
+      min_order: minOrder ? parseInt(minOrder) : null,
+      max_uses: maxUses ? parseInt(maxUses) : null,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Coupon created');
+    setCode(''); setDiscountPercent(''); setMinOrder(''); setMaxUses('');
+    fetchCoupons();
+  }
+
+  async function deleteCoupon(id: string) {
+    if (!confirm('Delete this coupon?')) return;
+    const { error } = await supabase.from('coupons').delete().eq('id', id);
+    if (!error) { toast.success('Deleted'); fetchCoupons(); }
+  }
+
+  return (
+    <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-10}} transition={{duration:0.3}} style={{display:'flex',flexDirection:'column',gap:20,paddingBottom:100}}>
+      <GlassCard style={{ padding: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.gold, marginBottom: 16 }}>Create Coupon</h2>
+        <form onSubmit={createCoupon} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <input className="admin-input" placeholder="CODE (e.g. SUMMER20)" value={code} onChange={e => setCode(e.target.value)} required />
+          <input className="admin-input" type="number" placeholder="Discount %" value={discountPercent} onChange={e => setDiscountPercent(e.target.value)} required />
+          <input className="admin-input" type="number" placeholder="Min Order (Optional)" value={minOrder} onChange={e => setMinOrder(e.target.value)} />
+          <input className="admin-input" type="number" placeholder="Max Uses Limit" value={maxUses} onChange={e => setMaxUses(e.target.value)} required />
+          <button className="admin-btn" type="submit" style={{ gridColumn: '1 / -1' }}><Plus size={16}/> Create Coupon</button>
+        </form>
+      </GlassCard>
+      
+      <GlassCard style={{ padding: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.textPrim, marginBottom: 16 }}>Active Coupons</h2>
+        {loading ? <p style={{color: T.textMuted}}>Loading...</p> : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {coupons.map(c => (
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, border: `1px solid ${T.border}`, borderRadius: 8, background: T.surface }}>
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: T.gold, margin: 0 }}>{c.code}</h3>
+                  <p style={{ fontSize: 13, color: T.textMuted, margin: '4px 0 0' }}>
+                    {c.discount_percent}% OFF {c.min_order ? `| Min: ₹${c.min_order}` : ''}
+                  </p>
+                  <p style={{ fontSize: 12, color: T.textSec, margin: '4px 0 0' }}>
+                    Uses: {c.used_count} / {c.max_uses || '∞'}
+                  </p>
+                </div>
+                <button onClick={() => deleteCoupon(c.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={18}/></button>
+              </div>
+            ))}
+            {coupons.length === 0 && <p style={{color: T.textMuted}}>No coupons found.</p>}
+          </div>
+        )}
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+// ── Reviews Tab ─────────────────────────────────────────────────
+function ReviewsTab() {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { fetchReviews(); }, []);
+
+  async function fetchReviews() {
+    setLoading(true);
+    const { data } = await supabase.from('reviews').select('*, product:products(name), profile:profiles(name)').order('created_at', { ascending: false });
+    if (data) setReviews(data);
+    setLoading(false);
+  }
+
+  async function deleteReview(id: string) {
+    if (!confirm('Delete this review?')) return;
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (!error) { toast.success('Deleted'); fetchReviews(); }
+  }
+
+  return (
+    <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-10}} transition={{duration:0.3}} style={{display:'flex',flexDirection:'column',gap:20,paddingBottom:100}}>
+      <GlassCard style={{ padding: 24 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.textPrim, marginBottom: 16 }}>All Reviews</h2>
+        {loading ? <p style={{color: T.textMuted}}>Loading...</p> : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {reviews.map(r => (
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, border: `1px solid ${T.border}`, borderRadius: 8, background: T.surface }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrim }}>{r.profile?.name || 'Unknown'}</span>
+                    <span style={{ fontSize: 12, color: T.textMuted }}>on</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: T.gold }}>{r.product?.name || 'Unknown Product'}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Star key={star} size={14} fill={star <= r.rating ? T.gold : 'none'} color={star <= r.rating ? T.gold : T.border} />
+                    ))}
+                  </div>
+                  {r.comment && <p style={{ fontSize: 14, color: T.textSec, margin: 0, lineHeight: 1.5 }}>{r.comment}</p>}
+                </div>
+                <button onClick={() => deleteReview(r.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 8 }} title="Delete Review">
+                  <Trash2 size={18}/>
+                </button>
+              </div>
+            ))}
+            {reviews.length === 0 && <p style={{color: T.textMuted}}>No reviews found.</p>}
+          </div>
+        )}
+      </GlassCard>
+    </motion.div>
+  );
+}

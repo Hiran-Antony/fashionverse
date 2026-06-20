@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
@@ -12,6 +12,7 @@ import GoldParticles from './components/GoldParticles';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import PageSkeleton from './components/PageSkeleton';
+import AdminSecureRoute from './components/admin/AdminSecureRoute';
 
 // ─── Lazy-loaded pages (code splitting) ──────────────────────
 const PlaceholderPage = lazy(() => import('./pages/PlaceholderPage'));
@@ -109,7 +110,12 @@ function App() {
                 <Route path="/driver" element={<DeliveryDashboard />} />
 
                 {/* ── Admin Dashboard (standalone, no Navbar/Footer) ─── */}
-                <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
+                <Route path="/admin-dashboard/*" element={<Navigate to="/404" replace />} />
+                <Route path="/fv-secure-panel-x7k9m2/*" element={
+                  <AdminSecureRoute>
+                    <AdminDashboard />
+                  </AdminSecureRoute>
+                } />
 
                 {/* ── Main app with Navbar + Footer ──────── */}
                 <Route element={<Layout />}>

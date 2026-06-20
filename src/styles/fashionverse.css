@@ -1,0 +1,24 @@
+/* Background image for Fashionverse AI page */
+.fv-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.fv-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('/photos/ai-bg.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  /* Dark overlay so content is readable */
+  filter: brightness(0.4);
+}
+
+.fv-page > * {
+  position: relative;
+  z-index: 1;
+}

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import SplitHero from '../components/home/SplitHero';
 import CollectionsSection from '../components/home/CollectionsSection';
+import HomeReviewsSection from '../components/home/HomeReviewsSection';
 import LazySection from '../components/LazySection';
 import { queryClient } from '../main';
 import { supabase } from '../lib/supabase';
@@ -132,6 +133,14 @@ export default function HomePage() {
         <Suspense fallback={<div className="h-96 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
           <div data-reveal="fade-up">
             <FeaturesSectionLazy />
+          </div>
+        </Suspense>
+      </LazySection>
+
+      <LazySection minHeight="300px" rootMargin="150px">
+        <Suspense fallback={<div className="h-64 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
+          <div data-reveal="fade-up">
+            <HomeReviewsSection />
           </div>
         </Suspense>
       </LazySection>

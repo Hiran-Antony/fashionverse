@@ -1,3 +1,5 @@
+import '../styles/tryon.css';
+// Force Vite HMR Cache Invalidation
 import { useState, useCallback, useEffect, useRef } from "react";
 import { fullTryOnFlow } from "../lib/segmind";
 import { useTryOnStore } from "../store/tryOnStore";
@@ -214,52 +216,21 @@ export default function VirtualTryOn() {
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
       
-      <div style={{
-        background: "linear-gradient(135deg, #0d0b07 0%, #1a1208 50%, #0d0b07 100%)",
-        minHeight: "100vh",
-        color: "#f5f0e8",
-        padding: "2rem"
-      }}>
+      <div className="tryon-page">
         {/* Header Section */}
-        <div style={{
-          textAlign: "center",
-          marginBottom: "3rem"
-        }}>
-          <div style={{
-            fontSize: "11px",
-            letterSpacing: "0.2em",
-            color: "#c9a84c",
-            marginBottom: "0.5rem",
-            textTransform: "uppercase"
-          }}>
+        <div className="tryon-header">
+          <div className="tryon-powered-tag">
             Powered by AI
           </div>
-          <h1 style={{
-            fontSize: "clamp(2rem, 5vw, 3.5rem)",
-            background: "linear-gradient(135deg, #c9a84c, #f0d080, #c9a84c)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            margin: "0 0 1rem 0"
-          }}>
+          <h1 className="tryon-title" style={{ background: "linear-gradient(135deg, #c9a84c, #f0d080, #c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             Virtual Try-On
           </h1>
-          <p style={{
-            color: "#8a7a5a",
-            fontSize: "15px",
-            maxWidth: "480px",
-            margin: "0 auto 1.5rem"
-          }}>
+          <p className="tryon-subtitle">
             Upload your photo and a garment — our AI will dress you instantly
           </p>
           
           {/* Step Indicators */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem"
-          }}>
+          <div className="tryon-steps" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
             {[1, 2, 3].map((s) => (
               <div key={s} style={{ display: "flex", alignItems: "center" }}>
                 <div style={{
@@ -291,13 +262,13 @@ export default function VirtualTryOn() {
         </div>
 
         {/* Main Layout - Top/Bottom Split */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+        <div className="tryon-page-content" style={{ display: "flex", flexDirection: "column", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
           
           {/* TOP ROW: Photo & Garments */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", gap: "2rem" }}>
+          <div className="tryon-panels-row">
             
             {/* Left Column - Capture Zone (Your Photo) */}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="capture-zone-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -371,9 +342,9 @@ export default function VirtualTryOn() {
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  position: "relative",
-                  overflow: "hidden"
+                  position: "relative"
                 }}
+                className="photo-upload-area"
                 onMouseEnter={(e) => {
                   if (!modelPreview) {
                     e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)";
@@ -452,14 +423,14 @@ export default function VirtualTryOn() {
             </div>
 
             {/* Right Column - Garments */}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
               {/* Card Header */}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
                   <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
                   <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
                 </svg>
-                <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>GARMENTS</span>
+                <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>UPPERWEAR</span>
               </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
@@ -470,7 +441,7 @@ export default function VirtualTryOn() {
                 </label>
 
                 {/* Filter Tabs */}
-                <div className="tryon-filter-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
+                <div className="garments-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
                   <style>{`.tryon-filter-tabs::-webkit-scrollbar { display: none; }`}</style>
                   {UPPER_FILTER_TABS.map((tab) => (
                     <button key={tab} onClick={() => setUpperTab(tab)} style={{
@@ -504,11 +475,11 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div className="garments-grid" data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedUpperProduct?.id === product.id;
                         return (
-                          <div key={product.id} onClick={() => selectUpperProduct(isSelected ? null : product)} style={{
+                          <div key={product.id} className="picker-product-card" onClick={() => selectUpperProduct(isSelected ? null : product)} style={{
                             background: "rgba(26,15,8,0.8)", border: isSelected ? "2px solid #C9973A" : "1px solid rgba(201,151,58,0.15)",
                             borderRadius: "10px", overflow: "hidden", cursor: "pointer",
                             transition: "all 0.2s ease", position: "relative",
@@ -553,6 +524,20 @@ export default function VirtualTryOn() {
                 {/* Description Input */}
                 <input type="text" value={upperwearDesc} onChange={(e) => setUpperwearDesc(e.target.value)} placeholder='e.g. "blue shirt"' style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#f5f0e8", fontSize: "13px", outline: "none", boxSizing: "border-box", transition: "all 0.2s ease", marginTop: "10px" }} onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.8)"; }} onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }} />
               </div>
+            </div>
+          </div>
+
+            {/* Right Column - Bottomwear */}
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+              {/* Card Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
+                  <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
+                  <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
+                </svg>
+                <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>BOTTOMWEAR</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
               {/* ── BOTTOMWEAR PICKER ── */}
               <div>
@@ -561,7 +546,7 @@ export default function VirtualTryOn() {
                 </label>
 
                 {/* Filter Tabs */}
-                <div className="tryon-filter-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
+                <div className="garments-tabs" data-lenis-prevent="true" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none", msOverflowStyle: "none", marginBottom: "10px" }}>
                   {LOWER_FILTER_TABS.map((tab) => (
                     <button key={tab} onClick={() => setLowerTab(tab)} style={{
                       padding: "4px 10px", fontSize: "10px", borderRadius: "6px", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
@@ -593,11 +578,11 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "280px", overflowY: "auto", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div className="garments-grid" data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedLowerProduct?.id === product.id;
                         return (
-                          <div key={product.id} onClick={() => selectLowerProduct(isSelected ? null : product)} style={{
+                          <div key={product.id} className="picker-product-card" onClick={() => selectLowerProduct(isSelected ? null : product)} style={{
                             background: "rgba(26,15,8,0.8)", border: isSelected ? "2px solid #C9973A" : "1px solid rgba(201,151,58,0.15)",
                             borderRadius: "10px", overflow: "hidden", cursor: "pointer",
                             transition: "all 0.2s ease", position: "relative",
@@ -672,9 +657,9 @@ export default function VirtualTryOn() {
           </div>
 
           {/* MIDDLE ROW: Try It On Button */}
-          <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-            <div style={{ width: "100%", maxWidth: "400px" }}>
+          <div className="tryon-action-section">
             <button
+              className="try-it-on-btn"
               onClick={handleTryOn}
               disabled={loading}
               style={{
@@ -732,28 +717,19 @@ export default function VirtualTryOn() {
             </button>
 
             {/* Privacy Note */}
-            <p style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              color: "#5a4f35",
-              fontSize: "12px",
-              marginTop: "1rem"
-            }}>
+            <p className="tryon-privacy-note" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
               Your images are private. Not stored or shared.
             </p>
-            </div>
           </div>
 
           {/* BOTTOM ROW: AI Output */}
           <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
             <div style={{ width: "100%", maxWidth: "800px" }}>
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)", minHeight: "400px", display: "flex", flexDirection: "column" }}>
+              <div className={`ai-output-section ${result ? "has-result" : ""}`} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
             {/* Card Header */}
             <div style={{
               display: "flex",
@@ -776,40 +752,19 @@ export default function VirtualTryOn() {
 
             {/* STATE 1 - Empty */}
             {!result && !loading && (
-              <div style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                padding: "2rem"
-              }}>
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" style={{ animation: "float 3s ease-in-out infinite", marginBottom: "1.5rem" }}>
+              <div className="ai-output-empty">
+                <svg className="ai-output-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ animation: "float 3s ease-in-out infinite" }}>
                   <path d="M20.38 3.4a2 2 0 0 0-2-2h-12.76a2 2 0 0 0-2 2l-.62 6.6h18z" />
                   <path d="M12 10v11" />
                   <path d="M8 14h8" />
                 </svg>
-                <p style={{ color: "#c9a84c", fontSize: "18px", fontWeight: "500", margin: "0 0 0.5rem 0" }}>
-                  Results will appear here
-                </p>
-                <p style={{ color: "#8a7a5a", fontSize: "14px", margin: "0 0 2rem 0" }}>
-                  Upload a photo and garment to get started
-                </p>
-                <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "0.75rem",
-                  justifyContent: "center"
-                }}>
+                <div className="ai-output-empty-text">
+                  <h3>Results will appear here</h3>
+                  <p>Upload a photo and garment to get started</p>
+                </div>
+                <div className="ai-feature-badges">
                   {["✨ Realistic Draping", "✨ Preserves Your Look", "✨ Instant Results"].map((feature) => (
-                    <span key={feature} style={{
-                      border: "1px solid rgba(201,168,76,0.2)",
-                      borderRadius: "99px",
-                      padding: "6px 14px",
-                      fontSize: "12px",
-                      color: "#8a7a5a"
-                    }}>
+                    <span key={feature} className="ai-feature-badge">
                       {feature}
                     </span>
                   ))}

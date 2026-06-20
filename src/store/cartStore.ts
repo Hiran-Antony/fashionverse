@@ -15,6 +15,7 @@ export interface LocalCartItem {
 interface CartState {
   items: LocalCartItem[];
   isCartOpen: boolean;
+  appliedCoupon: { code: string; discount: number } | null;
 
   addItem: (item: LocalCartItem) => void;
   removeItem: (productId: string, color: string, size: string) => void;
@@ -23,6 +24,8 @@ interface CartState {
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
+  applyCoupon: (code: string, discount: number) => void;
+  removeCoupon: () => void;
 
   getItemCount: () => number;
   getTotal: () => number;
@@ -33,6 +36,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isCartOpen: false,
+      appliedCoupon: null,
 
       addItem: (newItem) => {
         const { user, triggerLoginPrompt } = useAuthStore.getState();
@@ -85,10 +89,12 @@ export const useCartStore = create<CartState>()(
           ),
         })),
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], appliedCoupon: null }),
       toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
       openCart: () => set({ isCartOpen: true }),
       closeCart: () => set({ isCartOpen: false }),
+      applyCoupon: (code, discount) => set({ appliedCoupon: { code, discount } }),
+      removeCoupon: () => set({ appliedCoupon: null }),
 
       getItemCount: () =>
         get().items.reduce((total, item) => total + item.quantity, 0),

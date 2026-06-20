@@ -9,10 +9,13 @@
 create table if not exists public.profiles (
   id           uuid references auth.users on delete cascade primary key,
   name         text,
+  email        text,
   avatar_url   text,
   phone        text,
   role         text not null default 'customer' check (role in ('customer', 'admin')),
   loyalty_points integer not null default 0,
+  addresses    jsonb not null default '[]'::jsonb,
+  admin_secret_verified boolean default false,
   created_at   timestamptz default now()
 );
 
@@ -37,15 +40,17 @@ create policy "Users can update own profile"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, name, avatar_url)
+  insert into public.profiles (id, name, email, avatar_url)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', 'User'),
+    new.email,
     coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture')
   )
   on conflict (id) do update
     set
       name       = coalesce(excluded.name, profiles.name),
+      email      = coalesce(excluded.email, profiles.email),
       avatar_url = coalesce(excluded.avatar_url, profiles.avatar_url);
   return new;
 end;
@@ -151,6 +156,9 @@ create table if not exists public.orders (
   payment_method  text not null,
   coupon_code     text,
   discount_amount numeric(10,2) default 0,
+  razorpay_order_id     text,
+  razorpay_payment_id   text,
+  razorpay_signature    text,
   created_at      timestamptz default now()
 );
 
@@ -163,6 +171,10 @@ create policy "Users can view own orders"
 create policy "Users can create orders"
   on public.orders for insert
   with check (auth.uid() = user_id);
+
+create policy "Users can update own orders"
+  on public.orders for update
+  using (auth.uid() = user_id);
 
 create policy "Admins can manage all orders"
   on public.orders for all
@@ -222,6 +234,64 @@ create policy "Users can update own reviews"
   on public.reviews for update
   using (auth.uid() = user_id);
 
+
+-- ─── 9. SECURITY LAYER TABLES ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.login_attempts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT,
+  ip_address TEXT,
+  attempted_at TIMESTAMP DEFAULT NOW(),
+  success BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS public.admin_access_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID,
+  action TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  user_agent TEXT,
+  success BOOLEAN
+);
+
+-- ─── 10. ADVANCED SECURITY POLICIES ────────────────────────────
+
+-- Prevent role escalation (users cannot update their own role)
+CREATE POLICY "prevent_role_change"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (role = (SELECT role FROM public.profiles WHERE id = auth.uid()));
+
+-- Only specific admin can read all orders
+DROP POLICY IF EXISTS "Admins can manage all orders" ON public.orders;
+CREATE POLICY "admin_read_orders"
+  ON public.orders FOR SELECT
+  USING (
+    auth.uid() IN (
+      SELECT id FROM public.profiles 
+      WHERE role = 'admin' AND email IN ('rhiranantonysgp@gmail.com', 'PUT_FRIEND_EMAIL_HERE@gmail.com')
+    )
+    OR auth.uid() = user_id
+  );
+
+CREATE POLICY "admin_update_orders"
+  ON public.orders FOR UPDATE
+  USING (
+    auth.uid() IN (
+      SELECT id FROM public.profiles
+      WHERE role = 'admin' AND email IN ('rhiranantonysgp@gmail.com', 'PUT_FRIEND_EMAIL_HERE@gmail.com')
+    )
+  );
+
+-- Only specific admin can manage products
+DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
+CREATE POLICY "admin_manage_products"
+  ON public.products FOR ALL
+  USING (
+    auth.uid() IN (
+      SELECT id FROM public.profiles
+      WHERE role = 'admin' AND email IN ('rhiranantonysgp@gmail.com', 'PUT_FRIEND_EMAIL_HERE@gmail.com')
+    )
+  );
 
 -- ─── DONE ─────────────────────────────────────────────────────
 -- All tables, policies, and triggers are set up.

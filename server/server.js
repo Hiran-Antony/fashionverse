@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from the root .env file
+dotenv.config({ path: '../.env' });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,7 +35,7 @@ const razorpay = new Razorpay({
 // Initialize Supabase Client
 // We use the service_role key to safely bypass Row Level Security (RLS) for server-to-server operations.
 const supabase = createClient(
-  process.env.SUPABASE_URL || '',
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
@@ -62,7 +62,7 @@ app.post('/api/payments/create-order', async (req, res) => {
     const options = {
       amount: amountInPaise,
       currency: 'INR',
-      receipt: `receipt_order_${orderId}`, // Unique receipt identifier
+      receipt: orderId, // Unique receipt identifier (UUID is 36 chars, limit is 40)
       notes: {
         supabase_order_id: orderId // Attach Supabase order metadata
       }
@@ -115,14 +115,13 @@ app.post('/api/payments/verify', async (req, res) => {
 
     // Validate the payment signature
     // The signature is a SHA256 HMAC of (razorpay_order_id + '|' + razorpay_payment_id) using the key secret
-    const isValid = razorpay.utils.validatePaymentVerification(
-      {
-        order_id: razorpay_order_id,
-        payment_id: razorpay_payment_id
-      },
-      razorpay_signature,
-      process.env.RAZORPAY_KEY_SECRET
-    );
+    const crypto = await import('crypto');
+    const generated_signature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(razorpay_order_id + '|' + razorpay_payment_id)
+      .digest('hex');
+
+    const isValid = generated_signature === razorpay_signature;
 
     if (!isValid) {
       console.warn(`Signature verification failed for Order ID: ${orderId}`);

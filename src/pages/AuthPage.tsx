@@ -132,11 +132,37 @@ export default function AuthPage() {
           return;
         }
 
+        // Layer 4 - Rate Limiting
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from('login_attempts')
+          .select('*', { count: 'exact', head: true })
+          .eq('email', cleanEmail)
+          .eq('success', false)
+          .gte('attempted_at', fiveMinutesAgo);
+
+        if (count && count >= 5) {
+          setError('Too many failed attempts. Try again in 5 minutes.');
+          setIsLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
-        if (error) throw error;
+
+        // Record attempt
+        await supabase.from('login_attempts').insert({
+          email: cleanEmail,
+          success: !error,
+        });
+
+        if (error) {
+          setError('Invalid credentials');
+          setIsLoading(false);
+          return;
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
@@ -258,7 +284,7 @@ export default function AuthPage() {
       {/* ── LEFT PANEL ─────────────────────────────── */}
       <div
         className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden py-12 lg:py-0"
-        style={{ background: 'linear-gradient(145deg, #120a06 0%, #C08552 45%, #1a0f08 100%)' }}
+        style={{ background: 'linear-gradient(145deg, #1f140e 0%, #C9973A 45%, #120a06 100%)' }}
       >
         {/* Decorative orb top-right */}
         <motion.div
@@ -267,7 +293,7 @@ export default function AuthPage() {
           style={{
             position: 'absolute', top: '-80px', right: '-80px',
             width: '420px', height: '420px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(96,165,250,0.35) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(201,151,58,0.35) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -314,7 +340,7 @@ export default function AuthPage() {
             }}>
               Your style journey<br />
               <span style={{
-                background: 'linear-gradient(135deg, #C08552 0%, #D5A075 100%)',
+                background: 'linear-gradient(135deg, #E8B84B 0%, #C9973A 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>

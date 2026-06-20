@@ -1,6 +1,7 @@
 // @ts-ignore
 import VirtualTryOn from "../components/VirtualTryOn";
 import useDeviceOptimization from "../hooks/useDeviceOptimization";
+import ElasticClothingWidget from "../components/ElasticClothingWidget";
 
 export default function TryOnPage() {
   const { isMobile } = useDeviceOptimization();
@@ -25,5 +26,10 @@ export default function TryOnPage() {
     );
   }
 
-  return <VirtualTryOn />;
+  return (
+    <>
+      <ElasticClothingWidget />
+      <VirtualTryOn />
+    </>
+  );
 }

@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import StandaloneFashionTools from '../components/StandaloneFashionTools';
 import { geminiFetch } from '../lib/gemini';
 import useDeviceOptimization from '../hooks/useDeviceOptimization';
+import '../styles/fashionverse.css';
 
 // ─── BRAND TOKENS ─────────────────────────────────────────────────
 const GOLD    = '#D4A032';
@@ -784,7 +785,7 @@ feature: "style_chat":
       {/* History Drawer */}
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} onNewChat={handleNewChat} />
 
-      <div className="fv-page" style={{ height: '100vh', background: BG_BASE, color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div className="fv-page" style={{ height: '100vh', background: 'transparent', color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         <div style={{ maxWidth: 860, margin: '0 auto', width: '100%', padding: '0 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative', zIndex: 1 }}>
 

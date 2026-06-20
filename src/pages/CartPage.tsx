@@ -5,40 +5,65 @@ import { useState } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { getOptimizedUrl } from '../lib/cloudinary';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, getTotal, getItemCount } = useCartStore();
+  const { items, removeItem, updateQuantity, getTotal, getItemCount, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
   const navigate = useNavigate();
-  const [couponCode, setCouponCode] = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponCode, setCouponCode] = useState(appliedCoupon?.code || '');
 
   const subtotal = getTotal();
   const deliveryFee = subtotal >= 999 ? 0 : 99;
-  const discount = couponApplied ? couponDiscount : 0;
+  const discount = appliedCoupon ? appliedCoupon.discount : 0;
   const total = subtotal + deliveryFee - discount;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
-    if (couponCode.toUpperCase() === 'FASHION10') {
-      const disc = Math.round(subtotal * 0.1);
-      setCouponDiscount(disc);
-      setCouponApplied(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase())
+        .single();
+        
+      if (error || !data) {
+        toast.error('Invalid coupon code');
+        return;
+      }
+      
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast.error('Coupon has expired');
+        return;
+      }
+      
+      if (data.min_order && subtotal < data.min_order) {
+        toast.error(`Minimum order amount is ₹${data.min_order}`);
+        return;
+      }
+      
+      if (data.max_uses && data.used_count >= data.max_uses) {
+        toast.error('Coupon usage limit reached');
+        return;
+      }
+      
+      let disc = 0;
+      if (data.discount_percent) {
+        disc = Math.round(subtotal * (data.discount_percent / 100));
+      } else if (data.discount_amount) {
+        disc = data.discount_amount;
+      }
+      
+      applyCoupon(couponCode.toUpperCase(), disc);
       toast.success(`Coupon applied! ₹${disc} off`);
-    } else if (couponCode.toUpperCase() === 'FIRST20') {
-      const disc = Math.round(subtotal * 0.2);
-      setCouponDiscount(disc);
-      setCouponApplied(true);
-      toast.success(`Coupon applied! ₹${disc} off`);
-    } else {
-      toast.error('Invalid coupon code');
+    } catch (err) {
+      toast.error('Error applying coupon');
     }
   };
 
   const handleRemoveCoupon = () => {
-    setCouponApplied(false);
+    removeCoupon();
     setCouponCode('');
-    setCouponDiscount(0);
     toast('Coupon removed');
   };
 
@@ -258,8 +283,8 @@ export default function CartPage() {
             </h2>
 
             {/* Coupon Code */}
-            <div className="mb-6">
-              {!couponApplied ? (
+            <div className="mb-6 pb-6" style={{ borderBottom: '1px solid var(--border-color)' }}>
+              {!appliedCoupon ? (
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Tag
@@ -303,9 +328,6 @@ export default function CartPage() {
                   </button>
                 </div>
               )}
-              <p className="text-[10px] mt-2" style={{ color: 'var(--text-muted)' }}>
-                Try: FASHION10 (10% off) or FIRST20 (20% off)
-              </p>
             </div>
 
             {/* Price Breakdown */}
@@ -329,7 +351,7 @@ export default function CartPage() {
                   Add ₹{(999 - subtotal).toLocaleString()} more for free delivery
                 </p>
               )}
-              {couponApplied && (
+              {appliedCoupon && (
                 <div className="flex justify-between text-sm font-medium" style={{ color: '#059669' }}>
                   <span>Coupon Discount</span>
                   <span>−₹{discount.toLocaleString()}</span>

@@ -7,8 +7,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
+
 import CategoryProductCard from '../components/product/CategoryProductCard';
 import SizeGuideModal from '../components/product/SizeGuideModal';
+import ReviewsSection from '../components/ReviewsSection';
 import OptimizedImage from '../components/OptimizedImage';
 import { useProductDetail } from '../hooks/useProductDetail';
 
@@ -361,6 +363,8 @@ export default function ProductDetailPage() {
                 )}
               </div>
             )}
+            
+            <ReviewsSection productId={product.id} />
           </div>
         </div>
 

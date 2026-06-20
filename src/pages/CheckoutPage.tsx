@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Phone, User, ChevronDown, Package, CreditCard, Truck,
-  ArrowLeft, Lock, CheckCircle2, Plus, X,
+  ArrowLeft, Lock, CheckCircle2, Plus, X, Tag,
 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
@@ -151,10 +151,38 @@ const loadRazorpayScript = () => {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, getTotal, getItemCount, clearCart } = useCartStore();
+  const { items, getTotal, getItemCount, clearCart, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
   const { user, profile, updateProfile } = useAuthStore();
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [isPlacing, setIsPlacing] = useState(false);
+  const [couponCode, setCouponCode] = useState(appliedCoupon?.code || '');
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    try {
+      const { data, error } = await supabase.from('coupons').select('*').eq('code', couponCode.toUpperCase()).single();
+      if (error || !data) { toast.error('Invalid coupon code'); return; }
+      if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error('Coupon has expired'); return; }
+      const currentSubtotal = getTotal();
+      if (data.min_order && currentSubtotal < data.min_order) { toast.error(`Minimum order amount is ₹${data.min_order}`); return; }
+      if (data.max_uses && data.used_count >= data.max_uses) { toast.error('Coupon usage limit reached'); return; }
+      
+      let disc = 0;
+      if (data.discount_percent) { disc = Math.round(currentSubtotal * (data.discount_percent / 100)); }
+      else if (data.discount_amount) { disc = data.discount_amount; }
+      
+      applyCoupon(couponCode.toUpperCase(), disc);
+      toast.success(`Coupon applied! ₹${disc} off`);
+    } catch (err) {
+      toast.error('Error applying coupon');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponCode('');
+    toast('Coupon removed');
+  };
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [savedAddress, setSavedAddress] = useState<AddressForm | null>(null);
   const [selectedSaved, setSelectedSaved] = useState<SavedAddress | null>(
@@ -167,7 +195,8 @@ export default function CheckoutPage() {
 
   const subtotal = getTotal();
   const deliveryFee = subtotal >= 999 ? 0 : 99;
-  const total = subtotal + deliveryFee;
+  const discount = appliedCoupon ? appliedCoupon.discount : 0;
+  const total = subtotal + deliveryFee - discount;
 
   const {
     register,
@@ -270,8 +299,8 @@ export default function CheckoutPage() {
           total_amount: total,
           address: savedAddress,
           payment_method: paymentMethod,
-          coupon_code: null,
-          discount_amount: 0,
+          coupon_code: appliedCoupon ? appliedCoupon.code : null,
+          discount_amount: discount,
           delivery_pin: deliveryPin,
           pin_attempts: 0,
           pin_verified: false,
@@ -286,6 +315,11 @@ export default function CheckoutPage() {
         await supabase.from('order_items').insert(
           orderItems.map((item) => ({ ...item, order_id: order.id }))
         );
+
+        // Update coupon usage
+        if (appliedCoupon) {
+          await supabase.rpc('increment_coupon_usage', { p_code: appliedCoupon.code });
+        }
 
         // ── Auto stock deduction ──────────────────────────────
         // For each item ordered, decrease stock in product_sizes and mark as out-of-stock if it hits 0
@@ -383,7 +417,14 @@ export default function CheckoutPage() {
             }
           },
           modal: {
-            ondismiss: () => {
+            ondismiss: async () => {
+              // Cancel the stranded order in Supabase since the user closed the modal
+              await supabase.from('orders').update({ 
+                status: 'cancelled',
+                cancellation_reason: 'Payment Abandoned',
+                cancelled_at: new Date().toISOString()
+              }).eq('id', order.id);
+
               setIsPlacing(false);
               toast.error('Payment cancelled.');
             },
@@ -393,7 +434,14 @@ export default function CheckoutPage() {
         // Open Razorpay Modal using the window constructor loaded via Checkout.js
         const rzp = new (window as any).Razorpay(options);
         
-        rzp.on('payment.failed', function (paymentFailResponse: any) {
+        rzp.on('payment.failed', async function (paymentFailResponse: any) {
+          // Cancel the stranded order in Supabase due to payment failure
+          await supabase.from('orders').update({ 
+            status: 'cancelled',
+            cancellation_reason: 'Payment Failed',
+            cancelled_at: new Date().toISOString()
+          }).eq('id', order.id);
+
           console.error('Razorpay payment failed:', paymentFailResponse.error);
           toast.error(`Payment failed: ${paymentFailResponse.error.description}`);
           setIsPlacing(false);
@@ -724,6 +772,26 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              {/* Coupon Code */}
+              <div className="mb-6 pb-6" style={{ borderBottom: '1px solid var(--border-color)', marginTop: '20px' }}>
+                {!appliedCoupon ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                      <input type="text" placeholder="Coupon code" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()} className="input pl-9 text-sm w-full" style={{ padding: '10px 12px 10px 32px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    </div>
+                    <button type="button" onClick={handleApplyCoupon} className="btn text-sm px-4" style={{ padding: '10px 16px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600 }}>Apply</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
+                    <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#065f46' }}>
+                      <Tag size={14} /> {couponCode} applied
+                    </div>
+                    <button type="button" onClick={handleRemoveCoupon} className="text-xs" style={{ color: '#065f46', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Remove</button>
+                  </div>
+                )}
+              </div>
+
               {/* Price Breakdown */}
               <div
                 style={{
@@ -840,6 +908,7 @@ export default function CheckoutPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
                 {/* COD */}
                 <label
+                  onClick={() => setPaymentMethod('cod')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '16px',
                     padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
@@ -858,7 +927,7 @@ export default function CheckoutPage() {
                     value="cod"
                     checked={paymentMethod === 'cod'}
                     onChange={() => setPaymentMethod('cod')}
-                    style={{ display: 'none' }}
+                    style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
@@ -873,6 +942,7 @@ export default function CheckoutPage() {
 
                  {/* Online Payment */}
                 <label
+                  onClick={() => setPaymentMethod('online')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '16px',
                     padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
@@ -890,7 +960,7 @@ export default function CheckoutPage() {
                     value="online"
                     checked={paymentMethod === 'online'}
                     onChange={() => setPaymentMethod('online')}
-                    style={{ display: 'none' }}
+                    style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C9973A', flexShrink: 0 }}>

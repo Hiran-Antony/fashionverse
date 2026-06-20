@@ -744,6 +744,7 @@ function ProfileTab() {
 function OrdersTab({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [cancelModal, setCancelModal] = useState<{ id: string; amount: number } | null>(null);
+  const [reviewModal, setReviewModal] = useState<{ productId: string; productName: string } | null>(null);
   const { invoiceOrder, downloadInvoice, sendWhatsAppBill } = useInvoice();
   const { user, profile } = useAuthStore();
 
@@ -788,6 +789,13 @@ function OrdersTab({ userId }: { userId: string }) {
             }}
           />
         )}
+        {reviewModal && (
+          <WriteReviewModal
+            productId={reviewModal.productId}
+            productName={reviewModal.productName}
+            onClose={() => setReviewModal(null)}
+          />
+        )}
       </AnimatePresence>
 
       {!isLoading && orders.length > 0 && (
@@ -821,6 +829,7 @@ function OrdersTab({ userId }: { userId: string }) {
           {orders.map((order: any, idx: number) => (
             <OrderCard key={order.id} order={order} index={idx}
               onCancel={() => setCancelModal({ id: order.id, amount: order.total_amount })}
+              onWriteReview={(productId, productName) => setReviewModal({ productId, productName })}
               onDownloadInvoice={() => downloadInvoice({ ...order, profiles: { name: profile?.name, email: user?.email } })}
               onWhatsApp={() => sendWhatsAppBill({ ...order, profiles: { name: profile?.name, email: user?.email } })} />
           ))}
@@ -932,10 +941,11 @@ function CancellationModal({ orderId, amount, onClose, onConfirm }: {
   );
 }
 
-function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
+function OrderCard({ order, index, onCancel, onWriteReview, onDownloadInvoice, onWhatsApp }: {
   order: any;
   index: number;
   onCancel: () => void;
+  onWriteReview: (productId: string, productName: string) => void;
   onDownloadInvoice?: () => void;
   onWhatsApp?: () => void;
 }) {
@@ -1091,12 +1101,28 @@ function OrderCard({ order, index, onCancel, onDownloadInvoice, onWhatsApp }: {
                   </div>
                 </div>
 
-                {/* Price */}
-                <div className="order-item-price">
-                  ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                  <div className="order-item-price-unit">
-                    ₹{item.price.toLocaleString('en-IN')} each
+                {/* Price and Actions */}
+                <div className="order-item-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                    <div className="order-item-price-unit">
+                      ₹{item.price.toLocaleString('en-IN')} each
+                    </div>
                   </div>
+                  
+                  {['delivered', 'shipped', 'out_for_delivery'].includes(order.status) && (
+                    <button
+                      onClick={() => onWriteReview(item.product_id, item.products?.name || item.product_name)}
+                      style={{
+                        padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
+                        background: 'transparent', border: '1px solid #C9973A', color: '#C9973A',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                        whiteSpace: 'nowrap', marginTop: 'auto'
+                      }}
+                    >
+                      <Star size={12} /> Write Review
+                    </button>
+                  )}
                 </div>
 
               </div>
@@ -1203,4 +1229,100 @@ function WishlistTab() {
   );
 }
 
+/* ─── Write Review Modal ─────────────────────────────────────── */
+function WriteReviewModal({ productId, productName, onClose }: { productId: string; productName: string; onClose: () => void }) {
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    async function checkReview() {
+      if (!user) return;
+      const { data } = await supabase.from('reviews').select('id').eq('product_id', productId).eq('user_id', user.id).single();
+      if (data) setHasReviewed(true);
+      setLoading(false);
+    }
+    checkReview();
+  }, [productId, user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmitting(true);
+    
+    const { error } = await supabase.from('reviews').insert({
+      product_id: productId,
+      user_id: user.id,
+      rating,
+      comment,
+    });
+      
+    setIsSubmitting(false);
+    
+    if (error) {
+      toast.error('Failed to submit review');
+      console.error(error);
+    } else {
+      toast.success('Review submitted successfully!');
+      queryClient.invalidateQueries();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)', paddingTop: '60px' }} onClick={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+        style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-card)', borderRadius: '24px', padding: '32px', border: '1px solid var(--border-color)' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>Write a Review</h3>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>
+        </div>
+
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+          How was your experience with <strong>{productName}</strong>?
+        </p>
+
+        {hasReviewed ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '24px', background: 'var(--bg-secondary)', borderRadius: '12px', textAlign: 'center' }}>
+            <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 12px' }} />
+            <p style={{ color: 'var(--text-primary)', fontWeight: 600 }}>You've already reviewed this item.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>Thank you for your feedback!</p>
+          </motion.div>
+        ) : (
+          <motion.form initial={{ opacity: 0 }} animate={{ opacity: loading ? 0 : 1 }} transition={{ duration: 0.2 }} onSubmit={handleSubmit} style={{ pointerEvents: loading ? 'none' : 'auto' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tap to Rate</p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '16px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button key={star} type="button" onClick={() => setRating(star)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                    <Star size={32} fill={star <= rating && rating > 0 ? '#C9973A' : 'none'} color={star <= rating && rating > 0 ? '#C9973A' : 'var(--text-muted)'} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Add a comment (Optional)</p>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="What did you like or dislike?"
+                rows={4}
+                style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', color: 'var(--text-primary)', fontSize: '14px', resize: 'vertical' }}
+              />
+            </div>
+
+            <button type="submit" disabled={isSubmitting || rating === 0} className="btn w-full" style={{ background: rating > 0 ? 'linear-gradient(135deg, #C9973A, #E8B84B)' : 'var(--bg-tertiary)', color: rating > 0 ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '999px', padding: '14px', fontWeight: 700, fontSize: '16px', opacity: (isSubmitting || rating === 0) ? 0.7 : 1, cursor: (isSubmitting || rating === 0) ? 'not-allowed' : 'pointer' }}>
+              {isSubmitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </motion.form>
+        )}
+      </motion.div>
+    </div>
+  );
+}

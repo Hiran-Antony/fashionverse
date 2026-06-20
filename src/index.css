@@ -206,12 +206,16 @@ html {
   transition: background-color var(--transition-smooth), color var(--transition-smooth);
 }
 
+html {
+  overflow-x: clip;
+}
+
 html.lenis {
   scroll-behavior: auto;
 }
 
 html.lenis body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -224,7 +228,7 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
   transition: background-color var(--transition-smooth), color var(--transition-smooth);
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   min-height: 100vh;
 }
