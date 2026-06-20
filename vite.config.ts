@@ -87,6 +87,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/api/payments': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
       // Proxy all Kolors Virtual Try-On space requests through Vite
       // This bypasses the "Forbidden embedding" 403 by making requests appear
       // to come from localhost instead of the browser origin

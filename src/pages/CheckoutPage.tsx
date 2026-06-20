@@ -138,6 +138,17 @@ const RHF_FloatingInput = forwardRef<
   );
 });
 
+// Helper to dynamically load the Razorpay Checkout.js script on demand
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, getTotal, getItemCount, clearCart } = useCartStore();
@@ -228,6 +239,16 @@ export default function CheckoutPage() {
     setIsPlacing(true);
 
     try {
+      // 1. If using online payment, ensure the Razorpay Checkout.js script is loaded dynamically
+      if (paymentMethod === 'online') {
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          toast.error('Failed to load Razorpay payment gateway. Please check your internet connection.');
+          setIsPlacing(false);
+          return;
+        }
+      }
+
       // Build order items
       const orderItems = items.map((item) => ({
         product_id: item.product_id,
@@ -240,6 +261,7 @@ export default function CheckoutPage() {
       // Generate 4-digit delivery PIN
       const deliveryPin = String(Math.floor(1000 + Math.random() * 9000));
 
+      // 2. Insert order record in database (status starts as pending)
       const { data: order, error } = await supabase
         .from('orders')
         .insert({
@@ -259,18 +281,16 @@ export default function CheckoutPage() {
 
       if (error) throw error;
 
-      // Insert order items
+      // 3. Insert specific order items
       if (order) {
         await supabase.from('order_items').insert(
           orderItems.map((item) => ({ ...item, order_id: order.id }))
         );
 
         // ── Auto stock deduction ──────────────────────────────
-        // For each item ordered, decrease stock in product_sizes
-        // and mark as out-of-stock if it hits 0
+        // For each item ordered, decrease stock in product_sizes and mark as out-of-stock if it hits 0
         await Promise.all(
           items.map(async (item) => {
-            // Fetch current stock for this product + size
             const { data: sizeRow } = await supabase
               .from('product_sizes')
               .select('id, stock')
@@ -292,17 +312,114 @@ export default function CheckoutPage() {
         );
       }
 
-      clearCart();
-      toast.success('Order placed successfully! 🎉');
-      navigate(`/order-confirmation?orderId=${order?.id || 'demo'}`);
+      // 4. Handle Online Payment Flow via Razorpay
+      if (paymentMethod === 'online' && order) {
+        // Request backend server to create Razorpay Order
+        const response = await fetch('/api/payments/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: order.id,
+            amount: total,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Failed to create payment order.');
+        }
+
+        const { order_id, key_id, amount, currency } = data;
+
+        // Configure Razorpay Checkout.js options
+        const options = {
+          key: key_id,
+          amount: amount, // in paise
+          currency: currency,
+          name: 'FashionVerse',
+          description: `Payment for Order #${order.id.slice(0, 8)}`,
+          order_id: order_id,
+          prefill: {
+            name: savedAddress.name,
+            contact: savedAddress.phone,
+            email: user.email,
+          },
+          theme: {
+            color: '#C9973A', // Theme color matching FashionVerse aesthetics (Gold)
+          },
+          handler: async (paymentResponse: any) => {
+            try {
+              setIsPlacing(true);
+              // Send signature details back to the server for secure verification
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                  orderId: order.id,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.success) {
+                throw new Error(verifyData.message || 'Payment signature verification failed.');
+              }
+
+              // Success! Clear cart, alert user, and redirect
+              clearCart();
+              toast.success('Payment verified & Order placed! 🎉');
+              navigate(`/order-confirmation?orderId=${order.id}`);
+            } catch (err: any) {
+              console.error('Signature verification error:', err);
+              toast.error(err.message || 'Payment verification failed.');
+            } finally {
+              setIsPlacing(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setIsPlacing(false);
+              toast.error('Payment cancelled.');
+            },
+          },
+        };
+
+        // Open Razorpay Modal using the window constructor loaded via Checkout.js
+        const rzp = new (window as any).Razorpay(options);
+        
+        rzp.on('payment.failed', function (paymentFailResponse: any) {
+          console.error('Razorpay payment failed:', paymentFailResponse.error);
+          toast.error(`Payment failed: ${paymentFailResponse.error.description}`);
+          setIsPlacing(false);
+        });
+
+        rzp.open();
+        // Keep processing screen state active or close modal. Note: modal opening takes focus, 
+        // dismissal resets state.
+      } else {
+        // 5. Cash on Delivery Flow
+        clearCart();
+        toast.success('Order placed successfully! 🎉');
+        navigate(`/order-confirmation?orderId=${order?.id || 'demo'}`);
+      }
+
     } catch (err: any) {
-      // Even if Supabase fails (not configured), show a demo success
-      console.warn('Order placement error:', err);
+      console.error('Order placement error:', err);
+      // Fallback behavior if connection fails or database mock behaves differently
       clearCart();
-      toast.success('Order placed! (Demo mode)');
+      toast.success('Order placed! (Demo mode fallback)');
       navigate('/order-confirmation?orderId=demo-' + Date.now());
     } finally {
-      setIsPlacing(false);
+      // For online payments, we don't clear placing state here, it is cleared on modal response / dismissal
+      if (paymentMethod !== 'online') {
+        setIsPlacing(false);
+      }
     }
   };
 
@@ -754,11 +871,11 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                {/* Online Payment */}
+                 {/* Online Payment */}
                 <label
                   style={{
                     display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s', opacity: 0.8,
+                    padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
                     background: paymentMethod === 'online' ? 'linear-gradient(135deg,rgba(201,151,58,0.12),rgba(26,15,8,0.95))' : 'var(--bg-secondary)',
                     border: `2px solid ${paymentMethod === 'online' ? '#C9973A' : '#e5e7eb'}`,
                   }}
@@ -782,9 +899,6 @@ export default function CheckoutPage() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Pay Online</p>
-                        <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px', borderRadius: '999px', background: '#fef3c7', color: '#d97706' }}>
-                          Soon
-                        </span>
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>UPI, Cards, Net Banking</p>
                     </div>
@@ -796,7 +910,7 @@ export default function CheckoutPage() {
                 <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(201,151,58,0.12)', border: '1px solid rgba(201,151,58,0.3)', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '16px' }}>⚡</span>
                   <p style={{ fontSize: '13px', color: '#92400e', fontWeight: 600, lineHeight: '1.5' }}>
-                    Online payments are currently being integrated. Please proceed with Cash on Delivery for now.
+                    Secure online payment via Razorpay. Supports UPI, Cards, Net Banking, and Wallets.
                   </p>
                 </div>
               )}
@@ -804,15 +918,15 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={handleConfirmOrder}
-                disabled={isPlacing || paymentMethod === 'online'}
+                disabled={isPlacing}
                 style={{
                   width: '100%', padding: '16px', borderRadius: '16px',
                   background: 'linear-gradient(135deg,#C9973A,#E8B84B)',
                   border: 'none', color: 'white', fontSize: '16px', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                   boxShadow: '0 8px 24px rgba(201,151,58,0.35)',
-                  cursor: isPlacing || paymentMethod === 'online' ? 'not-allowed' : 'pointer',
-                  opacity: isPlacing || paymentMethod === 'online' ? 0.7 : 1,
+                  cursor: isPlacing ? 'not-allowed' : 'pointer',
+                  opacity: isPlacing ? 0.7 : 1,
                   transition: 'all 0.2s',
                 }}
               >
@@ -820,8 +934,6 @@ export default function CheckoutPage() {
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...
                   </>
-                ) : paymentMethod === 'online' ? (
-                  'Select Cash on Delivery'
                 ) : (
                   `Place Order · ₹${total.toLocaleString()}`
                 )}
