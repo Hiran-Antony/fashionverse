@@ -21,7 +21,7 @@ export default function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeCart}
-            className="fixed inset-0 z-50 backdrop-blur-[4px]"
+            className="fixed inset-0 z-[999] backdrop-blur-[4px]"
             style={{ background: 'rgba(15, 10, 6, 0.75)' }}
           />
 
@@ -31,7 +31,7 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md flex flex-col border-l backdrop-blur-xl"
+            className="fixed top-0 right-0 bottom-0 z-[999] w-full max-w-md flex flex-col border-l backdrop-blur-xl"
             style={{
               background: 'linear-gradient(180deg, rgba(20, 11, 6, 0.97) 0%, rgba(10, 6, 2, 0.99) 100%)',
               borderColor: 'rgba(201, 151, 58, 0.15)',

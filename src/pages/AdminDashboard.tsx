@@ -96,19 +96,11 @@ function GlassCard({ children, style, className, onClick, onMouseEnter, onMouseL
 }) {
   return (
     <div
-      className={className}
+      className={className ? `admin-glass-card ${className}` : 'admin-glass-card'}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      style={{
-        background: T.card,
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: `1px solid ${T.border}`,
-        borderRadius: 20,
-        boxShadow: `${SHADOW_MD}, ${SHADOW_GOLD}`,
-        ...style,
-      }}
+      style={style}
     >
       {children}
     </div>
@@ -166,11 +158,11 @@ function StatCard({ label, value, icon: Icon, sub, color, trend }: {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'relative', overflow: 'hidden', cursor: 'default',
+        cursor: 'default',
         transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
         transform: hovered ? 'translateY(-4px)' : 'none',
-        boxShadow: hovered ? `${SHADOW_LG}, 0 0 32px ${color}30` : `${SHADOW_MD}, ${SHADOW_GOLD}`,
-        borderColor: hovered ? `${color}40` : T.border,
+        boxShadow: hovered ? `0 20px 60px rgba(0,0,0,0.5), 0 0 32px ${color}30, inset 0 1px 0 rgba(255, 255, 255, 0.06)` : `0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)`,
+        borderColor: hovered ? `${color}40` : 'rgba(212, 175, 55, 0.15)',
         minWidth: 0,
       }}
     >
@@ -420,7 +412,8 @@ export default function AdminDashboard() {
         @keyframes adminShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes adminFadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes adminGlow { 0%,100% { box-shadow: 0 0 16px rgba(201,168,76,0.2); } 50% { box-shadow: 0 0 28px rgba(201,168,76,0.4); } }
-        .admin-nav-btn:hover { background: rgba(201,168,76,0.12) !important; color: ${T.lightGold} !important; }
+        .admin-nav-btn { transition: all 0.2s ease; }
+        .admin-nav-btn:hover { background: rgba(255, 255, 255, 0.04) !important; backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; color: ${T.lightGold} !important; }
         .admin-nav-btn:hover svg { color: ${T.gold} !important; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: ${T.bgDark}; }
@@ -428,6 +421,29 @@ export default function AdminDashboard() {
         ::-webkit-scrollbar-thumb:hover { background: ${T.lightGold}; }
         /* Dot-grid background pattern */
         .admin-bg { background-image: radial-gradient(circle, rgba(201,168,76,0.07) 1px, transparent 1px); background-size: 28px 28px; }
+
+        .admin-glass-card {
+          position: relative;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(16px) saturate(150%);
+          -webkit-backdrop-filter: blur(16px) saturate(150%);
+          border: 1px solid rgba(212, 175, 55, 0.15);
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          overflow: hidden;
+        }
+        .admin-glass-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          border-radius: 16px 16px 0 0;
+          pointer-events: none;
+          z-index: 10;
+        }
 
         /* Responsive Layout Classes */
         .admin-layout {
@@ -441,8 +457,10 @@ export default function AdminDashboard() {
         }
 
         .admin-sidebar {
-          background: ${T.sidebar} !important;
-          border-right: 1px solid ${T.border} !important;
+          background: rgba(20, 14, 8, 0.4);
+          backdrop-filter: blur(20px) saturate(160%);
+          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          border-right: 1px solid rgba(212, 175, 55, 0.15);
           display: flex !important;
           flex-direction: column !important;
           position: sticky !important;
@@ -474,10 +492,10 @@ export default function AdminDashboard() {
 
         .admin-header {
           height: 70px;
-          background: rgba(15, 10, 6, 0.9);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid ${T.border};
+          background: rgba(20, 14, 8, 0.35);
+          backdrop-filter: blur(18px) saturate(150%);
+          -webkit-backdrop-filter: blur(18px) saturate(150%);
+          border-bottom: 1px solid rgba(212, 175, 55, 0.1);
           padding: 0 32px;
           display: flex;
           align-items: center;
@@ -672,6 +690,7 @@ export default function AdminDashboard() {
       `}</style>
 
       <div className="admin-layout admin-bg" style={{ background: T.bgDark }}>
+        <ModalParticles />
         {/* Backdrop for mobile drawer sidebar */}
         <div 
           className={`admin-sidebar-backdrop ${mobileSidebarOpen ? 'mobile-open' : ''}`} 
@@ -706,7 +725,7 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div style={{ height: 1, background: T.border, margin: '0 16px 16px' }}/>
+          <div style={{ height: 1, background: 'rgba(212, 175, 55, 0.12)', margin: '0 16px 16px' }}/>
 
           {/* Nav */}
           <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 10px', overflowY: 'auto' }}>
@@ -735,9 +754,10 @@ export default function AdminDashboard() {
                     padding: sidebarCollapsed ? '12px 0' : '12px 14px',
                     justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                     borderRadius: 12, marginBottom: 4,
-                    background: active ? `rgba(201,168,76,0.14)` : 'transparent',
-                    borderLeft: active ? `3px solid ${T.gold}` : '3px solid transparent',
-                    borderRight: 'none', borderTop: 'none', borderBottom: 'none',
+                    background: active ? `rgba(212, 175, 55, 0.15)` : 'transparent',
+                    backdropFilter: active ? 'blur(8px)' : 'none',
+                    WebkitBackdropFilter: active ? 'blur(8px)' : 'none',
+                    border: active ? `1px solid rgba(212, 175, 55, 0.3)` : '1px solid transparent',
                     color: active ? T.lightGold : T.textMuted,
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
                     textAlign: 'left', transition: 'all 0.2s',
@@ -756,7 +776,7 @@ export default function AdminDashboard() {
               );
             })}
 
-            <div style={{ height: 1, background: T.border, margin: '14px 6px' }}/>
+            <div style={{ height: 1, background: 'rgba(212, 175, 55, 0.12)', margin: '14px 6px' }}/>
             {!sidebarCollapsed && (
               <div style={{
                 fontSize: 9, fontWeight: 800, color: T.textMuted,
@@ -782,10 +802,11 @@ export default function AdminDashboard() {
           {!sidebarCollapsed && (
             <div style={{
               margin: 12, padding: 16,
-              border: `1px solid ${T.border}`,
-              borderRadius: 16,
-              background: `linear-gradient(135deg, rgba(201,168,76,0.08), rgba(30,18,9,0.6))`,
-              boxShadow: `inset 0 0 20px ${T.gold}05`,
+              background: 'rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'blur(14px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(14px) saturate(150%)',
+              border: '1px solid rgba(212, 175, 55, 0.12)',
+              borderRadius: 14,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <div style={{
@@ -823,8 +844,11 @@ export default function AdminDashboard() {
             onClick={() => setSidebarCollapsed(c => !c)}
             style={{
               margin: '8px 12px 16px', padding: '8px',
-              borderRadius: 10, border: `1px solid ${T.border}`,
-              background: 'transparent', color: T.textMuted,
+              borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.12)',
+              background: 'rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              color: T.textMuted,
               fontSize: 11, fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               transition: 'all 0.2s',
