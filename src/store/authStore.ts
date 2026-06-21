@@ -12,6 +12,7 @@ interface AuthState {
   isAdmin: boolean;
   isDeliveryApproved: boolean;
   isDeliveryPending: boolean;
+  walletAddress: string | null;
 
   // Login prompt for guests
   showLoginPrompt: boolean;
@@ -28,6 +29,9 @@ interface AuthState {
   // Login prompt
   triggerLoginPrompt: (reason?: string) => void;
   closeLoginPrompt: () => void;
+  
+  // Web3 Wallet
+  setWalletAddress: (address: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -40,8 +44,11 @@ export const useAuthStore = create<AuthState>()(
       isAdmin: false,
       isDeliveryApproved: false,
       isDeliveryPending: false,
+      walletAddress: null,
       showLoginPrompt: false,
       loginPromptReason: 'sign in to continue',
+
+      setWalletAddress: (address) => set({ walletAddress: address }),
 
       setSession: (session) =>
         set({

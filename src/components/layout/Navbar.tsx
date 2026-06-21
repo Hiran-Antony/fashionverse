@@ -19,6 +19,7 @@ import {
   Camera,
   Bot,
   ChevronRight,
+  Wallet,
 } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useCartStore } from '../../store/cartStore';
@@ -37,7 +38,7 @@ export default function Navbar() {
   const { theme, toggleTheme } = useThemeStore();
   const { getItemCount, openCart } = useCartStore();
   const { items: wishlistItems } = useWishlistStore();
-  const { user, profile, signOut } = useAuthStore();
+  const { user, profile, signOut, walletAddress, setWalletAddress } = useAuthStore();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -123,6 +124,23 @@ export default function Navbar() {
     await signOut();
     setIsUserMenuOpen(false);
     navigate('/');
+  };
+
+  const connectWallet = async () => {
+    // @ts-ignore
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        // @ts-ignore
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+        }
+      } catch (err) {
+        console.error("User rejected wallet connection", err);
+      }
+    } else {
+      alert("Please install MetaMask to use Web3 features!");
+    }
   };
 
   const isHomePage = location.pathname === '/';
@@ -257,6 +275,29 @@ export default function Navbar() {
                   {cartCount}
                 </motion.span>
               )}
+            </button>
+
+            {/* Web3 Wallet Connect */}
+            <button
+              onClick={connectWallet}
+              className={`relative px-3 h-8 sm:h-10 flex items-center justify-center gap-2 rounded-xl transition-colors font-medium text-xs sm:text-sm`}
+              style={{
+                color: walletAddress ? '#C9973A' : (!isScrolled && isHomePage ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'),
+                background: walletAddress ? 'rgba(201, 151, 58, 0.1)' : 'transparent',
+                border: walletAddress ? '1px solid rgba(201, 151, 58, 0.3)' : '1px solid transparent'
+              }}
+              onMouseEnter={(e) => {
+                if (!walletAddress) (e.currentTarget as HTMLElement).style.background = !isScrolled && isHomePage ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                if (!walletAddress) (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
+              aria-label="Connect Wallet"
+            >
+              <Wallet size={16} />
+              <span className="hidden md:inline">
+                {walletAddress ? `${walletAddress.substring(0,6)}...${walletAddress.substring(walletAddress.length - 4)}` : 'Connect'}
+              </span>
             </button>
 
             {user ? (

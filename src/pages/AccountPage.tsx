@@ -8,7 +8,7 @@ import {
   Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
   Circle, Shield, Calendar, ArrowRight, Plus, Trash2,
   Save, Phone, Mail, ChevronRight, Star, XCircle,
-  Eye, EyeOff, AlertTriangle, Download, MessageCircle,
+  Eye, EyeOff, AlertTriangle, Download, MessageCircle, Wallet
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,7 +19,7 @@ import { useInvoice } from '../hooks/useInvoice';
 import type { Product, SavedAddress } from '../types';
 import toast from 'react-hot-toast';
 
-type Tab = 'profile' | 'orders' | 'wishlist';
+type Tab = 'profile' | 'orders' | 'wishlist' | 'web3';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'packed', 'ready_to_ship', 'out_for_delivery', 'delivered'];
 
@@ -84,6 +84,7 @@ const TAB_META: Record<Tab, { title: string; subtitle: string }> = {
   profile:  { title: 'My Profile',   subtitle: 'Manage your personal information and delivery addresses' },
   orders:   { title: 'My Orders',    subtitle: 'Track your deliveries and view past orders' },
   wishlist: { title: 'My Wishlist',  subtitle: 'Items you have saved for later' },
+  web3:     { title: 'Web3 Wallet',  subtitle: 'Loyalty Tokens & Authenticated NFTs' },
 };
 
 /* ─── Floating Label Input ──────────────────────────────────── */
@@ -412,7 +413,7 @@ export default function AccountPage() {
   const location = useLocation();
   const pathParts = location.pathname.split('/');
   const activeTab: Tab = (pathParts[pathParts.length - 1] as Tab) || 'profile';
-  const currentTab: Tab = (['orders', 'wishlist'] as Tab[]).includes(activeTab) ? activeTab : 'profile';
+  const currentTab: Tab = (['orders', 'wishlist', 'web3'] as Tab[]).includes(activeTab) ? activeTab : 'profile';
 
   if (isLoading) {
     return (
@@ -429,6 +430,7 @@ export default function AccountPage() {
     { id: 'profile',  label: 'Profile',   icon: <User size={17} /> },
     { id: 'orders',   label: 'My Orders', icon: <Package size={17} /> },
     { id: 'wishlist', label: 'Wishlist',  icon: <Heart size={17} /> },
+    { id: 'web3',     label: 'Web3 Wallet', icon: <Wallet size={17} /> },
   ];
 
   const initial = profile?.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?';
@@ -505,6 +507,7 @@ export default function AccountPage() {
               {currentTab === 'profile'  && <ProfileTab  key="profile" />}
               {currentTab === 'orders'   && <OrdersTab   key="orders" userId={user.id} />}
               {currentTab === 'wishlist' && <WishlistTab key="wishlist" />}
+              {currentTab === 'web3'     && <Web3Tab     key="web3" />}
             </AnimatePresence>
           </div>
 
@@ -1324,5 +1327,98 @@ function WriteReviewModal({ productId, productName, onClose }: { productId: stri
         )}
       </motion.div>
     </div>
+  );
+}
+
+/* ─── Web3 Wallet Tab ───────────────────────────────────────── */
+function Web3Tab() {
+  const { walletAddress } = useAuthStore();
+  const [balance, setBalance] = useState<string>('0');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBalance() {
+      if (!walletAddress) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`http://localhost:5000/api/loyalty/balance/${walletAddress}`);
+        const data = await res.json();
+        if (data.balance) {
+          setBalance(data.balance);
+        }
+      } catch (e) {
+        console.error("Failed to fetch loyalty balance", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBalance();
+  }, [walletAddress]);
+
+  if (!walletAddress) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+        style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(201,151,58,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <Wallet size={36} style={{ color: '#C9973A' }} />
+        </div>
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>Wallet Not Connected</h3>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', maxWidth: '340px', margin: '0 auto 28px' }}>
+          Please connect your Web3 wallet using the button in the top navigation bar to view your FashionVerse Tokens and Authenticated NFTs.
+        </p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+      {/* Wallet Info Card */}
+      <div style={{ background: 'var(--bg-card)', borderRadius: '20px', padding: '28px', border: '1px solid rgba(201,151,58,0.15)', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg,#C9973A,#A07828)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(201,151,58,0.3)' }}>
+            <Wallet size={22} color="white" />
+          </div>
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Connected Address</p>
+            <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace', marginTop: '4px' }}>
+              {walletAddress}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* FVT Balance */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div style={{ background: 'linear-gradient(135deg,#C9973A,#8B651B)', borderRadius: '24px', padding: '32px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <Sparkles size={24} color="#fbbf24" />
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white' }}>FashionVerse Token</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <p style={{ fontSize: '48px', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+              {loading ? '...' : balance}
+            </p>
+            <p style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>FVT</p>
+          </div>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '12px' }}>Earned from your authentic purchases.</p>
+        </div>
+
+        {/* NFT Stats */}
+        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <Shield size={24} style={{ color: '#10b981' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Verified NFTs</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <p style={{ fontSize: '48px', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>0</p>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>Owned</p>
+          </div>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>Certificates of authenticity for your items.</p>
+        </div>
+      </div>
+    </motion.div>
   );
 }
