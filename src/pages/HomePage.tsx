@@ -86,27 +86,35 @@ export default function HomePage() {
       <SplitHero />
       <CollectionsSection />
       <HeroTicker direction="right" />
-      <ScrollStory />
+      <Suspense fallback={<div className="h-[600px] w-full animate-pulse bg-[rgba(26,15,8,0.03)]" />}>
+        <ScrollStory />
+      </Suspense>
       <div data-reveal="fade-up">
-        <ProductCarousel
-          title="New Arrivals"
-          subtitle="Just Dropped"
-          filter="featured"
-          viewAllLink="/products?sort=newest"
-          accentColor="gold"
-        />
+        <Suspense fallback={<CarouselSkeleton />}>
+          <ProductCarousel
+            title="New Arrivals"
+            subtitle="Just Dropped"
+            filter="featured"
+            viewAllLink="/products?sort=newest"
+            accentColor="gold"
+          />
+        </Suspense>
       </div>
       <div data-reveal="fade-up" data-reveal-delay="100">
-        <ProductCarousel
-          title="Trending Now"
-          subtitle="Most Popular"
-          filter="trending"
-          viewAllLink="/products?sort=popular"
-          accentColor="gold"
-        />
+        <Suspense fallback={<CarouselSkeleton />}>
+          <ProductCarousel
+            title="Trending Now"
+            subtitle="Most Popular"
+            filter="trending"
+            viewAllLink="/products?sort=popular"
+            accentColor="gold"
+          />
+        </Suspense>
       </div>
       <div data-reveal="fade-up">
-        <BrandsSection />
+        <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-[rgba(26,15,8,0.03)] rounded-3xl" />}>
+          <BrandsSection />
+        </Suspense>
       </div>
       <div data-reveal="fade-up">
         <LazySection>
