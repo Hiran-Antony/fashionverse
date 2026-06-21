@@ -43,7 +43,9 @@ export default function LazySection({
   return (
     <div ref={sectionRef} style={{ minHeight: isIntersecting ? 'auto' : minHeight }}>
       {isIntersecting ? (
-        children
+        <React.Suspense fallback={<div className="w-full bg-[rgba(26,15,8,0.03)] animate-pulse rounded-3xl" style={{ height: minHeight }} />}>
+          {children}
+        </React.Suspense>
       ) : (
         <div 
           className="w-full bg-[rgba(26,15,8,0.03)] animate-pulse rounded-3xl"
