@@ -29,7 +29,7 @@ const PANELS = [
     features: [
       { icon: <Eye size={22} />, title: 'AI Try-On', desc: 'See outfits on yourself before you buy.', to: '/try-on' },
       { icon: <Sparkles size={22} />, title: 'FashionVerse AI', desc: 'Curate complete looks from our catalog.', to: '/style-builder' },
-      { icon: <Search size={22} />, title: 'Smart Search', desc: 'Find pieces that match your aesthetic instantly.', to: '/products' },
+      { icon: <Search size={22} />, title: 'Smart Search', desc: 'Find pieces that match your aesthetic instantly.', to: '/men' },
     ],
   },
   {

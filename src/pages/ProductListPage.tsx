@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { CATEGORIES, GROUPED_CATEGORIES } from '../utils/constants';
+import { CATEGORIES, GROUPED_CATEGORIES, PRICE_RANGES, SORT_OPTIONS } from '../utils/constants';
+import { Check } from 'lucide-react';
 import CategoryProductCard from '../components/product/CategoryProductCard';
 import useDeviceOptimization from '../hooks/useDeviceOptimization';
 import { useProducts } from '../hooks/useProducts';
@@ -12,12 +13,20 @@ export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
-  const [selectedGroupHeader, setSelectedGroupHeader] = useState<string | null>(null);
 
   const categoryQuery = searchParams.get('category');
   const searchQuery = searchParams.get('search');
   const sortQuery = searchParams.get('sort') || 'newest';
   const activeTypes = useMemo(() => searchParams.get('types')?.split(',').filter(Boolean) || [], [searchParams]);
+
+  const selectedGroupHeader = useMemo(() => {
+    if (!categoryQuery || !GROUPED_CATEGORIES[categoryQuery] || activeTypes.length === 0) return null;
+    const group = GROUPED_CATEGORIES[categoryQuery].find((g: any) => {
+      const groupTypes = g.items.map((item: any) => item.value);
+      return groupTypes.length === activeTypes.length && groupTypes.every((t: any) => activeTypes.includes(t));
+    });
+    return group ? group.heading : null;
+  }, [categoryQuery, activeTypes]);
 
   const {
     data,
@@ -53,8 +62,7 @@ export default function ProductListPage() {
       newParams.delete('types');
     }
     setSearchParams(newParams);
-    setSelectedGroupHeader(null);
-  };
+      };
 
   const handleTypeToggle = (typeValue: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -69,6 +77,19 @@ export default function ProductListPage() {
     } else {
       newParams.delete('types');
     }
+    setSearchParams(newParams);
+  };
+
+  
+  const currentPriceRange = searchParams.get('priceRange');
+  const handlePriceSelect = (rangeLabel: string | null) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (rangeLabel) {
+      newParams.set('priceRange', rangeLabel);
+    } else {
+      newParams.delete('priceRange');
+    }
+    newParams.delete('page');
     setSearchParams(newParams);
   };
 
@@ -179,7 +200,7 @@ export default function ProductListPage() {
               )}
 
               <div
-                className="absolute inset-y-0 left-0 w-80 lg:w-full lg:static h-full overflow-y-auto lg:overflow-visible p-6 lg:p-0 flex flex-col gap-8"
+                className="absolute inset-y-0 left-0 w-80 lg:w-full lg:static lg:sticky lg:top-24 h-full lg:h-[calc(100vh-8rem)] overflow-y-auto p-6 lg:p-4 lg:pr-2 flex flex-col gap-8 custom-scrollbar rounded-xl"
                 style={{
                   background: 'var(--bg-primary)',
                   borderRight: '1px solid var(--border-color)',
@@ -334,28 +355,87 @@ export default function ProductListPage() {
                   </div>
                 )}
 
-                {/* Sort (Desktop only, mobile is above grid) */}
-                <div className="hidden lg:block">
-                   <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Sort By
+                
+                {/* Price Range Filter */}
+                <div style={{ borderTop: '1px solid rgba(201,151,58,0.12)', paddingTop: '16px' }}>
+                  <h4 style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(201,151,58,0.55)', marginBottom: '10px' }}>
+                    Price Range
                   </h4>
-                  <div className="relative">
-                    <select
-                      value={sortQuery}
-                      onChange={handleSortChange}
-                      className="w-full appearance-none rounded-xl px-4 py-3 text-sm font-medium border pr-10 focus:outline-none"
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <button
+                      onClick={() => handlePriceSelect(null)}
                       style={{
-                        background: 'var(--bg-secondary)',
-                        borderColor: 'var(--border-color)',
-                        color: 'var(--text-primary)'
+                        width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px',
+                        fontSize: '13px', fontWeight: !currentPriceRange ? 600 : 400, border: 'none', cursor: 'pointer',
+                        background: !currentPriceRange ? 'rgba(201,151,58,0.12)' : 'transparent',
+                        color: !currentPriceRange ? '#E8B84B' : 'rgba(245,237,212,0.7)',
+                        borderLeft: !currentPriceRange ? '2px solid #C9973A' : '2px solid transparent',
+                        transition: 'all 0.15s',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                       }}
                     >
-                      <option value="newest">Newest Arrivals</option>
-                      <option value="price-asc">Price: Low to High</option>
-                      <option value="price-desc">Price: High to Low</option>
-                      <option value="name-asc">Name: A to Z</option>
-                    </select>
-                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+                      All Prices
+                      {!currentPriceRange && <Check size={14} />}
+                    </button>
+                    {PRICE_RANGES.map((range) => {
+                      let backendVal = '';
+                      if (range.label === 'Under ₹500') backendVal = 'under50';
+                      else if (range.label === '₹500 – ₹1,000') backendVal = '50to100';
+                      else if (range.label === 'Above ₹5,000') backendVal = 'over100';
+                      else backendVal = 'over100';
+
+                      const isActive = currentPriceRange === backendVal;
+                      return (
+                        <button
+                          key={range.label}
+                          onClick={() => handlePriceSelect(backendVal)}
+                          style={{
+                            width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px',
+                            fontSize: '13px', fontWeight: isActive ? 600 : 400, border: 'none', cursor: 'pointer',
+                            background: isActive ? 'rgba(201,151,58,0.12)' : 'transparent',
+                            color: isActive ? '#E8B84B' : 'rgba(245,237,212,0.7)',
+                            borderLeft: isActive ? '2px solid #C9973A' : '2px solid transparent',
+                            transition: 'all 0.15s',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                          }}
+                        >
+                          {range.label}
+                          {isActive && <Check size={14} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Desktop Sort Options (Premium style) */}
+                <div className="hidden lg:block" style={{ borderTop: '1px solid rgba(201,151,58,0.12)', paddingTop: '16px', paddingBottom: '16px' }}>
+                   <h4 style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(201,151,58,0.55)', marginBottom: '10px' }}>
+                    Sort By
+                  </h4>
+                  <div className="flex flex-col gap-1">
+                    {[
+                      { value: 'newest', label: 'Newest Arrivals' },
+                      { value: 'price-asc', label: 'Price: Low to High' },
+                      { value: 'price-desc', label: 'Price: High to Low' },
+                      { value: 'name-asc', label: 'Name: A to Z' }
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleSortChange({ target: { value: opt.value } } as any)}
+                        style={{
+                          width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px',
+                          fontSize: '13px', fontWeight: sortQuery === opt.value ? 600 : 400, border: 'none', cursor: 'pointer',
+                          background: sortQuery === opt.value ? 'rgba(201,151,58,0.12)' : 'transparent',
+                          color: sortQuery === opt.value ? '#E8B84B' : 'rgba(245,237,212,0.7)',
+                          borderLeft: sortQuery === opt.value ? '2px solid #C9973A' : '2px solid transparent',
+                          transition: 'all 0.15s',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                        }}
+                      >
+                        {opt.label}
+                        {sortQuery === opt.value && <Check size={14} />}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -371,7 +451,7 @@ export default function ProductListPage() {
             <div className="w-full border-y border-[rgba(201,151,58,0.15)] bg-[rgba(18,10,6,0.3)] mb-8 overflow-x-auto hide-scrollbar rounded-lg">
               <div className="flex items-center gap-6 md:gap-10 px-6 min-w-max">
                 <button
-                  onClick={() => setSelectedGroupHeader(null)}
+                  onClick={() => handleGroupHeaderSelect(null)}
                   className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors cursor-pointer ${
                     selectedGroupHeader === null
                       ? 'border-[#C9973A] text-[#E8B84B]'
@@ -383,7 +463,7 @@ export default function ProductListPage() {
                 {GROUPED_CATEGORIES[categoryQuery].map((group) => (
                   <button
                     key={group.heading}
-                    onClick={() => setSelectedGroupHeader(group.heading)}
+                    onClick={() => handleGroupHeaderSelect(group.heading)}
                     className={`py-4 text-xs md:text-sm font-bold tracking-widest uppercase border-b-2 transition-colors cursor-pointer ${
                       selectedGroupHeader === group.heading
                         ? 'border-[#C9973A] text-[#E8B84B]'

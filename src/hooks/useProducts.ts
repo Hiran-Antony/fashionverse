@@ -107,7 +107,24 @@ export function useProducts(params: UseProductsParams = {}) {
       }
 
       if (types && types.length > 0) {
-        result = result.filter((p) => p.tags && p.tags.some((tag: string) => types.includes(tag)));
+        result = result.filter((p) => {
+          const hasTag = p.tags && p.tags.some((tag: string) => types.includes(tag));
+          const nameLower = p.name ? p.name.toLowerCase() : '';
+          const hasNameMatch = types.some(type => {
+            const typeLower = type.toLowerCase();
+            if (typeLower === 't-shirts') return nameLower.includes('t-shirt') || nameLower.includes('polo');
+            if (typeLower === 'casual shirts') return nameLower.includes('shirt') && nameLower.includes('casual');
+            if (typeLower === 'formal shirts') return nameLower.includes('shirt') && nameLower.includes('formal');
+            if (typeLower === 'blazers & suits') return nameLower.includes('blazer') || nameLower.includes('suit');
+            if (typeLower === 'jeans') return nameLower.includes('jeans');
+            if (typeLower === 'trousers') return nameLower.includes('trouser') || nameLower.includes('pant');
+            if (typeLower === 'cargo') return nameLower.includes('cargo');
+            if (typeLower === 'sweatshirts') return nameLower.includes('sweatshirt');
+            if (typeLower === 'jackets') return nameLower.includes('jacket');
+            return nameLower.includes(typeLower);
+          });
+          return hasTag || hasNameMatch;
+        });
       }
 
       // Map to include image_url, slug, colors and sizes properties
