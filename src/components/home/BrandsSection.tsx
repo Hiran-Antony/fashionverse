@@ -46,25 +46,48 @@ export default function BrandsSection() {
           </p>
         </motion.div>
 
-        {/* Brand Grid */}
-        <div className="brands-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" style={{ marginBottom: '48px' }}>
-          {BRANDS.map((brand, i) => (
-            <motion.div
-              key={brand.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.6, ease: 'easeOut' }}
-            >
-              <Link
-                to={`/products?brand=${encodeURIComponent(brand.name)}`}
-                className="group flex flex-col items-center justify-center no-underline transition-all duration-300"
+        {/* Brand Logo Loop */}
+        <div style={{
+          display: 'flex',
+          overflow: 'hidden',
+          position: 'relative',
+          width: '100%',
+          marginBottom: '48px',
+          padding: '20px 0',
+          maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)'
+        }}>
+          <style>{`
+            @keyframes logo-loop-scroll {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .logo-loop-track {
+              display: flex;
+              gap: 20px;
+              width: max-content;
+              animation: logo-loop-scroll 30s linear infinite;
+            }
+            .logo-loop-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          
+          <div className="logo-loop-track">
+            {/* Render 4 copies of BRANDS to ensure it's wide enough for the 50% translation trick on large screens */}
+            {[...BRANDS, ...BRANDS, ...BRANDS, ...BRANDS].map((brand, i) => (
+              <div
+                key={`${brand.name}-${i}`}
+                className="group flex flex-col items-center justify-center transition-all duration-300"
                 style={{
                   background: 'rgba(26, 15, 8, 0.8)',
                   border: '1px solid rgba(201, 151, 58, 0.15)',
                   borderRadius: '16px',
                   padding: '24px 20px',
-                  height: '100%',
+                  width: '180px',
+                  height: '140px',
+                  flexShrink: 0,
+                  cursor: 'default',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
@@ -81,6 +104,7 @@ export default function BrandsSection() {
                   src={brand.image}
                   alt={brand.name}
                   className={`brand-logo-img brand-logo-img--${brand.type}`}
+                  style={{ maxHeight: '50px', objectFit: 'contain' }}
                 />
                 
                 <p
@@ -94,9 +118,9 @@ export default function BrandsSection() {
                 >
                   {brand.name}
                 </p>
-              </Link>
-            </motion.div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* View All Brands CTA */}

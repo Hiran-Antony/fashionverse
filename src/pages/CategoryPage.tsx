@@ -502,6 +502,25 @@ export default function CategoryPage({
           style={{ background: heroAccentColor }}
           aria-hidden="true"
         />
+
+        {/* Floating Golden Particles */}
+        <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-[var(--color-gold-primary)] rounded-full animate-pulse"
+              style={{
+                width: Math.random() * 4 + 2 + 'px',
+                height: Math.random() * 4 + 2 + 'px',
+                left: Math.random() * 100 + '%',
+                top: Math.random() * 100 + '%',
+                animationDuration: Math.random() * 3 + 2 + 's',
+                animationDelay: Math.random() * 2 + 's',
+                boxShadow: 'var(--glow-gold-soft)',
+              }}
+            />
+          ))}
+        </div>
         <div className="cat-hero-content container">
           <motion.p
             className="cat-hero-eyebrow"

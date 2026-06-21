@@ -16,6 +16,7 @@ export default function ProductListPage() {
 
   const categoryQuery = searchParams.get('category');
   const searchQuery = searchParams.get('search');
+  const brandQuery = searchParams.get('brand');
   const sortQuery = searchParams.get('sort') || 'newest';
   const activeTypes = useMemo(() => searchParams.get('types')?.split(',').filter(Boolean) || [], [searchParams]);
 
@@ -28,6 +29,7 @@ export default function ProductListPage() {
   } = useProducts({
     category: categoryQuery,
     search: searchQuery,
+    brand: brandQuery,
     sort: sortQuery,
     types: activeTypes,
     priceRange: searchParams.get('priceRange'),

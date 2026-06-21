@@ -15,29 +15,20 @@ const HeroVideo = forwardRef<HTMLVideoElement, HeroVideoProps>(({
   className = '',
   priority = false,
 }, ref) => {
-  const [videoSrc, setVideoSrc] = useState('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVideoSrc(src);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [src]);
-
   return (
     <video
       ref={ref}
-      src={videoSrc || undefined}
+      src={src}
       poster={poster}
       className={className}
       autoPlay
       muted
       loop
       playsInline
-      preload="none"
+      preload="auto"
       disablePictureInPicture
       controlsList="nodownload noplaybackrate nofullscreen"
-      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }}
       aria-label={alt}
       {...({ fetchPriority: priority ? 'high' : undefined } as any)}
     />

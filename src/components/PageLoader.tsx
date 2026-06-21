@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MIN_DISPLAY_MS = 300;
+const MIN_DISPLAY_MS = 750;
 
 export default function PageLoader() {
   const [visible, setVisible] = useState(true);
@@ -20,6 +20,7 @@ export default function PageLoader() {
     };
 
     if (document.readyState === 'complete') {
+      // Force it to wait at least MIN_DISPLAY_MS even if the document is already loaded
       hide();
     } else {
       window.addEventListener('load', hide);

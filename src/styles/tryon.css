@@ -79,18 +79,18 @@
 /* Both panels same fixed height */
 .capture-zone-panel,
 .garments-panel {
-  height: 380px;
+  height: 430px;
   overflow: hidden;
 }
 
 /* Photo upload area - more compact */
 .photo-upload-area {
-  height: 260px;
+  height: 280px;
 }
 
 /* Garments panel - scrollable inside */
 .garments-grid {
-  max-height: 260px;
+  max-height: 310px;
   overflow-y: auto;
   overflow-x: hidden;
 }

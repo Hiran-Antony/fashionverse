@@ -21,7 +21,14 @@ export default function CollectionsSection() {
   useTitleReveal(headerRef, titleRef);
 
   return (
-    <section className="collections-section" data-reveal="fade-up">
+    // NO data-reveal on the section — cards animate individually via Framer Motion
+    <section
+      className="collections-section"
+      style={{
+        background: 'radial-gradient(circle at center, #1a0d00 0%, #0d0600 100%)',
+      }}
+    >
+      {/* Centred header */}
       <div className="container">
         <div ref={headerRef} className="collections-section-header">
           <p className="collections-eyebrow">Shop By Category</p>
@@ -29,18 +36,19 @@ export default function CollectionsSection() {
             Explore Our Collections
           </h2>
         </div>
+      </div>
 
-        <div className="collections-grid">
-          {CATEGORIES.map((cat, index) => (
-            <Product3DCard
-              key={cat.value}
-              to={['men', 'women', 'kids'].includes(cat.value) ? `/${cat.value}` : `/products?category=${cat.value}`}
-              label={cat.label}
-              icon={CATEGORY_ICONS[cat.value]}
-              index={index}
-            />
-          ))}
-        </div>
+      {/* Grid sits outside .container so it uses its own max-width */}
+      <div className="collections-grid">
+        {CATEGORIES.map((cat, index) => (
+          <Product3DCard
+            key={cat.value}
+            to={['men', 'women', 'kids'].includes(cat.value) ? `/${cat.value}` : `/products?category=${cat.value}`}
+            label={cat.label}
+            icon={CATEGORY_ICONS[cat.value]}
+            index={index}
+          />
+        ))}
       </div>
     </section>
   );

@@ -58,7 +58,7 @@ export default function ProductCarousel({
     accentColor === 'gold' || accentColor === 'sapphire' ? '#E8B84B' : 'var(--purple-600)';
 
   return (
-    <section style={{ padding: '5rem 0', background: 'var(--bg-primary)' }}>
+    <section style={{ padding: '5rem 0', background: 'var(--bg-primary)', contentVisibility: 'auto', containIntrinsicSize: '500px' }}>
       <div className="container">
         {/* Header */}
         <motion.div

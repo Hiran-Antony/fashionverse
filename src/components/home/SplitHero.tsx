@@ -34,12 +34,11 @@ function HeroTicker() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="hero-ticker" aria-hidden="true">
-      <div ref={trackRef} className="hero-ticker-track">
+    <div className="ticker-wrapper" aria-hidden="true">
+      <div ref={trackRef} className="ticker-track">
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-          <span key={`${item}-${i}`} className="hero-ticker-item">
+          <span key={`${item}-${i}`} className="ticker-item">
             {item}
-            <span className="hero-ticker-dot">✦</span>
           </span>
         ))}
       </div>

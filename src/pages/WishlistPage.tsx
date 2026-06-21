@@ -1,14 +1,34 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useWishlistStore } from '../store/wishlistStore';
-import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
+import CategoryProductCard from '../components/product/CategoryProductCard';
 
 export default function WishlistPage() {
-  const { items, removeItem } = useWishlistStore();
+  const { items } = useWishlistStore();
 
-  // items are product IDs — we'll show a meaningful UI
   const isEmpty = items.length === 0;
+
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['wishlist-products', items],
+    queryFn: async () => {
+      if (!items.length) return [];
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, price, original_price, description, category, brand, rating, review_count, tags, is_featured,
+          product_colors (id, product_id, color_name, hex_code, image_url),
+          product_sizes (id, size, stock, is_out_of_stock)
+        `)
+        .in('id', items);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: items.length > 0,
+  });
 
   if (isEmpty) {
     return (
@@ -74,77 +94,29 @@ export default function WishlistPage() {
       </div>
 
       {/* Wishlist Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-        <AnimatePresence>
-          {items.map((productId, index) => (
-            <motion.div
-              key={productId}
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ delay: index * 0.05 }}
-              className="relative rounded-2xl overflow-hidden flex flex-col"
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-              }}
-            >
-              {/* Placeholder image */}
-              <div
-                className="w-full pt-[125%] relative"
-                style={{ background: 'var(--bg-secondary)' }}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="loading loading-spinner text-primary"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
+          <AnimatePresence>
+            {products?.map((product, index) => (
+              <motion.div
+                key={product.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ delay: index * 0.05 }}
+                className="wishlist-custom-card"
               >
-                <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  <Heart size={28} style={{ color: '#ef4444' }} fill="#ef4444" />
-                  <span className="text-xs font-medium">Saved Item</span>
-                </div>
-
-                {/* Remove from wishlist */}
-                <button
-                  onClick={() => {
-                    removeItem(productId);
-                    toast('Removed from wishlist');
-                  }}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                  style={{
-                    background: 'rgba(255,255,255,0.9)',
-                    color: '#ef4444',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-
-              {/* Info */}
-              <div className="p-3 flex flex-col gap-2 flex-1">
-                <p
-                  className="text-xs font-medium line-clamp-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Saved Product
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  ID: {productId.slice(0, 8)}...
-                </p>
-                <div className="flex flex-col gap-2 mt-auto pt-2">
-                  <Link
-                    to={`/product/${productId}`}
-                    className="btn btn-outline btn-sm text-xs text-center justify-center no-underline"
-                  >
-                    View Product
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+                <CategoryProductCard product={product as any} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Continue Shopping */}
       <div className="mt-12 text-center">

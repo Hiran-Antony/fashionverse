@@ -777,6 +777,53 @@ feature: "style_chat":
         .send-btn { position: relative; overflow: hidden; }
         .send-btn::after { content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; background: rgba(212,160,50,0.4); border-radius: 50%; transform: scale(0); opacity: 1; pointer-events: none; }
         .send-btn:active::after { animation: ripple 300ms ease-out forwards; }
+        
+        /* LIQUID GLASS UI */
+        .glass-container {
+          background: rgba(20, 14, 8, 0.45);
+          backdrop-filter: blur(20px) saturate(160%);
+          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          border: 1px solid rgba(212, 175, 55, 0.25);
+          border-radius: 24px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          position: relative;
+        }
+        .glass-container::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          border-radius: 24px 24px 0 0;
+        }
+        .glass-chip {
+          background: rgba(255, 255, 255, 0.04) !important;
+          border: 1px solid rgba(212, 175, 55, 0.2) !important;
+          backdrop-filter: blur(10px) !important;
+          -webkit-backdrop-filter: blur(10px) !important;
+          border-radius: 999px !important;
+          transition: all 0.25s ease !important;
+          box-shadow: none !important;
+        }
+        .glass-chip:hover {
+          background: rgba(212, 175, 55, 0.12) !important;
+          border-color: rgba(212, 175, 55, 0.45) !important;
+          transform: translateY(-1px) !important;
+        }
+        .glass-input-bar {
+          background: rgba(255, 255, 255, 0.03) !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
+          border: 1px solid rgba(212, 175, 55, 0.18) !important;
+          border-radius: 20px !important;
+          box-shadow: none !important;
+        }
+        .glass-send-btn {
+          box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4) !important;
+        }
+        .glass-input-bar textarea::placeholder {
+          color: rgba(255, 255, 255, 0.35) !important;
+        }
       `}</style>
 
       {/* Hidden file input */}
@@ -785,7 +832,7 @@ feature: "style_chat":
       {/* History Drawer */}
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} onNewChat={handleNewChat} />
 
-      <div className="fv-page" style={{ height: '100vh', background: 'transparent', color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div className="fv-page" style={{ height: 'calc(100vh - 80px)', background: 'transparent', color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         <div style={{ maxWidth: 860, margin: '0 auto', width: '100%', padding: '0 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative', zIndex: 1 }}>
 
@@ -924,7 +971,7 @@ feature: "style_chat":
 
           {/* ── BOTTOM INPUT AREA ── */}
           {viewMode === 'chat' && (
-            <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: BG_BASE, flexShrink: 0, paddingTop: 10, paddingBottom: 14 }}>
+            <div className="glass-container" style={{ position: 'sticky', bottom: 16, zIndex: 10, flexShrink: 0, padding: '16px 20px', marginBottom: 16 }}>
 
             {/* Photo preview */}
             <AnimatePresence>
@@ -953,7 +1000,7 @@ feature: "style_chat":
                   { icon: Camera, label: 'Upload Photo', prompt: '', color: GOLD, isPhoto: true },
                 ].map((chip, i) => (
                   <motion.button key={i}
-                    whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+                    className="glass-chip"
                     onClick={() => {
                       if ((chip as { isPhoto?: boolean }).isPhoto) { photoInputRef.current?.click(); return; }
                       handleSendMessage(chip.prompt);
@@ -961,23 +1008,10 @@ feature: "style_chat":
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       height: 32, padding: '0 14px',
-                      background: 'rgba(10,6,0,0.82)',
-                      border: `1px solid rgba(212,160,50,0.28)`,
-                      borderRadius: 20, cursor: 'pointer',
+                      cursor: 'pointer',
                       fontSize: 11, fontWeight: 500,
-                      color: TEXT_PRI, backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
-                      transition: 'border-color 160ms, box-shadow 160ms',
+                      color: TEXT_PRI,
                       whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = `${chip.color}88`;
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 2px 14px rgba(0,0,0,0.5), 0 0 0 1px ${chip.color}33`;
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(212,160,50,0.28)';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.4)';
                     }}>
                     <chip.icon size={12} color={chip.color} />
                     {chip.label}
@@ -985,9 +1019,7 @@ feature: "style_chat":
                 ))}
               </div>
             )}
-            <div style={{ background: 'rgba(22,12,3,0.75)', border: `1px solid rgba(212,160,50,0.18)`, borderRadius: 16, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 4px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(212,160,50,0.08)', padding: '12px 12px 10px 18px', transition: 'border-color 200ms ease, box-shadow 200ms ease' }}
-              onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = `rgba(212,160,50,0.55)`; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 32px rgba(0,0,0,0.45), 0 0 0 2px rgba(212,160,50,0.10), inset 0 1px 0 rgba(212,160,50,0.12)`; }}
-              onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = `rgba(212,160,50,0.18)`; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(212,160,50,0.08)`; }}>
+            <div className="glass-input-bar" style={{ padding: '12px 12px 10px 18px', transition: 'border-color 200ms ease, box-shadow 200ms ease' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
                 {/* Photo upload button */}
                 <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.93 }}
@@ -1009,7 +1041,7 @@ feature: "style_chat":
                   style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 14, color: TEXT_PRI, lineHeight: 1.65, fontWeight: 400, padding: '2px 0 4px', maxHeight: 110, caretColor: GOLD }}
                   onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px'; }} />
 
-                <motion.button className="send-btn" whileHover={{ scale: 1.07, boxShadow: `0 0 22px rgba(212,160,50,0.45)` }} whileTap={{ scale: 0.94 }}
+                <motion.button className="send-btn glass-send-btn" whileHover={{ scale: 1.07, boxShadow: `0 0 22px rgba(212,160,50,0.45)` }} whileTap={{ scale: 0.94 }}
                   onClick={() => handleSendMessage()}
                   disabled={(!inputValue.trim() && !photoBase64) || isGenerating || !catalogLoaded}
                   style={{ width: 44, height: 44, flexShrink: 0, borderRadius: '50%', border: 'none', background: (inputValue.trim() || photoBase64) && !isGenerating ? `linear-gradient(135deg, #e8b840 0%, ${GOLD_MU} 100%)` : `rgba(212,160,50,0.15)`, cursor: (inputValue.trim() || photoBase64) && !isGenerating ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 220ms ease', boxShadow: (inputValue.trim() || photoBase64) && !isGenerating ? '0 2px 12px rgba(212,160,50,0.25)' : 'none' }}>
@@ -1024,22 +1056,22 @@ feature: "style_chat":
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: catalogLoaded ? '#4ade80' : '#f59e0b' }} />
-                    <span style={{ fontSize: 10, color: '#4a3a28', letterSpacing: '0.1em' }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>
                       {catalogLoaded ? `${catalog.length} items in catalog` : 'Loading catalog…'}
                     </span>
                   </div>
-                  <span style={{ color: '#2a1a08', fontSize: 10 }}>·</span>
-                  <span style={{ fontSize: 10, color: '#4a3a28', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>·</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
                     Enter to send &middot; <span style={{ position: 'relative', top: '-1px', fontSize: 11 }}>📸</span> for photo analysis
                   </span>
                 </div>
-                <span style={{ fontSize: 10, color: inputValue.length > 400 ? '#f59e0b' : '#4a3a28', letterSpacing: '0.06em', transition: 'color 200ms' }}>
+                <span style={{ fontSize: 10, color: inputValue.length > 400 ? '#f59e0b' : 'rgba(255,255,255,0.5)', letterSpacing: '0.06em', transition: 'color 200ms' }}>
                   {inputValue.length}/500
                 </span>
               </div>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#3a2a18', margin: '10px 0 0' }}>
+            <p style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(212,160,50,0.4)', margin: '10px 0 0' }}>
               FashionVerse AI · Recommendations sourced from your live catalog
             </p>
             </div>

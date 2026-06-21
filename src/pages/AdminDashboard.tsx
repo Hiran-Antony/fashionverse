@@ -362,6 +362,32 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(sub); };
   }, [qc]);
 
+  // Layer 10: Disable Right Click & DevTools
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [user]);
+
   useEffect(() => {
     const html = document.documentElement;
     const prev = html.getAttribute('data-theme') || 'dark';
@@ -407,7 +433,8 @@ export default function AdminDashboard() {
         .admin-layout {
           font-family: 'Outfit', sans-serif !important;
           display: flex;
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
           position: relative;
           z-index: 2;
           max-width: 100%;
@@ -422,7 +449,6 @@ export default function AdminDashboard() {
           top: 0 !important;
           height: 100vh !important;
           align-self: flex-start !important;
-          overflow-y: auto !important;
           flex-shrink: 0 !important;
           transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease !important;
           z-index: 100 !important;
@@ -486,6 +512,7 @@ export default function AdminDashboard() {
           padding: 28px 32px;
           overflow-y: auto;
           min-width: 0;
+          min-height: 0;
           max-width: 100%;
         }
 
@@ -652,7 +679,10 @@ export default function AdminDashboard() {
         />
 
         {/* ── SIDEBAR ──────────────────────────────────── */}
-        <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : 'expanded'} ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
+        <aside 
+          className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : 'expanded'} ${mobileSidebarOpen ? 'mobile-open' : ''}`}
+          onWheel={(e) => e.stopPropagation()}
+        >
           {/* Logo */}
           <div style={{ padding: sidebarCollapsed ? '24px 12px 20px' : '28px 20px 20px', textAlign: 'center' }}>
             <div style={{
@@ -679,7 +709,7 @@ export default function AdminDashboard() {
           <div style={{ height: 1, background: T.border, margin: '0 16px 16px' }}/>
 
           {/* Nav */}
-          <nav style={{ flex: 1, padding: '0 10px' }}>
+          <nav className="custom-scrollbar" style={{ flex: 1, padding: '0 10px', overflowY: 'auto' }}>
             {!sidebarCollapsed && (
               <div style={{
                 fontSize: 9, fontWeight: 800, color: T.textMuted,
@@ -881,7 +911,7 @@ export default function AdminDashboard() {
           </header>
 
           {/* Page body */}
-          <main className="admin-main-body">
+          <main className="admin-main-body custom-scrollbar" onWheel={(e) => e.stopPropagation()}>
             <AnimatePresence mode="wait">
               {activeTab === 'overview'  && <OverviewTab  key="overview" />}
               {activeTab === 'products'  && <ProductsTab  key="products" />}

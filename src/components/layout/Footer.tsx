@@ -5,10 +5,10 @@ import { APP_NAME, CATEGORIES } from '../../utils/constants';
 import BrandLogo from './BrandLogo';
 
 const QUICK_LINKS = [
-  { to: '/products', label: 'Shop All' },
+  { to: '/', label: 'Shop All' },
   { to: '/try-on', label: 'Virtual Try-On' },
   { to: '/style-builder', label: 'FashionVerse AI' },
-  { to: '/products?sort=newest', label: 'New Arrivals' },
+  { to: '/', label: 'New Arrivals' },
   { to: '/account/orders', label: 'Track My Order' },
 ];
 

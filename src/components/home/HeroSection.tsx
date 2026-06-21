@@ -10,26 +10,30 @@ export function FeaturesSection() {
       icon: <Eye size={26} />,
       title: 'Virtual Try-On',
       desc: 'Upload a photo and see exactly how any garment looks on your body before purchasing.',
+      link: '/try-on',
     },
     {
       icon: <Shirt size={26} />,
       title: 'FashionVerse AI',
       desc: 'Curate complete outfits from our catalog and visualize every combination.',
+      link: '/style-builder',
     },
     {
       icon: <Sparkles size={26} />,
       title: 'AI Fashion Assistant',
       desc: 'Chat with our AI stylist for personalized outfit ideas based on your taste.',
+      link: '/style-builder',
     },
     {
       icon: <Zap size={26} />,
       title: 'Smart Size Guide',
       desc: 'Enter your measurements once — our AI recommends the perfect size every time.',
+      link: '/style-builder',
     },
   ];
 
   return (
-    <section style={{ padding: '6rem 0', background: 'var(--bg-secondary)' }}>
+    <section style={{ padding: '6rem 0', background: 'var(--bg-secondary)', borderTop: '1px solid rgba(201, 151, 58, 0.15)' }}>
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -64,46 +68,51 @@ export function FeaturesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="rounded-2xl transition-all duration-300"
-              style={{
-                padding: '2.5rem 2rem',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-xl)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border-glow)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--glow-gold-soft)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-color)';
-              }}
             >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                style={{ background: 'rgba(192,133,82,0.15)', color: '#C08552', boxShadow: 'var(--glow-gold-soft)' }}
-              >
-                {feature.icon}
-              </div>
-              <h3
-                className="font-bold mb-3"
+              <Link
+                to={feature.link}
+                className="rounded-2xl transition-all duration-300 block h-full"
                 style={{
-                  color: 'var(--text-primary)',
-                  fontSize: '1.0625rem',
-                  letterSpacing: '-0.01em',
+                  padding: '2.5rem 2rem',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-xl)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border-glow)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = 'var(--glow-gold-soft)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-color)';
                 }}
               >
-                {feature.title}
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}
-              >
-                {feature.desc}
-              </p>
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
+                  style={{ background: 'rgba(192,133,82,0.15)', color: '#C08552', boxShadow: 'var(--glow-gold-soft)' }}
+                >
+                  {feature.icon}
+                </div>
+                <h3
+                  className="font-bold mb-3"
+                  style={{
+                    color: 'var(--text-primary)',
+                    fontSize: '1.0625rem',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  {feature.title}
+                </h3>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}
+                >
+                  {feature.desc}
+                </p>
+              </Link>
             </motion.div>
           ))}
         </div>
