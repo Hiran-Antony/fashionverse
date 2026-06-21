@@ -12,6 +12,7 @@ const BRANDS = [
   { name: 'Zara', image: '/photos/6.png', type: 'light' },
 ];
 
+// Top Brands curated selection showcase
 export default function BrandsSection() {
   return (
     <section className="brands-section" style={{ paddingTop: '60px', paddingBottom: '70px', background: 'var(--bg-secondary)' }}>
