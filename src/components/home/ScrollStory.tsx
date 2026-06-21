@@ -27,9 +27,9 @@ const PANELS = [
     title: 'Everything you need, in one place',
     subtitle: '',
     features: [
-      { icon: <Eye size={22} />, title: 'AI Try-On', desc: 'See outfits on yourself before you buy.' },
-      { icon: <Sparkles size={22} />, title: 'FashionVerse AI', desc: 'Curate complete looks from our catalog.' },
-      { icon: <Search size={22} />, title: 'Smart Search', desc: 'Find pieces that match your aesthetic instantly.' },
+      { icon: <Eye size={22} />, title: 'AI Try-On', desc: 'See outfits on yourself before you buy.', to: '/try-on' },
+      { icon: <Sparkles size={22} />, title: 'FashionVerse AI', desc: 'Curate complete looks from our catalog.', to: '/style-builder' },
+      { icon: <Search size={22} />, title: 'Smart Search', desc: 'Find pieces that match your aesthetic instantly.', to: '/products' },
     ],
   },
   {
@@ -208,11 +208,11 @@ export default function ScrollStory() {
                   </h2>
                   <div className="scroll-story-features">
                     {panel.features.map((f) => (
-                      <div key={f.title} className="scroll-story-feature-card">
+                      <Link to={f.to} key={f.title} className="scroll-story-feature-card block no-underline text-inherit cursor-pointer hover:text-inherit">
                         <div className="scroll-story-feature-icon">{f.icon}</div>
                         <h3>{f.title}</h3>
                         <p>{f.desc}</p>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </>

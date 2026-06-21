@@ -30,16 +30,21 @@ const STATS: Array<
   { staticText: 'Free', label: 'Free Returns' },
 ];
 
-function HeroTicker() {
+export function HeroTicker({ direction = 'left' }: { direction?: 'left' | 'right' }) {
   const trackRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="hero-ticker" aria-hidden="true">
-      <div ref={trackRef} className="hero-ticker-track">
+    <div className="ticker-wrapper" aria-hidden="true">
+      <div 
+        ref={trackRef} 
+        className="ticker-track"
+        style={{
+          animationDirection: direction === 'right' ? 'reverse' : 'normal'
+        }}
+      >
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-          <span key={`${item}-${i}`} className="hero-ticker-item">
+          <span key={`${item}-${i}`} className="ticker-item">
             {item}
-            <span className="hero-ticker-dot">✦</span>
           </span>
         ))}
       </div>

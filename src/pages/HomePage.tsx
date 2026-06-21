@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import SplitHero from '../components/home/SplitHero';
+import SplitHero, { HeroTicker } from '../components/home/SplitHero';
 import CollectionsSection from '../components/home/CollectionsSection';
 import HomeReviewsSection from '../components/home/HomeReviewsSection';
 import LazySection from '../components/LazySection';
@@ -85,73 +85,39 @@ export default function HomePage() {
       {/* 1. IMMEDIATE RENDER (First Paint priority) */}
       <SplitHero />
       <CollectionsSection />
-
-      {/* 2. DEFERRED VIEWPORT LAZY SECTIONS (Prevents main thread locking during initial page load) */}
-      <LazySection minHeight="450px" rootMargin="150px">
-        <Suspense fallback={<div className="h-96 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
-          <ScrollStory />
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="400px" rootMargin="150px">
-        <Suspense fallback={<CarouselSkeleton />}>
-          <div data-reveal="fade-up">
-            <ProductCarousel
-              title="New Arrivals"
-              subtitle="Just Dropped"
-              filter="featured"
-              viewAllLink="/products?sort=newest"
-              accentColor="gold"
-            />
-          </div>
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="400px" rootMargin="150px">
-        <Suspense fallback={<CarouselSkeleton />}>
-          <div data-reveal="fade-up" data-reveal-delay="100">
-            <ProductCarousel
-              title="Trending Now"
-              subtitle="Most Popular"
-              filter="trending"
-              viewAllLink="/products?sort=popular"
-              accentColor="gold"
-            />
-          </div>
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="180px" rootMargin="150px">
-        <Suspense fallback={<div className="h-64 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
-          <div data-reveal="fade-up">
-            <BrandsSection />
-          </div>
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="450px" rootMargin="150px">
-        <Suspense fallback={<div className="h-96 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
-          <div data-reveal="fade-up">
-            <FeaturesSectionLazy />
-          </div>
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="300px" rootMargin="150px">
-        <Suspense fallback={<div className="h-64 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
-          <div data-reveal="fade-up">
-            <HomeReviewsSection />
-          </div>
-        </Suspense>
-      </LazySection>
-
-      <LazySection minHeight="300px" rootMargin="150px">
-        <Suspense fallback={<div className="h-96 w-full bg-[rgba(26,15,8,0.03)] animate-pulse" />}>
-          <div data-reveal="zoom-in">
-            <CTABannerLazy />
-          </div>
-        </Suspense>
-      </LazySection>
+      <HeroTicker direction="right" />
+      <ScrollStory />
+      <div data-reveal="fade-up">
+        <ProductCarousel
+          title="New Arrivals"
+          subtitle="Just Dropped"
+          filter="featured"
+          viewAllLink="/products?sort=newest"
+          accentColor="gold"
+        />
+      </div>
+      <div data-reveal="fade-up" data-reveal-delay="100">
+        <ProductCarousel
+          title="Trending Now"
+          subtitle="Most Popular"
+          filter="trending"
+          viewAllLink="/products?sort=popular"
+          accentColor="gold"
+        />
+      </div>
+      <div data-reveal="fade-up">
+        <BrandsSection />
+      </div>
+      <div data-reveal="fade-up">
+        <LazySection>
+          <FeaturesSectionLazy />
+        </LazySection>
+      </div>
+      <div data-reveal="zoom-in">
+        <LazySection>
+          <CTABannerLazy />
+        </LazySection>
+      </div>
     </>
   );
 }
