@@ -457,9 +457,9 @@ export default function AdminDashboard() {
         }
 
         .admin-sidebar {
-          background: rgba(20, 14, 8, 0.4);
-          backdrop-filter: blur(20px) saturate(160%);
-          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(16px) saturate(150%);
+          -webkit-backdrop-filter: blur(16px) saturate(150%);
           border-right: 1px solid rgba(212, 175, 55, 0.15);
           display: flex !important;
           flex-direction: column !important;
@@ -846,8 +846,8 @@ export default function AdminDashboard() {
               margin: '8px 12px 16px', padding: '8px',
               borderRadius: 10, border: '1px solid rgba(212, 175, 55, 0.12)',
               background: 'rgba(255, 255, 255, 0.03)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
               color: T.textMuted,
               fontSize: 11, fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -995,6 +995,7 @@ function OverviewTab() {
         revenue: totalRevenue,
         ordersToday,
         recentOrders: orderData.slice(0, 5),
+        orderData: validOrders,
       };
     },
     refetchInterval: 30000,

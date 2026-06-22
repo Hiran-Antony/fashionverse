@@ -139,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'fashionverse-auth',
       partialize: (state) => ({
         isAdmin: state.isAdmin,
+        walletAddress: state.walletAddress,
       }),
     }
   )

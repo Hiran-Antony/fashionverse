@@ -114,7 +114,7 @@ export default function MapTab() {
 
     // Add delivery markers (active deliveries)
     activeDeliveries.forEach((o) => {
-      const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, driverLocation[0], driverLocation[1]);
+      const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, 11.0168, 76.9558);
       L.marker(pos as [number, number], { icon: dropIcon })
         .bindPopup(`<strong>Drop: #${o.id.slice(0, 8).toUpperCase()}</strong><br/>${o.address?.city || 'Customer'}<br/>₹${o.driver_earnings || Math.round((o.total_amount || 0) * 0.1)}`)
         .addTo(map);
@@ -122,7 +122,7 @@ export default function MapTab() {
 
     // Add available order markers (limited to 20)
     availableOrders.slice(0, 20).forEach((o) => {
-      const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, driverLocation[0], driverLocation[1]);
+      const pos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, 11.0168, 76.9558);
       L.marker(pos as [number, number], { icon: availableIcon })
         .bindPopup(`<strong>Available: #${o.id.slice(0, 8).toUpperCase()}</strong><br/>${o.address?.city || 'City'}<br/>₹${o.driver_earnings || Math.round((o.total_amount || 0) * 0.1)}`)
         .addTo(map);
@@ -133,7 +133,7 @@ export default function MapTab() {
       navigator.geolocation.getCurrentPosition((pos) => {
         const driverPos: [number, number] = [pos.coords.latitude, pos.coords.longitude];
         activeDeliveries.forEach(async (o) => {
-          const dropPos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, driverPos[0], driverPos[1]);
+          const dropPos = o.drop_lat && o.drop_lng ? [o.drop_lat, o.drop_lng] : getOrderCoords(o.id, 11.0168, 76.9558);
           
           try {
             // Route from Driver to Drop

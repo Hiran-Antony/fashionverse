@@ -16,16 +16,15 @@ interface ActiveDeliveryCardProps {
 export default function ActiveDeliveryCard({ order, onMarkDelivered, onOpenMap }: ActiveDeliveryCardProps) {
   const { driverLocation } = useDriverStore();
   const company = order.courier_companies;
-  const addr = order.address || {};
-
-  const dropAddr = order.drop_address || [addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ') || 'Customer Location';
-  const customerName = order.customer_name || addr.name || 'Customer';
-  const customerPhone = order.customer_phone || addr.phone;
+  const dropAddr = typeof order.address === 'string' ? JSON.parse(order.address) : (order.address || {});
+  const addrStr = order.drop_address || [dropAddr.line1, dropAddr.line2, dropAddr.city, dropAddr.state, dropAddr.pincode].filter(Boolean).join(', ') || 'Customer Location';
+  const customerName = order.customer_name || dropAddr.name || 'Customer';
+  const customerPhone = order.customer_phone || dropAddr.phone;
   const earnings = order.driver_earnings || Math.round((order.total_amount || 0) * 0.1);
 
   const [lat, lng] = order.drop_lat && order.drop_lng
     ? [order.drop_lat, order.drop_lng]
-    : getOrderCoords(order.id, driverLocation[0], driverLocation[1]);
+    : getOrderCoords(order.id, 11.0168, 76.9558); // Fixed hub location (Coimbatore)
   const dist = distanceKm(driverLocation[0], driverLocation[1], lat, lng).toFixed(1);
 
   // Progress: assigned = 33%, picked/in_transit = 66%
@@ -105,7 +104,7 @@ export default function ActiveDeliveryCard({ order, onMarkDelivered, onOpenMap }
         }}
       >
         <MapPin size={14} style={{ color: 'var(--dh-orange)', flexShrink: 0, marginTop: '2px' }} />
-        <p style={{ fontSize: '13px', color: 'var(--dh-muted)', lineHeight: 1.5 }}>{dropAddr}</p>
+        <p style={{ fontSize: '13px', color: 'var(--dh-muted)', lineHeight: 1.5 }}>{addrStr}</p>
       </div>
 
       {/* Meta */}

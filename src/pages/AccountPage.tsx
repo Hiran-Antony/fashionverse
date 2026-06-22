@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useWishlistStore } from '../store/wishlistStore';
 import {
   User, Package, LogOut, Edit3,
-  CheckCircle2, Truck, Package as PackageIcon, Home, X,
+  Check, CheckCircle2, Truck, Package as PackageIcon, Home, X,
   Heart, Sparkles, Clock, CreditCard, MapPin, ShoppingBag,
   Circle, Shield, Calendar, ArrowRight, Plus, Trash2,
   Save, Phone, Mail, ChevronRight, Star, XCircle,
@@ -13,7 +13,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import ProductCard from '../components/product/ProductCard';
+import CategoryProductCard from '../components/product/CategoryProductCard';
 import InvoiceTemplate from '../components/InvoiceTemplate';
 import { useInvoice } from '../hooks/useInvoice';
 import type { Product, SavedAddress } from '../types';
@@ -97,7 +97,7 @@ function FloatingInput({
   const [focused, setFocused] = useState(false);
   const active = focused || value.length > 0;
   return (
-    <div className="relative" style={{ marginBottom: '20px' }}>
+    <div className="relative" style={{ marginBottom: '12px' }}>
       <div
         className="relative flex items-center w-full rounded-xl transition-all duration-200"
         style={{
@@ -110,12 +110,12 @@ function FloatingInput({
             <Icon size={16} />
           </div>
         )}
-        <div className="w-full" style={{ paddingLeft: Icon ? '44px' : '16px', paddingRight: '16px', paddingTop: '22px', paddingBottom: '8px' }}>
+        <div className="w-full" style={{ paddingLeft: Icon ? '44px' : '16px', paddingRight: '16px', paddingTop: '16px', paddingBottom: '6px' }}>
           <label
             style={{
               position: 'absolute',
               left: Icon ? '44px' : '16px',
-              top: active ? '8px' : '50%',
+              top: active ? '4px' : '50%',
               transform: active ? 'none' : 'translateY(-50%)',
               fontSize: active ? '10px' : '14px',
               fontWeight: active ? 700 : 500,
@@ -175,8 +175,11 @@ function EditProfileModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+      style={{ 
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)', padding: '24px' 
+      }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
@@ -299,41 +302,79 @@ function AddressFormModal({ existing, onClose, onSave }: {
 
   return (
     <div
-      className="new-address-overlay"
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)' }}
+      style={{ 
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15,10,30,0.6)', backdropFilter: 'blur(8px)', padding: '24px' 
+      }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
-        className="new-address-modal"
-        onWheel={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.stopPropagation()}
+        onWheel={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 24 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        style={{
+          width: '100%', maxWidth: '500px',
+          background: 'var(--bg-card)',
+          borderRadius: '24px',
+          padding: '24px',
+          boxShadow: '0 32px 64px rgba(201,151,58,0.2), 0 8px 24px rgba(0,0,0,0.12)',
+          maxHeight: 'calc(100vh - 48px)',
+          overflowY: 'auto'
+        }}
       >
         {/* Header */}
-        <div style={{ position: 'relative', marginBottom: '24px' }}>
-          <div className="modal-icon-wrap">
-            <MapPin className="modal-icon" />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '48px', height: '48px', borderRadius: '14px', marginBottom: '12px',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
+              boxShadow: '0 8px 20px rgba(201,151,58,0.35)',
+            }}>
+              <MapPin size={22} color="white" />
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', }}>
+              {existing ? 'Edit Address' : 'New Address'}
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
+              {existing ? 'Update your delivery address' : 'Add a new delivery address'}
+            </p>
           </div>
-          <h2 className="modal-title">{existing ? 'Edit Address' : 'New Address'}</h2>
-          <p className="modal-subtitle">{existing ? 'Update your delivery address' : 'Add a new delivery address'}</p>
-          
-          <button className="modal-close" onClick={onClose}>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-muted)', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
             <X size={16} />
           </button>
         </div>
 
         {/* Label Pills */}
-        <div>
-          <p className="address-type-label">Address Type</p>
-          <div className="address-type-pills">
+        <div style={{ marginBottom: '16px' }}>
+          <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '10px', paddingLeft: '4px' }}>Address Type</p>
+          <div style={{ display: 'flex', gap: '10px' }}>
             {LABELS.map(l => (
               <button
                 key={l}
                 onClick={() => setLabel(l)}
-                className={`address-type-pill ${label === l ? 'active' : ''}`}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '12px',
+                  background: label === l ? 'rgba(201,151,58,0.1)' : 'transparent',
+                  border: `1.5px solid ${label === l ? '#C9973A' : 'var(--bg-tertiary)'}`,
+                  color: label === l ? '#C9973A' : 'var(--text-muted)',
+                  fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
               >
                 {l}
               </button>
@@ -342,64 +383,62 @@ function AddressFormModal({ existing, onClose, onSave }: {
         </div>
 
         {/* Fields */}
-        <div className="address-input-group">
-          <div className="address-input-wrap">
-            <User className="address-input-icon" />
-            <input className="address-input" value={name} onChange={e => setName(e.target.value)} placeholder="Recipient's full name" />
+        <FloatingInput label="Full Name" value={name} onChange={setName} placeholder="Recipient's full name" icon={User} />
+        <FloatingInput label="Phone Number" value={phone} onChange={setPhone} type="tel" placeholder="10-digit mobile number" icon={Phone} />
+        <FloatingInput label="Address Line 1" value={line1} onChange={setLine1} placeholder="House / Flat, Building, Street" icon={MapPin} />
+        <FloatingInput label="Address Line 2 (Optional)" value={line2} onChange={setLine2} placeholder="Area, Landmark" icon={MapPin} />
+        
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <FloatingInput label="City" value={city} onChange={setCity} placeholder="Chennai" icon={MapPin} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <FloatingInput label="Pincode" value={pincode} onChange={setPincode} placeholder="6-digits" icon={MapPin} />
           </div>
         </div>
         
-        <div className="address-input-group">
-          <div className="address-input-wrap">
-            <Phone className="address-input-icon" />
-            <input className="address-input" value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="10-digit mobile number" />
-          </div>
-        </div>
-
-        <div className="address-input-group">
-          <div className="address-input-wrap">
-            <MapPin className="address-input-icon" />
-            <input className="address-input" value={line1} onChange={e => setLine1(e.target.value)} placeholder="House / Flat, Building, Street" />
-          </div>
-        </div>
-
-        <div className="address-input-group">
-          <div className="address-input-wrap">
-            <input className="address-input no-icon" value={line2} onChange={e => setLine2(e.target.value)} placeholder="Area, Landmark (Optional)" />
-          </div>
-        </div>
-
-        <div className="address-input-row">
-          <div className="address-input-wrap">
-            <input className="address-input no-icon" value={city} onChange={e => setCity(e.target.value)} placeholder="City (e.g. Chennai)" />
-          </div>
-          <div className="address-input-wrap">
-            <input className="address-input no-icon" value={pincode} onChange={e => setPincode(e.target.value)} placeholder="Pincode (6-digits)" />
-          </div>
-        </div>
-        
-        <div className="address-input-group">
-          <div className="address-input-wrap">
-            <input className="address-input no-icon" value={state} onChange={e => setState(e.target.value)} placeholder="State (e.g. Tamil Nadu)" />
-          </div>
-        </div>
+        <FloatingInput label="State" value={state} onChange={setState} placeholder="Tamil Nadu" icon={MapPin} />
 
         {/* Default toggle */}
-        <div className="default-address-wrap" onClick={() => setIsDefault(!isDefault)} style={{ cursor: 'pointer' }}>
-          <div className="default-address-text">
-            <h4>Set as default address</h4>
-            <p>Use this address by default at checkout</p>
+        <div onClick={() => setIsDefault(!isDefault)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-secondary)', borderRadius: '14px', cursor: 'pointer', marginBottom: '16px', border: '1px solid var(--bg-tertiary)' }}>
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Set as default address</h4>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Use this address by default at checkout</p>
           </div>
-          <div className={`toggle-switch ${isDefault ? 'on' : ''}`}>
-            <div className="toggle-knob" />
+          <div style={{ width: '44px', height: '24px', borderRadius: '12px', background: isDefault ? '#C9973A' : 'var(--bg-tertiary)', position: 'relative', transition: 'background 0.3s' }}>
+            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: isDefault ? '22px' : '2px', transition: 'left 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
           </div>
         </div>
 
         {/* Actions */}
-        <div className="modal-buttons">
-          <button className="modal-cancel-btn" onClick={onClose}>Cancel</button>
-          <button className="modal-save-btn" onClick={handleSave}>
-            <Save size={15} /> Save Address
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              border: '2px solid #e5e7eb', background: 'var(--bg-card)',
+              fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '12px',
+              background: 'linear-gradient(135deg,#C9973A,#C9973A)',
+              border: 'none', color: 'white', fontSize: '14px', fontWeight: 800,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 8px 16px rgba(201,151,58,0.25)',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <Save size={16} /> Save Address
           </button>
         </div>
       </motion.div>
@@ -523,6 +562,29 @@ function ProfileTab() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<SavedAddress | undefined>();
+  const [points, setPoints] = useState<number>(profile?.loyalty_points || 0);
+
+  useEffect(() => {
+    async function fetchPoints() {
+      if (!user) return;
+      if (profile?.loyalty_points) {
+        setPoints(profile.loyalty_points);
+        return;
+      }
+      
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('user_id', user.id)
+        .eq('status', 'delivered');
+        
+      if (orders) {
+        const totalSpent = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+        setPoints(Math.floor(totalSpent / 10));
+      }
+    }
+    fetchPoints();
+  }, [user, profile]);
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
@@ -613,7 +675,7 @@ function ProfileTab() {
       </div>
 
       {/* ── Stats Row ─── */}
-      <div className="account-stats-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         {/* Loyalty */}
         <div style={{
           borderRadius: '20px', padding: '22px 20px', position: 'relative', overflow: 'hidden',
@@ -623,7 +685,7 @@ function ProfileTab() {
           <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
           <Sparkles size={18} color="#fbbf24" style={{ marginBottom: '10px' }} />
           <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.65)', marginBottom: '6px' }}>Points</p>
-          <p style={{ fontSize: '32px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{profile?.loyalty_points || 0}</p>
+          <p style={{ fontSize: '32px', fontWeight: 900, color: 'white', lineHeight: 1 }}>{points}</p>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>1 pt per ₹10</p>
         </div>
         {/* Member Since */}
@@ -1000,47 +1062,50 @@ function OrderCard({ order, index, onCancel, onWriteReview, onDownloadInvoice, o
       {/* Progress */}
       {!isCancelled && (
         <div style={{ padding: '24px', borderBottom: '1px solid var(--bg-tertiary)', background: 'var(--bg-secondary)' }}>
-          {/* Desktop Tracker */}
-          <div className="order-progress-desktop" style={{ alignItems: 'center', width: '100%' }}>
-            {STATUS_STEPS.map((step, i) => {
+          <p style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '20px' }}>
+            Order Timeline
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            {['pending', 'packed', 'out_for_delivery', 'delivered'].map((step, i, arr) => {
+              const displayLabels: Record<string, string> = { pending: 'Order Placed', packed: 'Packed', out_for_delivery: 'Shipped', delivered: 'Delivered' };
               const s = STATUS_META[step] || STATUS_META.pending;
-              const done = i <= stepIdx;
-              const active = i === stepIdx;
-              const isLast = i === STATUS_STEPS.length - 1;
+              
+              // Find logical progress based on actual order status
+              let mappedStepIdx = 0;
+              if (stepIdx >= STATUS_STEPS.indexOf('delivered')) mappedStepIdx = 3;
+              else if (stepIdx >= STATUS_STEPS.indexOf('out_for_delivery')) mappedStepIdx = 2;
+              else if (stepIdx >= STATUS_STEPS.indexOf('packed')) mappedStepIdx = 1;
+              else mappedStepIdx = 0;
+
+              const done = i <= mappedStepIdx;
+              const active = i === mappedStepIdx;
+              const isLast = i === arr.length - 1;
+
               return (
-                <div key={step} style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0, minWidth: '56px' }}>
+                <div key={step} style={{ flex: isLast ? 0 : 1, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0, width: '60px' }}>
                     <div style={{
                       width: '40px', height: '40px', borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: done ? (active ? meta.color : '#10b981') : '#e5e7eb',
-                      color: done ? 'white' : 'var(--text-muted)',
-                      boxShadow: active ? `0 0 0 5px ${meta.color}25` : 'none',
+                      background: done && active ? '#E8B84B' : 'transparent',
+                      color: done && active ? '#1A0F08' : done ? '#E8B84B' : 'var(--text-muted)',
+                      border: done && active ? 'none' : done ? '1.5px solid #E8B84B' : '1.5px solid rgba(232,184,75,0.3)',
+                      boxShadow: active ? `0 0 0 5px rgba(232,184,75,0.15)` : 'none',
                       transform: active ? 'scale(1.15)' : 'scale(1)',
                       transition: 'all 0.3s',
                     }}>
-                      {done && !active ? <CheckCircle2 size={17} strokeWidth={2.5} /> : done && active ? <span style={{ display: 'flex' }}>{s.icon}</span> : <Circle size={17} strokeWidth={2} />}
+                      {done && active ? <Check size={20} strokeWidth={3} /> : done ? <CheckCircle2 size={18} strokeWidth={2.5} /> : null}
                     </div>
-                    <p style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center', color: done ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: '1.3', maxWidth: '56px' }}>{s.label}</p>
+                    <p style={{ fontSize: '10px', fontWeight: done ? 800 : 600, color: done ? '#E8B84B' : 'var(--text-muted)', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {displayLabels[step]}
+                    </p>
                   </div>
-                  {!isLast && <div style={{ flex: 1, height: '3px', margin: '0 4px', borderRadius: '999px', background: i < stepIdx ? '#10b981' : '#e5e7eb', marginBottom: '20px' }} />}
+                  {!isLast && (
+                    <div style={{ flex: 1, height: '2px', background: done ? '#E8B84B' : 'rgba(255,255,255,0.08)', margin: '0 8px', marginBottom: '20px', transition: 'background 0.3s ease' }} />
+                  )}
                 </div>
               );
             })}
-          </div>
-          
-          {/* Mobile Tracker */}
-          <div className="order-progress-mobile">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ display: 'inline-flex', color: meta.color }}>{meta.icon}</span>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{meta.label}</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Step {Math.max(1, stepIdx + 1)} of 6</span>
-            </div>
-            <div style={{ width: '100%', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ width: `${((Math.max(0, stepIdx) + 1) / STATUS_STEPS.length) * 100}%`, background: meta.color === '#10B981' ? '#10b981' : '#C9973A', height: '100%', borderRadius: '3px', transition: 'width 0.3s ease' }} />
-            </div>
           </div>
         </div>
       )}
@@ -1142,35 +1207,43 @@ function OrderCard({ order, index, onCancel, onWriteReview, onDownloadInvoice, o
         </div>
       )}
 
-        <div className="order-card-footer">
+      {/* Footer */}
+      <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--bg-tertiary)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           {delivery && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin size={14} style={{ color: '#C9973A', flexShrink: 0 }} />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: '200px' }}>
+              <MapPin size={16} style={{ color: '#C9973A', flexShrink: 0, marginTop: '2px' }} />
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500, lineHeight: 1.4 }}>
                 {typeof delivery === 'object' ? [delivery.line1, delivery.city, delivery.state].filter(Boolean).join(', ') : delivery}
               </p>
             </div>
           )}
-          <div className="order-card-footer-actions">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
-            </div>
-            {onDownloadInvoice && (
-              <button className="btn-invoice-small" onClick={onDownloadInvoice}>
-                <Download size={11} /> Invoice
-              </button>
-            )}
-            {onWhatsApp && (
-              <button className="btn-whatsapp-small" onClick={onWhatsApp}>
-                <MessageCircle size={11} /> WhatsApp
-              </button>
-            )}
-            <div style={{ padding: '6px 16px', borderRadius: '999px', background: 'linear-gradient(135deg,#C9973A,#C9973A)' }}>
-              <p style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '4px' }}>
+                <CreditCard size={14} style={{ color: 'var(--text-muted)' }} />
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online'}</p>
+              </div>
+              {onDownloadInvoice && (
+                <button className="btn-invoice-small" onClick={onDownloadInvoice} style={{ padding: '6px 12px', fontSize: '11px' }}>
+                  <Download size={12} /> Invoice
+                </button>
+              )}
+              {onWhatsApp && (
+                <button className="btn-whatsapp-small" onClick={onWhatsApp} style={{ padding: '6px 12px', fontSize: '11px' }}>
+                  <MessageCircle size={12} /> WhatsApp
+                </button>
+              )}
             </div>
           </div>
         </div>
+        
+        <div style={{ padding: '12px 20px', borderRadius: '12px', background: 'linear-gradient(135deg,#C9973A,#C9973A)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 8px 16px rgba(201,151,58,0.2)' }}>
+           <p style={{ fontSize: '13px', fontWeight: 800, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Total</p>
+           <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>₹{order.total_amount?.toLocaleString('en-IN')}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -1214,7 +1287,7 @@ function WishlistTab() {
       {isLoading ? (
         <div className="product-grid">{[...Array(Math.min(items.length, 4))].map((_, i) => <div key={i} className="rounded-2xl skeleton" style={{ aspectRatio: '3/4' }} />)}</div>
       ) : products.length > 0 ? (
-        <div className="product-grid">{products.map(p => <ProductCard key={p.id} product={p} />)}</div>
+        <div className="product-grid">{products.map(p => <CategoryProductCard key={p.id} product={p} />)}</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {items.map(id => (
@@ -1332,21 +1405,50 @@ function WriteReviewModal({ productId, productName, onClose }: { productId: stri
 
 /* ─── Web3 Wallet Tab ───────────────────────────────────────── */
 function Web3Tab() {
-  const { walletAddress } = useAuthStore();
+  const { walletAddress, user } = useAuthStore();
   const [balance, setBalance] = useState<string>('0');
+  const [nftCount, setNftCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchBalance() {
-      if (!walletAddress) {
+    async function fetchLoyalty() {
+      if (!walletAddress || !user) {
         setLoading(false);
         return;
       }
       try {
-        const res = await fetch(`http://localhost:5000/api/loyalty/balance/${walletAddress}`);
-        const data = await res.json();
-        if (data.balance) {
-          setBalance(data.balance);
+        let fetchSuccess = false;
+        try {
+          const res = await fetch(`http://localhost:5000/api/loyalty/balance/${walletAddress}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.balance) {
+              setBalance(data.balance);
+              fetchSuccess = true;
+            }
+          }
+        } catch (e) {
+          // Backend not running, proceed to Supabase fallback
+        }
+
+        if (!fetchSuccess) {
+          // Fallback: calculate FVT and NFTs from delivered orders
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('total_amount, order_items(id)')
+            .eq('user_id', user.id)
+            .eq('status', 'delivered');
+
+          if (orders) {
+            const totalSpent = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+            // 1 FVT for every ₹100 spent
+            const fvt = Math.floor(totalSpent / 100);
+            setBalance(fvt.toString());
+
+            // 1 Verified NFT per delivered order item
+            const nfts = orders.reduce((count, o) => count + (o.order_items?.length || 0), 0);
+            setNftCount(nfts);
+          }
         }
       } catch (e) {
         console.error("Failed to fetch loyalty balance", e);
@@ -1354,8 +1456,8 @@ function Web3Tab() {
         setLoading(false);
       }
     }
-    fetchBalance();
-  }, [walletAddress]);
+    fetchLoyalty();
+  }, [walletAddress, user]);
 
   if (!walletAddress) {
     return (
@@ -1413,7 +1515,9 @@ function Web3Tab() {
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Verified NFTs</h3>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <p style={{ fontSize: '48px', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>0</p>
+            <p style={{ fontSize: '48px', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+              {loading ? '...' : nftCount}
+            </p>
             <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>Owned</p>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>Certificates of authenticity for your items.</p>

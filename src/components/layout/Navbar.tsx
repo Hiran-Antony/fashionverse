@@ -26,8 +26,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
 import { useAuthStore } from '../../store/authStore';
 import BrandLogo from './BrandLogo';
-
-
+import SearchOverlay from './SearchOverlay';
 // ─── Main Navbar ─────────────────────────────────────────────────
 
 
@@ -215,24 +214,7 @@ export default function Navbar() {
               <Search size={18} className="sm:w-[19px] sm:h-[19px]" />
             </IconBtn>
 
-            <IconBtn
-              onClick={toggleTheme}
-              label="Toggle theme"
-              isLight={!isScrolled && isHomePage}
-              className="w-8 h-8 sm:w-10 sm:h-10 flex"
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={theme}
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {theme === 'light' ? <Moon size={18} className="sm:w-[19px] sm:h-[19px]" /> : <Sun size={18} className="sm:w-[19px] sm:h-[19px]" />}
-                </motion.div>
-              </AnimatePresence>
-            </IconBtn>
+
 
             <Link
               to="/wishlist"
@@ -280,11 +262,13 @@ export default function Navbar() {
             {/* Web3 Wallet Connect */}
             <button
               onClick={connectWallet}
-              className={`relative px-3 h-8 sm:h-10 flex items-center justify-center gap-2 rounded-xl transition-colors font-medium text-xs sm:text-sm`}
+              className={`relative h-8 sm:h-10 flex items-center justify-center gap-2 transition-colors font-medium text-xs sm:text-sm`}
               style={{
                 color: walletAddress ? '#C9973A' : (!isScrolled && isHomePage ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'),
                 background: walletAddress ? 'rgba(201, 151, 58, 0.1)' : 'transparent',
-                border: walletAddress ? '1px solid rgba(201, 151, 58, 0.3)' : '1px solid transparent'
+                border: walletAddress ? '1px solid rgba(201, 151, 58, 0.3)' : '1px solid transparent',
+                borderRadius: '9999px',
+                padding: '0 16px'
               }}
               onMouseEnter={(e) => {
                 if (!walletAddress) (e.currentTarget as HTMLElement).style.background = !isScrolled && isHomePage ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)';
@@ -386,46 +370,8 @@ export default function Navbar() {
       </motion.nav>
 
 
-      {/* Search Bar */}
-      <AnimatePresence>
-        {isSearchOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className="fixed z-40 left-0 right-0 bottom-0 px-6 py-10 search-overlay"
-            style={{ top: 'var(--nav-height)' }}
-          >
-            <form onSubmit={handleSearch} className="container max-w-2xl mx-auto">
-              <p className="search-recent-label">Search FASHIONVERSE</p>
-              <div className="search-input-wrapper">
-                <Search className="search-input-icon" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for shirts, dresses, shoes..."
-                  className="search-input"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsSearchOpen(false)}
-                  className="search-close-btn flex items-center justify-center p-1"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-5">
-                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Summer Collection'); handleSearch(new Event('submit') as any); }}>Summer Collection</button>
-                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Sneakers'); handleSearch(new Event('submit') as any); }}>Sneakers</button>
-                <button type="button" className="search-chip" onClick={() => { setSearchQuery('Dresses'); handleSearch(new Event('submit') as any); }}>Dresses</button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Search Overlay */}
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
       {/* Mobile Menu */}
       <AnimatePresence>
@@ -543,27 +489,7 @@ export default function Navbar() {
                   <ChevronRight className="menu-item-arrow" size={16} />
                 </button>
 
-                <div className="menu-divider" />
-                <div className="menu-theme-row">
-                  <div className="menu-theme-label">
-                    <div className="icon">
-                      {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
-                    </div>
-                    <span>{theme === 'light' ? 'Light Mode' : 'Dark Mode'}</span>
-                  </div>
-                  <button
-                    onClick={toggleTheme}
-                    className="w-12 h-6 rounded-full relative transition-colors"
-                    style={{ background: 'rgba(201,151,58,0.2)', border: '1px solid rgba(201,151,58,0.3)', cursor: 'pointer' }}
-                  >
-                    <motion.div
-                      className="absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full"
-                      style={{ background: '#C9973A' }}
-                      animate={{ x: theme === 'dark' ? 24 : 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                  </button>
-                </div>
+
               </div>
 
               <div className="menu-panel-footer">

@@ -18,16 +18,16 @@ export default function OrderCard({ order, onAccept }: OrderCardProps) {
   const { driverLocation } = useDriverStore();
   const company = order.courier_companies;
 
-  const addr = order.address || {};
   const itemCount = order.order_items?.length || 0;
   const earnings = order.driver_earnings || Math.round((order.total_amount || 0) * 0.1);
 
   const pickupAddr = order.pickup_address || 'FashionVerse Warehouse';
-  const dropAddr = order.drop_address || [addr.line1, addr.city, addr.state].filter(Boolean).join(', ') || 'Customer Location';
+  const dropAddrObj = typeof order.address === 'string' ? JSON.parse(order.address) : (order.address || {});
+  const addrStr = order.drop_address || [dropAddrObj.line1, dropAddrObj.city, dropAddrObj.state].filter(Boolean).join(', ') || 'Customer Location';
 
   const [lat, lng] = order.drop_lat && order.drop_lng
     ? [order.drop_lat, order.drop_lng]
-    : getOrderCoords(order.id, driverLocation[0], driverLocation[1]);
+    : getOrderCoords(order.id, 11.0168, 76.9558);
   const dist = distanceKm(driverLocation[0], driverLocation[1], lat, lng).toFixed(1);
   const estMin = Math.max(5, Math.round(parseFloat(dist) * 4));
 
@@ -91,7 +91,7 @@ export default function OrderCard({ order, onAccept }: OrderCardProps) {
 
       {/* Row 4: Drop */}
       <p className="dh-order-address drop">
-        🏠 Drop: {dropAddr}
+        🏠 Drop: {addrStr}
       </p>
 
       {/* Row 5: Meta */}
