@@ -268,7 +268,7 @@ export default function VirtualTryOn() {
           <div className="tryon-panels-row">
             
             {/* Left Column - Capture Zone (Your Photo) */}
-            <div className="capture-zone-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="capture-zone-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -423,7 +423,7 @@ export default function VirtualTryOn() {
             </div>
 
             {/* Right Column - Garments */}
-            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
               {/* Card Header */}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
@@ -475,7 +475,7 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div className="garments-grid" data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div className="garments-grid" data-lenis-prevent="true" style={{ gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedUpperProduct?.id === product.id;
                         return (
@@ -528,7 +528,7 @@ export default function VirtualTryOn() {
           </div>
 
             {/* Right Column - Bottomwear */}
-            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
               {/* Card Header */}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
@@ -578,7 +578,7 @@ export default function VirtualTryOn() {
                       <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.6 }}>Check back soon</div>
                     </div>
                   ) : (
-                    <div className="garments-grid" data-lenis-prevent="true" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
+                    <div className="garments-grid" data-lenis-prevent="true" style={{ gap: "8px", padding: "4px", scrollbarWidth: "thin", scrollbarColor: "#c9a84c transparent" }}>
                       {items.map((product) => {
                         const isSelected = selectedLowerProduct?.id === product.id;
                         return (
@@ -1125,7 +1125,7 @@ export default function VirtualTryOn() {
           {/* ── FASHION AI TOOLS SECTION ── */}
           {result && (
             <div style={{ maxWidth: "1200px", margin: "2rem auto 0", width: "100%" }}>
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "2rem", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
                 <FashionAITools modelFile={modelFile} resultUrl={result} />
               </div>
             </div>

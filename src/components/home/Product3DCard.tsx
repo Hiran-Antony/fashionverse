@@ -54,7 +54,7 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ delay: index * 0.08, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{ minHeight: '220px', display: 'flex', flexDirection: 'column' }}
+      style={{ minHeight: 'var(--card-min-height, 220px)', display: 'flex', flexDirection: 'column' }}
     >
       <div className="card-wrapper w-full" style={{ flex: 1, display: 'flex' }}>
         <Link
@@ -65,7 +65,7 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
             flex: 1,
             background: 'linear-gradient(145deg, #2e1e14 0%, #170e0a 60%, #0d0705 100%)',
             borderRadius: '16px',
-            padding: '40px 24px',
+            padding: 'var(--card-padding, 40px 24px)',
             transition: 'all 0.3s ease',
             display: 'flex',
             flexDirection: 'column',
@@ -88,15 +88,15 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
             <div
               className="card-icon-wrapper transition-all duration-500 ease-out"
               style={{
-                width: '68px',
-                height: '68px',
+                width: 'var(--card-icon-size, 68px)',
+                height: 'var(--card-icon-size, 68px)',
                 borderRadius: '50%',
                 border: '1px solid rgba(212, 160, 50, 0.3)',
                 color: '#D4A032',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '24px',
+                marginBottom: 'var(--card-icon-margin, 24px)',
                 backgroundColor: 'rgba(212, 160, 50, 0.03)',
                 position: 'relative',
               }}
@@ -116,9 +116,9 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
                 fontWeight: 700,
                 letterSpacing: '0.15em',
                 color: '#FFFFFF',
-                fontSize: '14px',
+                fontSize: 'var(--card-title-size, 14px)',
                 textTransform: 'uppercase',
-                margin: '0 0 20px 0',
+                margin: 'var(--card-title-margin, 0 0 20px 0)',
               }}
             >
               {label}
@@ -132,7 +132,7 @@ export default function Product3DCard({ to, label, icon, index = 0 }: Product3DC
                 style={{
                   fontFamily: 'Inter, var(--font-sans)',
                   fontWeight: 600,
-                  fontSize: '11px',
+                  fontSize: 'var(--card-explore-size, 11px)',
                   letterSpacing: '0.15em',
                   color: '#D4A032',
                   textTransform: 'uppercase',

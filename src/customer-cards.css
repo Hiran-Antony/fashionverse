@@ -51,6 +51,7 @@
   aspect-ratio: 5/4;
   overflow: hidden;
   background: rgba(26,15,8,0.8);
+  z-index: 4;
 }
 
 .product-card-image-wrap img {

@@ -25,7 +25,7 @@ export default function CollectionsSection() {
     <section
       className="collections-section"
       style={{
-        background: 'radial-gradient(circle at center, #1a0d00 0%, #0d0600 100%)',
+        background: 'var(--bg-primary)',
       }}
     >
       {/* Centred header */}

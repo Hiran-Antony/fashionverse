@@ -33,7 +33,7 @@ export function FeaturesSection() {
   ];
 
   return (
-    <section style={{ padding: '6rem 0', background: 'var(--bg-secondary)', borderTop: '1px solid rgba(201, 151, 58, 0.15)' }}>
+    <section style={{ padding: '6rem 0', background: 'var(--bg-primary)', borderTop: '1px solid rgba(201, 151, 58, 0.15)' }}>
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -127,7 +127,7 @@ export function CTABanner() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{ background: 'var(--gradient-hero)' }}
+      style={{ background: 'var(--bg-primary)', borderTop: '1px solid rgba(201, 151, 58, 0.15)' }}
     >
       {/* Ambient glow */}
       <div
@@ -172,7 +172,7 @@ export function CTABanner() {
           >
             <p
               className="text-xs font-semibold uppercase tracking-widest"
-              style={{ color: 'rgba(255,255,255,0.45)', marginBottom: '1.5rem', letterSpacing: '0.14em' }}
+              style={{ color: '#C9973A', marginBottom: '1.5rem', letterSpacing: '0.14em', opacity: 0.85 }}
             >
               Virtual Fitting Room
             </p>
@@ -221,11 +221,12 @@ export function CTABanner() {
             <div
               className="rounded-2xl"
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(201,151,58,0.15)',
+                boxShadow: 'rgba(0,0,0,0.4) 0px 20px 40px, rgba(255,255,255,0.05) 0px 1px 0px inset',
                 padding: '2.5rem',
                 marginBottom: '2rem',
-                backdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(20px)',
               }}
             >
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -271,7 +272,7 @@ export function CTABanner() {
                 style={{
                   background: 'transparent',
                   color: 'rgba(255,255,255,0.85)',
-                  border: '1px solid rgba(255,255,255,0.25)',
+                  border: '1px solid rgba(201,151,58,0.4)',
                 }}
               >
                 Browse Products

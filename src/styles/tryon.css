@@ -3,6 +3,7 @@
   min-height: 100vh;
   overflow: hidden;
   color: #f5f0e8;
+  --tryon-panel-padding: 2rem;
 }
 
 /* Background image */
@@ -90,6 +91,8 @@
 
 /* Garments panel - scrollable inside */
 .garments-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   max-height: 310px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -214,5 +217,18 @@
 @media (max-width: 768px) {
   .elastic-widget {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .tryon-page {
+    --tryon-panel-padding: 1.25rem;
+  }
+  .garments-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .picker-product-card > div {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
   }
 }

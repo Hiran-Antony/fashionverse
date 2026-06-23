@@ -16,7 +16,7 @@ export default function GoldParticles() {
     if (!ctx) return;
 
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    
+
     const resize = () => {
       canvas.width = window.innerWidth * DPR;
       canvas.height = window.innerHeight * DPR;
@@ -24,7 +24,7 @@ export default function GoldParticles() {
       canvas.style.height = window.innerHeight + 'px';
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     };
-    
+
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
@@ -79,6 +79,19 @@ export default function GoldParticles() {
       };
     });
 
+    // Cache image rects — refresh every 30 frames to avoid layout thrashing
+    let cachedRects: DOMRect[] = [];
+    let rectFrame = 0;
+
+    const getImageRects = (): DOMRect[] => {
+      rectFrame++;
+      if (rectFrame % 30 === 0 || cachedRects.length === 0) {
+        const wraps = document.querySelectorAll<HTMLElement>('.product-card-image-wrap');
+        cachedRects = Array.from(wraps).map(el => el.getBoundingClientRect());
+      }
+      return cachedRects;
+    };
+
     const draw = () => {
       // 3. Performance: Pause updates if tab is in the background
       if (document.hidden) {
@@ -89,6 +102,20 @@ export default function GoldParticles() {
       const w = W();
       const h = H();
       ctx.clearRect(0, 0, w, h);
+
+      // ── Build clip region: full viewport MINUS all product image rects ──
+      const imageRects = getImageRects();
+
+      ctx.save();
+      ctx.beginPath();
+      // Outer rect = entire viewport (winding: clockwise)
+      ctx.rect(0, 0, w, h);
+      // Cut out each product image rect (winding: counter-clockwise = hole)
+      for (const r of imageRects) {
+        ctx.rect(r.left, r.top, r.width, r.height);
+      }
+      // evenodd rule: overlapping areas (the image rects) become holes
+      ctx.clip('evenodd');
 
       for (const f of flakes) {
         // Update positions & physics
@@ -136,6 +163,8 @@ export default function GoldParticles() {
         ctx.restore();
       }
 
+      ctx.restore(); // Remove clip region
+
       rafRef.current = requestAnimationFrame(draw);
     };
 
@@ -159,7 +188,7 @@ export default function GoldParticles() {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 3, // Draw directly above Layout elements (zIndex 2) but below headers/modals
+        zIndex: 3, // Above all page content; image rects are masked out via canvas clip
       }}
     />
   );

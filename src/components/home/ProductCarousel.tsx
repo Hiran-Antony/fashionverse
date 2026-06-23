@@ -190,9 +190,8 @@ export default function ProductCarousel({
             ))}
           </div>
         )}
-
         {/* Mobile View All */}
-        <div className="mt-8 text-center sm:hidden">
+        <div className="text-center sm:hidden" style={{ marginTop: '42px' }}>
           <Link to={viewAllLink} className="btn btn-outline">
             View All <ArrowRight size={16} />
           </Link>

@@ -22,3 +22,140 @@
   position: relative;
   z-index: 1;
 }
+
+.style-builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 14px;
+  border-bottom: 1px solid rgba(42, 26, 8, 0.4);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.style-builder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .style-builder-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+  }
+  .style-builder-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Style Builder Mobile Layout adjustments */
+.style-builder-page-container {
+  height: calc(100vh - var(--nav-height, 72px));
+  background: transparent;
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Horizontal scroll for quick action chips on mobile */
+.quick-chips-container {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.quick-chips-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Horizontal scroll for standalone tools tabs on mobile */
+.standalone-tools-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.standalone-tools-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Style compatibility selectors stacking on mobile */
+.style-match-selectors-grid {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* Weather products grid responsive columns */
+.weather-products-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-auto-rows: 240px;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .style-match-selectors-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  /* Center the VS badge */
+  .style-match-selectors-grid > div:nth-child(2) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    align-self: center;
+  }
+  
+  .glass-container {
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
+    border-radius: 16px !important;
+  }
+  .glass-input-bar {
+    padding: 8px 10px 8px 14px !important;
+    border-radius: 14px !important;
+  }
+  .glass-send-btn {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .quick-chips-container {
+    margin-bottom: 8px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .weather-products-grid {
+    grid-template-columns: 1fr 1fr !important;
+    grid-auto-rows: auto !important;
+  }
+  .weather-products-grid > :first-child {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .weather-products-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

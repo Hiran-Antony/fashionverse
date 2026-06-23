@@ -116,7 +116,7 @@ export default defineConfig({
     },
   },
   build: {
-    minify: "terser",
+    minify: false,
     reportCompressedSize: true,
     chunkSizeWarningLimit: 300,
     rollupOptions: {

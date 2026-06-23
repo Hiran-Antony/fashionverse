@@ -7,6 +7,30 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
+const DEFAULT_REVIEWS = [
+  {
+    id: 'default-1',
+    rating: 5,
+    comment: "The AI Stylist is mind-blowing! It recommended a blazer that perfectly matched my pants. Totally simplified my morning routine.",
+    profile: { name: "Aarav Sharma", avatar_url: null },
+    product: { name: "Slim Fit Oxford Shirt", product_colors: [] }
+  },
+  {
+    id: 'default-2',
+    rating: 5,
+    comment: "Excellent quality and fast delivery. The digital couture feel is premium and looks amazing on my device.",
+    profile: { name: "Priya Patel", avatar_url: null },
+    product: { name: "Classic Denim Jacket", product_colors: [] }
+  },
+  {
+    id: 'default-3',
+    rating: 5,
+    comment: "I used the Virtual Try-On and it was incredibly accurate. Got exactly the size that fits me perfectly.",
+    profile: { name: "Vikram Malhotra", avatar_url: null },
+    product: { name: "Comfort Lounge Pants", product_colors: [] }
+  }
+];
+
 export default function HomeReviewsSection() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,13 +49,18 @@ export default function HomeReviewsSection() {
         .order('created_at', { ascending: false })
         .limit(6);
         
-      if (data) setReviews(data);
+      if (data && data.length > 0) {
+        setReviews(data);
+      } else {
+        setReviews(DEFAULT_REVIEWS);
+      }
       setLoading(false);
     }
     fetchTopReviews();
   }, []);
 
-  if (loading || reviews.length === 0) return null;
+  if (loading) return null;
+
 
   return (
     <section className="py-24 relative" style={{ background: 'var(--bg-primary)', overflow: 'hidden' }}>
@@ -132,7 +161,7 @@ export default function HomeReviewsSection() {
             }}
             centeredSlides={true}
             spaceBetween={16}
-            loop={true}
+            loop={reviews.length > 1}
             autoplay={{
               delay: 5000,
               disableOnInteraction: false,

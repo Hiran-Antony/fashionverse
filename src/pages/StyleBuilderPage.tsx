@@ -832,13 +832,13 @@ feature: "style_chat":
       {/* History Drawer */}
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} onNewChat={handleNewChat} />
 
-      <div className="fv-page" style={{ height: 'calc(100vh - 80px)', background: 'transparent', color: TEXT_PRI, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div className="style-builder-page-container">
 
         <div style={{ maxWidth: 860, margin: '0 auto', width: '100%', padding: '0 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative', zIndex: 1 }}>
 
           {/* ── HEADER ── */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 14px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+            className="style-builder-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ position: 'relative' }}>
                 <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${SURFACE}, #1e1005)`, border: `1px solid ${BORDER}`, boxShadow: `0 0 14px rgba(212,160,50,0.15)`, overflow: 'hidden' }}>
@@ -853,7 +853,7 @@ feature: "style_chat":
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="style-builder-toolbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', border: `1px solid ${BORDER}`, borderRadius: 20, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: catalogLoaded ? '#4ade80' : TEXT_SEC }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: catalogLoaded ? '#4ade80' : TEXT_SEC, flexShrink: 0 }} />
                 {catalogLoaded ? `${catalog.length} Products` : 'Loading…'}
@@ -895,7 +895,7 @@ feature: "style_chat":
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
               ref={chatLogRef} className="fv-chat-log fv-elegant-scroll"
             onWheel={(e) => e.stopPropagation()}
-            style={{ flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', padding: '28px 8px 12px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '28px 8px 12px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <AnimatePresence initial={false}>
               {messages.map((msg) => (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -990,7 +990,7 @@ feature: "style_chat":
 
             {/* ── FEATURE QUICK-ACCESS CHIPS ── */}
             {!isGenerating && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <div className="quick-chips-container">
                 {[
                   { icon: Palette, label: 'Color Advisor', prompt: 'I want to know which colors suit me best. Analyze my skin tone.', color: '#c084fc' },
                   { icon: ScanLine, label: 'Fabric Scanner', prompt: 'I want to know what fabric this is. Please scan the attached photo.', color: '#38bdf8' },
