@@ -827,7 +827,7 @@ Return ONLY valid JSON matching this exact format:
     <div style={{ fontFamily:"'Outfit', sans-serif" }}>
 
       {/* ── TAB BAR ─────────────────────────────────── */}
-      <div className="standalone-tools-tabs">
+      <div style={{ display:"flex", gap:6, marginBottom:24, flexWrap:"wrap" }}>
         {TABS.map(({ id, label, Icon, accent }) => {
           const active = tab === id;
           return (
@@ -985,7 +985,7 @@ Return ONLY valid JSON matching this exact format:
               )}
 
               {/* Product selector slots */}
-              <div className="style-match-selectors-grid">
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 40px 1fr", gap:14, alignItems:"center", marginBottom:24 }}>
                 {[
                   { label:"Product 1", p:p1, slot:1 },
                   { isVs: true },
@@ -1285,7 +1285,7 @@ Return ONLY valid JSON matching this exact format:
 
                   {/* Asymmetrical Layout for Products */}
                   {weatherProducts.length > 0 && (
-                    <div className="weather-products-grid">
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gridAutoRows: "240px", gap: 16, marginBottom: 32 }}>
                       {weatherProducts.map((p, i) => (
                         <div key={p.id} className="fv-item-card" onClick={() => handleTryOn(p)} style={{
                           gridColumn: i === 0 ? "1 / span 1" : "auto",
