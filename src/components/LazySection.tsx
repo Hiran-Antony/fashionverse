@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 
 interface LazySectionProps {
   children: React.ReactNode;
@@ -43,7 +43,14 @@ export default function LazySection({
   return (
     <div ref={sectionRef} style={{ minHeight: isIntersecting ? 'auto' : minHeight }}>
       {isIntersecting ? (
-        children
+        <Suspense fallback={
+          <div 
+            className="w-full bg-[rgba(26,15,8,0.03)] animate-pulse rounded-3xl"
+            style={{ height: minHeight }}
+          />
+        }>
+          {children}
+        </Suspense>
       ) : (
         <div 
           className="w-full bg-[rgba(26,15,8,0.03)] animate-pulse rounded-3xl"

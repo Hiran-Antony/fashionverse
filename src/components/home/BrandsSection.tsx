@@ -21,27 +21,27 @@ export default function BrandsSection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex flex-col items-center justify-center text-center mb-6"
+          className="flex flex-col items-center justify-center text-center mb-10 gap-3"
         >
           <p
-            className="text-xs font-semibold uppercase m-0 mb-2"
+            className="text-xs font-semibold uppercase m-0"
             style={{ color: '#E8B84B', fontFamily: 'Inter, sans-serif', letterSpacing: '0.15em' }}
           >
             Curated Selection
           </p>
           <h2
-            className="m-0 mb-1"
+            className="m-0"
             style={{
               fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              lineHeight: 1.1,
+              lineHeight: 1.2,
               letterSpacing: '-0.02em',
             }}
           >
             Top Brands, All in One Place
           </h2>
-          <p className="text-base font-medium m-0 mt-2 text-center max-w-xl" style={{ color: '#E8B84B', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>Discover your favourite labels and explore their latest collections</p>
+          <p className="text-base font-medium m-0 text-center max-w-xl" style={{ color: '#E8B84B', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em', lineHeight: 1.5 }}>Discover your favourite labels and explore their latest collections</p>
         </motion.div>
 
         {/* Infinite Marquee Grid */}
@@ -55,7 +55,7 @@ export default function BrandsSection() {
           }} />
           
           <motion.div
-            className="flex w-max"
+            className="flex w-max gap-4 sm:gap-6 lg:gap-8"
             animate={{ x: ["0%", "-50%"] }}
             transition={{ ease: "linear", duration: 20, repeat: Infinity }}
             whileHover={{ animationPlayState: "paused" }} 
@@ -63,7 +63,7 @@ export default function BrandsSection() {
             {[...BRANDS, ...BRANDS].map((brand, i) => (
               <div
                 key={`${brand.name}-${i}`}
-                className="w-[140px] sm:w-[170px] lg:w-[200px] flex-shrink-0 h-full flex flex-col mr-4 sm:mr-6"
+                className="w-[120px] sm:w-[145px] lg:w-[175px] flex-shrink-0 h-full flex flex-col"
               >
                 <motion.div
                   whileHover={{ 
