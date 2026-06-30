@@ -1,5 +1,6 @@
-import { n as __commonJSMin, t as require_react } from "./react-CZunmVaX.js";
-import { t as require_react_dom } from "./react-dom-DlAeUGhR.js";
+import { t as __commonJSMin } from "./chunk-B-1-B7_t.js";
+import { t as require_react } from "./react.js";
+import { t as require_react_dom } from "./react-dom-Br2l1Z8p.js";
 //#region node_modules/scheduler/cjs/scheduler.development.js
 /**
 * @license React

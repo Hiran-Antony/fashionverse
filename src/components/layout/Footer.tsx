@@ -147,34 +147,23 @@ function EditorialFooter() {
             </div>
           </div>
 
-          {/* Newsletter */}
+          {/* Project Team */}
           <div className="editorial-footer-newsletter" data-reveal="fade-up" data-reveal-delay="200">
-            <p className="editorial-footer-heading">Newsletter</p>
-            <p className="editorial-footer-newsletter-desc">
-              Exclusive drops, style tips, and early access. Join 50,000+ subscribers.
-            </p>
-            <form className="editorial-newsletter" onSubmit={handleNewsletter}>
-              <div className="input-float-wrap">
-                <input
-                  id="footer-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder=" "
-                  required
-                  className="input-float editorial-newsletter-input"
-                />
-                <label htmlFor="footer-email">Your email</label>
-              </div>
-              <button
-                type="submit"
-                className="btn btn-gold editorial-newsletter-btn"
-                data-magnetic
-                disabled={submitted}
-              >
-                {submitted ? 'Subscribed ✓' : 'Subscribe'}
-              </button>
-            </form>
+            <p className="editorial-footer-heading">Project Team</p>
+            <ul className="editorial-footer-links" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+              <li style={{ lineHeight: 1.4 }}>
+                <strong style={{ color: 'var(--text-primary)', fontSize: '14px', display: 'block', marginBottom: '2px' }}>Hiran Antony R</strong>
+                <a href="mailto:rhiranantony15@gmail.com" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>rhiranantony15@gmail.com</a>
+              </li>
+              <li style={{ lineHeight: 1.4 }}>
+                <strong style={{ color: 'var(--text-primary)', fontSize: '14px', display: 'block', marginBottom: '2px' }}>Visal A</strong>
+                <a href="mailto:vijayvisal2710@gmail.com" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vijayvisal2710@gmail.com</a>
+              </li>
+              <li style={{ lineHeight: 1.4 }}>
+                <strong style={{ color: 'var(--text-primary)', fontSize: '14px', display: 'block', marginBottom: '2px' }}>Sakthi Sundaram R</strong>
+                <a href="mailto:sakthisundaram.rajeshkannan@gmail.com" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>sakthisundaram.rajeshkannan@gmail.com</a>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
