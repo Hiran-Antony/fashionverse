@@ -192,11 +192,18 @@ function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
                 return;
               }
 
-              let imgUrl =
+              let rawUrl =
                 typeof imgData === "string"
                   ? imgData
                   : imgData?.url ||
                     (imgData?.path ? `${REAL_SPACE_URL}/file=${imgData.path}` : null);
+
+              // Route the image download through our proxy to bypass 403 Forbidden
+              let imgUrl = rawUrl;
+              if (rawUrl && rawUrl.startsWith(REAL_SPACE_URL)) {
+                const pathPart = rawUrl.substring(REAL_SPACE_URL.length);
+                imgUrl = `${SPACE_URL}?target=${encodeURIComponent(pathPart)}`;
+              }
 
               if (!imgUrl) {
                 console.error("Unexpected output:", outputData);
