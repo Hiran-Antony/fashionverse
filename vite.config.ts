@@ -95,10 +95,22 @@ export default defineConfig({
       // Proxy all Kolors Virtual Try-On space requests through Vite
       // This bypasses the "Forbidden embedding" 403 by making requests appear
       // to come from localhost instead of the browser origin
-      '/api/tryon': {
+      '/api/proxy': {
         target: 'https://kwai-kolors-kolors-virtual-try-on.hf.space',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/tryon/, ''),
+        rewrite: (path) => {
+          // Extract the target query parameter (e.g., ?target=/upload)
+          const url = new URL(path, 'http://localhost');
+          const target = url.searchParams.get('target');
+          if (target) {
+            // Reconstruct path: /upload + &session_hash=...
+            const params = new URLSearchParams(url.searchParams);
+            params.delete('target');
+            const search = params.toString();
+            return target + (search ? '?' + search : '');
+          }
+          return path.replace(/^\/api\/proxy/, '');
+        },
         secure: true,
         ws: true,
         configure: (proxy) => {

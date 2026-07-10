@@ -3,7 +3,7 @@ const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 // Vite proxy path — bypasses 403 Forbidden embedding
-const SPACE_URL = "/api/tryon";
+const SPACE_URL = "/api/proxy";
 // Real space URL — used for constructing file result URLs
 const REAL_SPACE_URL = "https://kwai-kolors-kolors-virtual-try-on.hf.space";
 
@@ -37,7 +37,7 @@ async function uploadFileToSpace(file, signal) {
   const headers = {};
   if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
 
-  const res = await fetch(`${SPACE_URL}/upload`, {
+  const res = await fetch(`${SPACE_URL}?target=/upload`, {
     method: "POST",
     headers,
     body: formData,
@@ -59,6 +59,7 @@ async function uploadFileToSpace(file, signal) {
     orig_name: file.name,
     size: file.size,
     mime_type: file.type || "image/jpeg",
+    meta: { _type: "gradio.FileData" }
   };
 }
 
@@ -69,7 +70,7 @@ async function joinQueue(personFileData, garmentFileData, sessionHash, signal) {
   const headers = { "Content-Type": "application/json" };
   if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
 
-  const res = await fetch(`${SPACE_URL}/queue/join`, {
+  const res = await fetch(`${SPACE_URL}?target=/queue/join`, {
     method: "POST",
     headers,
     signal,
@@ -104,7 +105,7 @@ async function joinQueue(personFileData, garmentFileData, sessionHash, signal) {
  */
 function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
   return new Promise((resolve, reject) => {
-    const url = `${SPACE_URL}/queue/data?session_hash=${sessionHash}`;
+    const url = `${SPACE_URL}?target=/queue/data&session_hash=${sessionHash}`;
     console.log("≡ƒôí Polling SSE:", url);
 
     const headers = {};
