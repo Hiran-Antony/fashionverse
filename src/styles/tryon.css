@@ -80,7 +80,7 @@
 /* Both panels same fixed height */
 .capture-zone-panel,
 .garments-panel {
-  height: 430px;
+  height: 500px;
   overflow: hidden;
 }
 
@@ -93,16 +93,34 @@
 .garments-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  max-height: 310px;
+  grid-auto-rows: max-content;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Product cards in picker - smaller */
+/* Custom golden scrollbar for garments grid */
+.garments-grid::-webkit-scrollbar {
+  width: 6px;
+}
+.garments-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+.garments-grid::-webkit-scrollbar-thumb {
+  background: #c9a84c;
+  border-radius: 10px;
+}
+.garments-grid::-webkit-scrollbar-thumb:hover {
+  background: #e8b84b;
+}
+
+/* Product cards in picker - tall portrait */
 .picker-product-card img {
-  aspect-ratio: 1/1;
-  /* Square not tall portrait */
+  aspect-ratio: 3/4;
   object-fit: cover;
+  object-position: top;
 }
 
 /* Category tabs - horizontal scroll */

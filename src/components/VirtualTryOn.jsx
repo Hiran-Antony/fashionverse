@@ -423,19 +423,19 @@ export default function VirtualTryOn() {
             </div>
 
             {/* Right Column - Garments */}
-            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column" }}>
               {/* Card Header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
                   <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
                   <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
                 </svg>
                 <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>UPPERWEAR</span>
               </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", flex: 1, minHeight: 0 }}>
 
               {/* ── UPPERWEAR PICKER ── */}
-              <div>
+              <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
                 <label style={{ fontSize: "13px", fontWeight: "600", color: "#f5f0e8", display: "block", marginBottom: "10px" }}>
                   👕 Upperwear
                 </label>
@@ -528,19 +528,19 @@ export default function VirtualTryOn() {
           </div>
 
             {/* Right Column - Bottomwear */}
-            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
+            <div className="garments-panel" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "20px", padding: "var(--tryon-panel-padding, 2rem)", backdropFilter: "blur(10px)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column" }}>
               {/* Card Header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem", flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
                   <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
                   <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
                 </svg>
                 <span style={{ fontSize: "12px", letterSpacing: "0.15em", color: "#c9a84c", fontWeight: "600" }}>BOTTOMWEAR</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", flex: 1, minHeight: 0 }}>
 
               {/* ── BOTTOMWEAR PICKER ── */}
-              <div>
+              <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
                 <label style={{ fontSize: "13px", fontWeight: "600", color: "#f5f0e8", display: "block", marginBottom: "10px" }}>
                   👖 Bottomwear
                 </label>

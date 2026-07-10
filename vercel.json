@@ -31,6 +31,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/tryon/(.*)",
+      "destination": "https://kwai-kolors-kolors-virtual-try-on.hf.space/$1"
+    },
+    {
       "source": "/api/tryon",
       "destination": "https://kwai-kolors-kolors-virtual-try-on.hf.space"
     },

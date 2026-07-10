@@ -18,6 +18,7 @@ This project was developed by:
 
 ### 🛍️ Core Customer Experience
 - **Complete E-Commerce Flow:** Fully functional Shopping Cart, Wishlist, and secure multi-step Checkout system.
+- **Invoice & Billing:** Automated PDF invoice generation and seamless WhatsApp bill sharing integration for easy record-keeping.
 - **Customer Dashboard:** Dedicated 'My Account' portal for users to manage profiles, track active orders, and view order history.
 - **Virtual Try-On:** Cutting-edge augmented reality integrations allowing users to visualize garments on themselves before purchasing.
 - **FashionVerse AI Consultant:** An integrated AI styling engine powered by Google Gemini that provides personalized style advice, color analysis, fabric scanning, and curated outfit recommendations.
