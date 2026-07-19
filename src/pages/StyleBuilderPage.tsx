@@ -19,7 +19,6 @@ import type {
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import StandaloneFashionTools from '../components/StandaloneFashionTools';
-import { geminiFetch } from '../lib/gemini';
 import useDeviceOptimization from '../hooks/useDeviceOptimization';
 import '../styles/fashionverse.css';
 
@@ -64,8 +63,7 @@ function timeAgo(ts: number) {
   return new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-// ─── FETCH WITH RETRY ─────────────────────────────────────────────
-const fetchWithRetry = geminiFetch;
+// ─── GROQ API KEY ─────────────────────────────────────────────
 
 
 
@@ -571,7 +569,7 @@ export default function StyleBuilderPage() {
     }
 
     try {
-      const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+      const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
       const catalogString = catalog.slice(0, 50).map((p, i) =>
         `${i + 1}. [${p.category.toUpperCase()}] ${p.name} | Brand: ${p.brand} | Price: ₹${p.price} | Color: ${p.color_name} | Image: ${p.image}`
       ).join('\n');
@@ -623,36 +621,46 @@ feature: "outfit":
 feature: "style_chat":
 {"feature":"style_chat","chat_response":"conversational reply warm direct Indian context aware max 3 sentences","style_tags":["tag1","tag2"],"confidence":"Perfect Match|Strong Match|Close Option","catalog_recommendations":[{"name":"<exact product name>","price":"₹<price>","occasion":"occasion","why":"1 line reason"}]}`;
 
-      // Build API contents — handle photo
-      type ApiPart = { text: string } | { inline_data: { mime_type: string; data: string } };
-      const apiContents: { role: string; parts: ApiPart[] }[] = newMessages.map((m, idx) => {
+      // Build Groq-compatible messages array
+      type GroqContent = string | Array<{type: string; text?: string; image_url?: {url: string}}>;
+      const groqMessages: {role: string; content: GroqContent}[] = [
+        { role: 'system', content: systemInstruction }
+      ];
+
+      newMessages.forEach((m, idx) => {
+        const role = m.role === 'model' ? 'assistant' : 'user';
         if (m.role === 'user' && idx === newMessages.length - 1 && b64) {
-          return {
+          // Last message with photo — use multimodal content
+          groqMessages.push({
             role: 'user',
-            parts: [
-              { inline_data: { mime_type: mime, data: b64 } } as ApiPart,
-              { text: `${m.text} [PHOTO_ATTACHED: true]` } as ApiPart
+            content: [
+              { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
+              { type: 'text', text: `${m.text} [PHOTO_ATTACHED: true]` }
             ]
-          };
+          });
+        } else {
+          groqMessages.push({ role, content: m.text });
         }
-        return { role: m.role, parts: [{ text: m.text } as ApiPart] };
       });
 
-      const response = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: apiContents,
-            generationConfig: { temperature: 0.75, maxOutputTokens: 4096, responseMimeType: 'application/json' }
-          })
-        }
-      );
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: groqMessages,
+          temperature: 0.75,
+          max_tokens: 4096,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message || 'API Error');
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = data.choices?.[0]?.message?.content;
       if (!rawText) throw new Error('Empty response from AI');
 
       let displayMessage = "Here's what I found for you!";

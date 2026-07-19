@@ -8,7 +8,7 @@ import {
   ChevronRight, X, Palette, CloudSun, MapPin, Zap, CheckCircle2
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { geminiCall } from "../lib/gemini";
+import { groqCall } from "../lib/groq";
 
 /* ─── BRAND TOKENS ──────────────────────────────────────────── */
 const G       = "#c9a84c";
@@ -618,7 +618,7 @@ Be decisive. No hedging language. No markdown.`;
 
       let res;
       try {
-        res = await geminiCall(sys, JSON.stringify(compactPayload), [], null, setLoadingStatus, { maxOutputTokens: 250, temperature: 0.4 });
+        res = await groqCall(sys, JSON.stringify(compactPayload), [], null, setLoadingStatus, { maxOutputTokens: 250, temperature: 0.4 });
       } catch (err) {
         console.warn("AI Style Matcher failed, falling back to local...", err);
         res = {
@@ -730,7 +730,7 @@ Return ONLY valid JSON matching this exact format:
 }`;
       const prompt = `Weather: ${weather.temp}°C, feels like ${weather.feelsLike}°C. Condition: ${weather.condition} (${weather.description}). Catalog: ${JSON.stringify(lightweightCatalog)}`;
       
-      const res = await geminiCall(sysPrompt, prompt, [], null, setLoadingStatus);
+      const res = await groqCall(sysPrompt, prompt, [], null, setLoadingStatus);
       
       if (res && res.curated_product_ids && res.curated_product_ids.length > 0) {
         const selected = res.curated_product_ids.map(id => {

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Sparkles, RefreshCcw, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { geminiCall } from '../lib/gemini';
+import { groqCall } from '../lib/groq';
 import type { Product } from '../types';
 import ProductPickerModal from '../components/ui/ProductPickerModal';
 
@@ -79,7 +79,7 @@ export default function StyleMatchPage() {
           required: ["score", "reason", "anchorItemIndex", "recommendedOppositeCategoryStyle"]
         };
 
-        const aiResult = (await geminiCall(systemPrompt, userMessage, [], schemaA, setStatusText)) as any;
+        const aiResult = (await groqCall(systemPrompt, userMessage, [], schemaA, setStatusText)) as any;
         setResult({ mode: 'A', ...aiResult });
 
         // Find a matching opposite piece
@@ -107,7 +107,7 @@ export default function StyleMatchPage() {
             const anchorName = aiResult.anchorItemIndex === 1 ? product1.name : product2.name;
             const pickMsg = `Anchor piece: ${anchorName}\nRecommended style: ${aiResult.recommendedOppositeCategoryStyle.style}, Color: ${aiResult.recommendedOppositeCategoryStyle.color}\n\nSelect the BEST matching item from this list:\n` + JSON.stringify(oppositeItems.map(p => ({id: p.id, name: p.name, color: p.product_colors?.[0]?.color_name || 'Unknown', category: p.category})));
             
-            const pickResult = (await geminiCall("You are a stylist. Pick the best matching item from the list for the anchor piece.", pickMsg, [], pickSchema, setStatusText)) as any;
+            const pickResult = (await groqCall("You are a stylist. Pick the best matching item from the list for the anchor piece.", pickMsg, [], pickSchema, setStatusText)) as any;
             
             const bestProduct = oppositeItems.find(p => p.id === pickResult.selectedId) || oppositeItems[0];
             setRecommendedProduct(bestProduct);
@@ -125,7 +125,7 @@ export default function StyleMatchPage() {
           required: ["score", "reason"]
         };
 
-        const aiResult = (await geminiCall(systemPrompt, userMessage, [], schemaB, setStatusText)) as any;
+        const aiResult = (await groqCall(systemPrompt, userMessage, [], schemaB, setStatusText)) as any;
         setResult({ mode: 'B', ...aiResult });
       }
 

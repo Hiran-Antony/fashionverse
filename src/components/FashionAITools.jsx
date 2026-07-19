@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { geminiCall } from "../lib/gemini";
+import { groqCall } from "../lib/groq";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useTryOnStore } from "../store/tryOnStore";
@@ -197,7 +197,7 @@ const styleMatchSchema = {
 };
 
 // ── Gemini Fetch (uses shared multi-model provider) ──────────
-// geminiCall is imported from ../lib/gemini
+// groqCall is imported from ../lib/groq
 
 // ── UI SKELETON ──────────────────────────────────────────────
 function Skeleton() {
@@ -299,7 +299,7 @@ export default function FashionAITools({ modelFile, resultUrl }) {
         let data;
         try {
           setStatusMsg("Analyzing style...");
-          data = await geminiCall(SYSTEM_PROMPT, userMessage, imageParts, schema, setStatusMsg);
+          data = await groqCall(SYSTEM_PROMPT, userMessage, imageParts, schema, setStatusMsg);
         } catch (apiError) {
           console.warn("API Error, using professional fallback", apiError);
           // Professional fallback for Free Tier limits
