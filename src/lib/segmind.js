@@ -233,7 +233,7 @@ function pollQueueResult(sessionHash, timeout = 180000, signal = null) {
                 resolve(blobUrl);
               } catch (fetchErr) {
                 console.warn("⚠️ Could not proxy image, falling back to direct URL:", fetchErr.message);
-                resolve(imgUrl);
+                resolve(rawUrl);
               }
               return;
             }
