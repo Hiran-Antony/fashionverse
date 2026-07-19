@@ -37,7 +37,9 @@ async function uploadFileToSpace(file, signal) {
   const headers = {};
   if (HF_TOKEN) headers["Authorization"] = `Bearer ${HF_TOKEN}`;
 
-  const res = await fetch(`${SPACE_URL}?target=/upload`, {
+  // Gradio v4 requires an upload_id
+  const uploadId = Math.random().toString(36).substring(2, 12);
+  const res = await fetch(`${SPACE_URL}?target=/upload&upload_id=${uploadId}`, {
     method: "POST",
     headers,
     body: formData,

@@ -12,7 +12,10 @@ export default async function handler(req) {
     }
 
     const HF_SPACE = "https://kwai-kolors-kolors-virtual-try-on.hf.space";
-    const targetUrl = new URL(HF_SPACE + targetPath);
+    
+    // If targetPath is already an absolute URL, use it directly. Otherwise, prepend HF_SPACE.
+    const fullUrl = targetPath.startsWith("http") ? targetPath : (HF_SPACE + targetPath);
+    const targetUrl = new URL(fullUrl);
 
     // Forward any extra query params (like session_hash)
     url.searchParams.forEach((value, key) => {
